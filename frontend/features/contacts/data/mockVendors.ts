@@ -1,0 +1,106 @@
+import type { Vendor } from "../types"
+
+export const MOCK_VENDORS: Vendor[] = [
+  { id: "v1", name: "2050 Breton LLC", address: "", trades: "", phone: "", email: "" },
+  { id: "v2", name: "ABC LLC", address: "", trades: "General Contractor", phone: "", email: "" },
+  {
+    id: "v3",
+    name: "ARC Roofing & Home Improve...",
+    address: "13210 Beldon Ave, Cleveland O...",
+    trades: "",
+    phone: "(440) 212-2083",
+    email: "leah@b2brealty.com",
+  },
+  { id: "v4", name: "AT&T", address: "", trades: "", phone: "", email: "" },
+  {
+    id: "v5",
+    name: "Aby Zim",
+    address: "4320 Ridge Rd Brooklyn OH 4...",
+    trades: "Plumbing",
+    phone: "(216) 353-0141",
+    email: "abby@b2brealty.com",
+  },
+  {
+    id: "v6",
+    name: "Adam Adan LLC",
+    address: "4320 Ridge Rd Brooklyn OH 4...",
+    trades: "Plumbing, General Contractor",
+    phone: "(216) 413-3008",
+    email: "adam@b2brealty.com",
+  },
+  {
+    id: "v7",
+    name: "Alex Head",
+    address: "121 Paxton Rd Cleveland OH 4...",
+    trades: "",
+    phone: "(111) 111-1111",
+    email: "pmb2brealty@gmail.com",
+  },
+  {
+    id: "v8",
+    name: "Aria Mitchelle",
+    address: "",
+    trades: "Painting",
+    phone: "+12162905971",
+    email: "aria@b2brealty.com",
+  },
+  { id: "v9", name: "Ashton Blair", address: "", trades: "", phone: "(326) 220-4291", email: "ashton@b2brealty.com" },
+  {
+    id: "v10",
+    name: "Atif Hussain",
+    address: "1501 Lakeside Ave E Cleveland...",
+    trades: "",
+    phone: "(216) 373-1549",
+    email: "arthur@b2brealty.com",
+  },
+  { id: "v11", name: "Avalon Hawaii", address: "", trades: "", phone: "", email: "" },
+  {
+    id: "v12",
+    name: "AveryCleans",
+    address: "78 Music Lane Clevealand OH ...",
+    trades: "Plumbing",
+    phone: "(440) 578-0181",
+    email: "rose@b2brealty.com",
+  },
+  {
+    id: "v13",
+    name: "B2B Property Management",
+    address: "4324 Ridge Rd Brooklyn OH 4...",
+    trades: "Repairs And Maintenance: Inte...",
+    phone: "(216) 404-4446",
+    email: "arif@b2brealty.com",
+  },
+  {
+    id: "v14",
+    name: "Batman Kirk",
+    address: "",
+    trades: "Electrical",
+    phone: "(216) 206-1515",
+    email: "Ivan@b2brealty.com",
+  },
+  { id: "v15", name: "Blinds, Inc", address: "", trades: "", phone: "1234-4324", email: "abc@blinds.com" },
+  {
+    id: "v16",
+    name: "Bojack Horsemen",
+    address: "",
+    trades: "",
+    phone: "(216) 201-9979",
+    email: "adrian@b2brealty.com",
+  },
+]
+
+export const TRADE_OPTIONS = [
+  "All Trades",
+  "Electrical",
+  "General Contractor",
+  "Painting",
+  "Plumbing",
+  "Repairs And Maintenance: Inte...",
+]
+
+export const STATE_OPTIONS = [
+  "Select...",
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY",
+  "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND",
+  "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+]
