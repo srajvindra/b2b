@@ -206,23 +206,23 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   }
 
   const [showNewTaskModal, setShowNewTaskModal] = useState(false)
-  
+
   // SMS Modal state
   const [showSMSModal, setShowSMSModal] = useState(false)
   const [selectedSMSItem, setSelectedSMSItem] = useState<CommunicationItem | null>(null)
-  
+
   // Email Modal state
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [selectedEmailItem, setSelectedEmailItem] = useState<CommunicationItem | null>(null)
-  
+
   // Tenant Information collapsible sections
   const [screeningExpanded, setScreeningExpanded] = useState(false)
   const [emergencyContactExpanded, setEmergencyContactExpanded] = useState(false)
-  
+
   // Missing Information Modal state
   const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
   const [missingInfoTab, setMissingInfoTab] = useState<"fields" | "documents">("fields")
-  
+
   // Tenant-specific missing information data
   const tenantMissingFields = [
     { id: 1, fieldName: "Emergency Contact", section: "Tenant Information", tab: "tenant-info" },
@@ -231,7 +231,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     { id: 4, fieldName: "Vehicle Information", section: "Additional Info", tab: "tenant-info" },
     { id: 5, fieldName: "Employer Details", section: "Employment", tab: "tenant-info" },
   ]
-  
+
   // Notes modal state
   const [selectedNote, setSelectedNote] = useState<{
     id: number
@@ -289,7 +289,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   // Communications tab filter state (separate from Activity section)
   const [commTileFilter, setCommTileFilter] = useState<"all" | "emails" | "sms">("all")
   const [commRadioFilter, setCommRadioFilter] = useState<"all" | "unread" | "unresponded">("all")
-  
+
   // Communications tab composer state
   const [commMessage, setCommMessage] = useState("")
   const [commChannel, setCommChannel] = useState<"email" | "sms" | "call">("email")
@@ -328,7 +328,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       // Filter by tile selection
       if (commTileFilter === "emails" && item.type !== "email") return false
       if (commTileFilter === "sms" && item.type !== "sms") return false
-      
+
       // Filter by radio selection
       if (commRadioFilter === "unread") {
         if (item.type === "call") return false
@@ -337,7 +337,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       if (commRadioFilter === "unresponded") {
         return item.isIncoming && item.isRead && !item.isResponded
       }
-      
+
       return true
     })
 
@@ -349,7 +349,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       return item.isGroupChat === true // Group: multi-party communications
     }
   })
-  
+
   // Calculate activity summary counts (filtered by chat tab)
   const activitySummary = {
     emails: {
@@ -368,7 +368,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   }
 
   const pinnedCommunications = chatTabFilteredComms.filter((item) => pinnedIds.has(item.id))
-  
+
   // Filter unpinned communications based on tile and radio filters
   const unpinnedCommunications = chatTabFilteredComms
     .filter((item) => !pinnedIds.has(item.id))
@@ -377,7 +377,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       if (activityTileFilter === "emails" && item.type !== "email") return false
       if (activityTileFilter === "sms" && item.type !== "sms") return false
       if (activityTileFilter === "notes" && item.type !== "note") return false
-      
+
       // Then filter by radio selection
       if (activityRadioFilter === "unread") {
         if (item.type === "note") return false
@@ -388,7 +388,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
         if (item.type === "note") return false
         return item.isIncoming && item.isRead && !item.isResponded
       }
-      
+
       return true
     })
 
@@ -641,196 +641,194 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     }
 
     return (
-    <div key={item.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-      <div
-        className={`p-4 cursor-pointer hover:bg-slate-100 transition-colors ${isPinned ? "border-l-4 border-slate-500" : ""}`}
-        onClick={() => {
-          // For SMS and Email, open the thread modal
-          if (item.type === "sms" || item.type === "email") {
-            openThreadModal()
-            return
-          }
-          // For calls and notes, toggle inline expansion
-          setExpandedId(expandedId === item.id ? null : item.id)
-        }}
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <div className="relative">
-              <div
-                className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                  item.isIncoming ? "bg-gray-200 text-gray-700" : "bg-slate-200 text-slate-700"
-                }`}
-              >
-                {getInitials(item.from.name)}
-              </div>
-              <div
-                className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center ${
-                  item.type === "email"
+      <div key={item.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+        <div
+          className={`p-4 cursor-pointer hover:bg-slate-100 transition-colors ${isPinned ? "border-l-4 border-slate-500" : ""}`}
+          onClick={() => {
+            // For SMS and Email, open the thread modal
+            if (item.type === "sms" || item.type === "email") {
+              openThreadModal()
+              return
+            }
+            // For calls and notes, toggle inline expansion
+            setExpandedId(expandedId === item.id ? null : item.id)
+          }}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <div className="relative">
+                <div
+                  className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-medium ${item.isIncoming ? "bg-gray-200 text-gray-700" : "bg-slate-200 text-slate-700"
+                    }`}
+                >
+                  {getInitials(item.from.name)}
+                </div>
+                <div
+                  className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center ${item.type === "email"
                     ? "bg-emerald-500"
                     : item.type === "sms" || item.type === "note"
                       ? "bg-amber-500"
                       : "bg-emerald-500"
-                }`}
-              >
-                {item.type === "email" && <Mail className="h-3 w-3 text-white" />}
-                {(item.type === "sms" || item.type === "note") && <MessageSquare className="h-3 w-3 text-white" />}
-                {item.type === "call" && <PhoneCall className="h-3 w-3 text-white" />}
+                    }`}
+                >
+                  {item.type === "email" && <Mail className="h-3 w-3 text-white" />}
+                  {(item.type === "sms" || item.type === "note") && <MessageSquare className="h-3 w-3 text-white" />}
+                  {item.type === "call" && <PhoneCall className="h-3 w-3 text-white" />}
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center flex-wrap gap-1 text-sm">
+                  {item.type === "note" ? (
+                    <>
+                      <span className="font-medium text-slate-800">{item.from.name}</span>
+                      <span className="text-amber-600 font-medium">left a Note</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-medium text-slate-800">{item.from.name}</span>
+                      <span className="text-muted-foreground">{item.from.contact}</span>
+                      <span className={`font-medium ${getActionVerbColor(item.type)}`}>{getActionVerb(item.type)}</span>
+                      <span className="font-medium text-slate-800">{item.to.name}</span>
+                      <span className="text-muted-foreground">{item.to.contact}</span>
+                    </>
+                  )}
+                </div>
+                {item.isGroupChat && item.groupParticipants && (
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {item.groupParticipants.length <= 3
+                      ? item.groupParticipants.join(", ")
+                      : `${item.groupParticipants[0]} + ${item.groupParticipants.length - 1} others`}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{item.preview}</p>
               </div>
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center flex-wrap gap-1 text-sm">
-                {item.type === "note" ? (
-                  <>
-                    <span className="font-medium text-slate-800">{item.from.name}</span>
-                    <span className="text-amber-600 font-medium">left a Note</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="font-medium text-slate-800">{item.from.name}</span>
-                    <span className="text-muted-foreground">{item.from.contact}</span>
-                    <span className={`font-medium ${getActionVerbColor(item.type)}`}>{getActionVerb(item.type)}</span>
-                    <span className="font-medium text-slate-800">{item.to.name}</span>
-                    <span className="text-muted-foreground">{item.to.contact}</span>
-                  </>
-                )}
-              </div>
-              {item.isGroupChat && item.groupParticipants && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {item.groupParticipants.length <= 3
-                    ? item.groupParticipants.join(", ")
-                    : `${item.groupParticipants[0]} + ${item.groupParticipants.length - 1} others`}
-                </p>
+            <div className="flex items-center gap-2 ml-4 shrink-0">
+              {item.isGroupChat && (item.unreadCount ?? 0) > 0 && (
+                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-500 text-white text-xs font-medium">
+                  {item.unreadCount}
+                </span>
               )}
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{item.preview}</p>
+              {!item.isRead && !item.isGroupChat && <div className="h-2 w-2 rounded-full bg-blue-500" />}
+              <span className="text-xs text-muted-foreground whitespace-nowrap">{item.timestamp}</span>
+              <ChevronDown
+                className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === item.id ? "rotate-180" : ""}`}
+              />
+              <button
+                onClick={(e) => handleTogglePin(e, item.id)}
+                className={`p-1 rounded hover:bg-slate-200 ${pinnedIds.has(item.id) ? "text-slate-600" : "text-muted-foreground"}`}
+              >
+                <Pin className={`h-4 w-4 ${pinnedIds.has(item.id) ? "fill-current" : ""}`} />
+              </button>
             </div>
           </div>
-
-          <div className="flex items-center gap-2 ml-4 shrink-0">
-            {item.isGroupChat && (item.unreadCount ?? 0) > 0 && (
-              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-500 text-white text-xs font-medium">
-                {item.unreadCount}
-              </span>
-            )}
-            {!item.isRead && !item.isGroupChat && <div className="h-2 w-2 rounded-full bg-blue-500" />}
-            <span className="text-xs text-muted-foreground whitespace-nowrap">{item.timestamp}</span>
-            <ChevronDown
-              className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === item.id ? "rotate-180" : ""}`}
-            />
-            <button
-              onClick={(e) => handleTogglePin(e, item.id)}
-              className={`p-1 rounded hover:bg-slate-200 ${pinnedIds.has(item.id) ? "text-slate-600" : "text-muted-foreground"}`}
-            >
-              <Pin className={`h-4 w-4 ${pinnedIds.has(item.id) ? "fill-current" : ""}`} />
-            </button>
-          </div>
         </div>
-      </div>
 
-      {expandedId === item.id && (
-        <div className="px-4 pb-4 border-t bg-slate-50">
-          <div className="pt-4 pl-12 space-y-4">
-            {item.type === "email" && item.thread && (
-              <div className="space-y-3">
-                {item.thread.map((email, idx) => (
-                  <div
-                    key={email.id}
-                    className={`p-3 rounded-lg ${email.isIncoming ? "bg-white border" : "bg-slate-100"}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{email.from}</span>
-                        <span className="text-xs text-muted-foreground">{email.email}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{email.timestamp}</span>
-                    </div>
-                    <p className="text-sm whitespace-pre-line">{email.content}</p>
-                    {/* Email Opens */}
-                    {!email.isIncoming && email.emailOpens && email.emailOpens.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-dashed">
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Email Opened</p>
-                        <div className="space-y-1">
-                          {email.emailOpens.map((open: { openedAt: string }, idx: number) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs text-amber-600">
-                              <Eye className="h-3 w-3" />
-                              <span>Recipient opened this email on {open.openedAt}</span>
-                            </div>
-                          ))}
+        {expandedId === item.id && (
+          <div className="px-4 pb-4 border-t bg-slate-50">
+            <div className="pt-4 pl-12 space-y-4">
+              {item.type === "email" && item.thread && (
+                <div className="space-y-3">
+                  {item.thread.map((email, idx) => (
+                    <div
+                      key={email.id}
+                      className={`p-3 rounded-lg ${email.isIncoming ? "bg-white border" : "bg-slate-100"}`}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm">{email.from}</span>
+                          <span className="text-xs text-muted-foreground">{email.email}</span>
                         </div>
+                        <span className="text-xs text-muted-foreground">{email.timestamp}</span>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {item.type === "sms" && <p className="text-sm">{item.content}</p>}
-
-            {item.type === "call" && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-muted-foreground">Duration:</span>
-                  <span>{item.duration}</span>
+                      <p className="text-sm whitespace-pre-line">{email.content}</p>
+                      {/* Email Opens */}
+                      {!email.isIncoming && email.emailOpens && email.emailOpens.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-dashed">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Email Opened</p>
+                          <div className="space-y-1">
+                            {email.emailOpens.map((open: { openedAt: string }, idx: number) => (
+                              <div key={idx} className="flex items-center gap-2 text-xs text-amber-600">
+                                <Eye className="h-3 w-3" />
+                                <span>Recipient opened this email on {open.openedAt}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-                {item.notes && (
-                  <div>
-                    <span className="text-sm text-muted-foreground">Notes:</span>
-                    <p className="text-sm mt-1">{item.notes}</p>
+              )}
+
+              {item.type === "sms" && <p className="text-sm">{item.content}</p>}
+
+              {item.type === "call" && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-muted-foreground">Duration:</span>
+                    <span>{item.duration}</span>
                   </div>
-                )}
-              </div>
-            )}
+                  {item.notes && (
+                    <div>
+                      <span className="text-sm text-muted-foreground">Notes:</span>
+                      <p className="text-sm mt-1">{item.notes}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {item.type === "note" && <p className="text-sm">{item.content}</p>}
+              {item.type === "note" && <p className="text-sm">{item.content}</p>}
 
-            {replyingToId === item.id ? (
-              <div className="space-y-2">
-                <div className="border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary bg-white">
-                  <Textarea
-                    placeholder={`Reply via ${item.type === "email" ? "email" : "SMS"}...`}
-                    value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
-                    className="min-h-[80px] border-0 focus-visible:ring-0 resize-none"
-                  />
-                  {/* Attachment Toolbar */}
-                  <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">
-                    <label className="cursor-pointer">
-                      <input type="file" multiple className="hidden" accept="image/*,.pdf,.doc,.docx" />
-                      <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
-                        <Paperclip className="h-4 w-4" />
-                        <span className="text-xs">Attach files</span>
-                      </div>
-                    </label>
-                    <span className="text-xs text-muted-foreground">Attach documents, images, or PDFs</span>
+              {replyingToId === item.id ? (
+                <div className="space-y-2">
+                  <div className="border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary bg-white">
+                    <Textarea
+                      placeholder={`Reply via ${item.type === "email" ? "email" : "SMS"}...`}
+                      value={replyContent}
+                      onChange={(e) => setReplyContent(e.target.value)}
+                      className="min-h-[80px] border-0 focus-visible:ring-0 resize-none"
+                    />
+                    {/* Attachment Toolbar */}
+                    <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">
+                      <label className="cursor-pointer">
+                        <input type="file" multiple className="hidden" accept="image/*,.pdf,.doc,.docx" />
+                        <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                          <Paperclip className="h-4 w-4" />
+                          <span className="text-xs">Attach files</span>
+                        </div>
+                      </label>
+                      <span className="text-xs text-muted-foreground">Attach documents, images, or PDFs</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={() => handleSendReply(item.id, item.type)}>
+                      <Send className="h-3 w-3 mr-1" /> Send
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => setReplyingToId(null)}>
+                      Cancel
+                    </Button>
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={() => handleSendReply(item.id, item.type)}>
-                    <Send className="h-3 w-3 mr-1" /> Send
+              ) : (
+                (item.type === "email" || item.type === "sms") && (
+                  <Button size="sm" variant="outline" onClick={() => setReplyingToId(item.id)}>
+                    <Send className="h-3 w-3 mr-1" /> Reply
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setReplyingToId(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              (item.type === "email" || item.type === "sms") && (
-                <Button size="sm" variant="outline" onClick={() => setReplyingToId(item.id)}>
-                  <Send className="h-3 w-3 mr-1" /> Reply
-                </Button>
-              )
-            )}
+                )
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  )
+        )}
+      </div>
+    )
   }
 
   return (
     <>
-    <div className="space-y-6">
+      <div className="space-y-6">
         {/* Back Button */}
         <button
           onClick={onBack}
@@ -840,32 +838,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
           Back to Tenants
         </button>
 
-        {/* Tenant Summary Bar */}
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-            <p className="text-sm font-semibold text-foreground">
-              {tenantSummary.propertyLabel}
-              <span className="font-normal text-muted-foreground">{" | "}{tenantSummary.fullAddress}</span>
-            </p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
-            {[
-              { label: "RECURRING CHARGES", value: `$${tenantSummary.recurringCharges.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-              { label: "CURRENT BALANCE", value: `$${tenantSummary.currentBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-              { label: "DEPOSIT PAID", value: `$${tenantSummary.depositPaid.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-              { label: "LAST RECEIPT", value: tenantSummary.lastReceipt },
-              { label: "LEASE END DATE", value: tenantSummary.leaseEndDate },
-              { label: "ONLINE PORTAL STATUS", value: `${tenantSummary.activePortals}/${tenantSummary.totalPortals} Active Portals` },
-            ].map(({ label, value }) => (
-              <div key={label} className="px-4 py-3 text-center">
-                <p className="text-sm font-bold text-primary">{value}</p>
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Header Card */}
+        {/* Header Card - Tenant Information */}
         <Card>
           <CardContent className="p-4">
             {/* Stage Color Bar */}
@@ -881,7 +854,9 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 null
               ))}
               <Select value={tenantStage} onValueChange={setTenantStage}>
-                
+                <SelectTrigger className="h-8 w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="move-in">Move-in</SelectItem>
                   <SelectItem value="current">Current</SelectItem>
@@ -957,7 +932,32 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             </div>
           </CardContent>
         </Card>
-        
+
+        {/* Tenant Summary Bar */}
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-border bg-muted/30">
+            <p className="text-sm font-semibold text-foreground">
+              {tenantSummary.propertyLabel}
+              <span className="font-normal text-muted-foreground">{" | "}{tenantSummary.fullAddress}</span>
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
+            {[
+              { label: "RECURRING CHARGES", value: `$${tenantSummary.recurringCharges.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
+              { label: "CURRENT BALANCE", value: `$${tenantSummary.currentBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
+              { label: "DEPOSIT PAID", value: `$${tenantSummary.depositPaid.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
+              { label: "LAST RECEIPT", value: tenantSummary.lastReceipt },
+              { label: "LEASE END DATE", value: tenantSummary.leaseEndDate },
+              { label: "ONLINE PORTAL STATUS", value: `${tenantSummary.activePortals}/${tenantSummary.totalPortals} Active Portals` },
+            ].map(({ label, value }) => (
+              <div key={label} className="px-4 py-3 text-center">
+                <p className="text-sm font-bold text-primary">{value}</p>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Bar 1: Pending Communications */}
         <button
           type="button"
@@ -1085,7 +1085,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
           </div>
         </button>
 
-        <div className="border-b">
+        {/* <div className="border-b">
           <div className="flex">
             {[
               { id: "overview", label: "Overview" },
@@ -1099,11 +1099,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? "border-teal-600 text-teal-600"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
-                }`}
+                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === tab.id
+                  ? "border-teal-600 text-teal-600"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+                  }`}
               >
                 {tab.label}
                 {tab.count !== undefined && (
@@ -1114,6 +1113,32 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               </button>
             ))}
           </div>
+        </div> */}
+        <div className="flex items-stretch border-b border-border">
+          {[
+            { id: "overview", label: "Overview" },
+            { id: "tenant-info", label: "Details" },
+            { id: "property", label: "Properties" },
+            { id: "communications", label: "Communications", count: communications.filter(c => c.type !== "note").length },
+            { id: "processes", label: "Processes", count: TENANT_PROCESSES.inProgress.length + TENANT_PROCESSES.upcoming.length + TENANT_PROCESSES.completed.length },
+            { id: "documents", label: "Documents", count: documents.length },
+            { id: "audit-log", label: "Audit Log" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                activeTab === tab.id
+                  ? "border border-success text-foreground bg-background"
+                  : "border border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {tab.count !== undefined && (
+                <span className="text-xs text-muted-foreground">{tab.count}</span>
+              )}
+            </button>
+          ))}
         </div>
 
         {activeTab === "overview" && (
@@ -1137,127 +1162,125 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 </div>
                 <div className="border rounded-lg overflow-hidden">
                   <div className={tasksToShow > 5 ? "max-h-[320px] overflow-y-auto" : ""}>
-                  <table className="w-full">
-                    <thead className={`bg-gray-50 border-b ${tasksToShow > 5 ? "sticky top-0 z-10" : ""}`}>
-                      <tr>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Related Entity</th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Due Date</th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Priority</th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Assigned To</th>
-                        <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      {tasks.slice(0, tasksToShow).map((task) => (
-                        <tr key={task.id} className="hover:bg-gray-50">
-                          <td className="p-3">
-                            <div className="flex flex-col gap-1">
-                              <span className="text-sm font-medium text-slate-800">{task.title}</span>
-                              {task.processName && (
-                                <div className="flex items-center gap-1">
-                                  <Workflow className="h-3 w-3 text-teal-600" />
-                                  <span className="text-xs text-teal-600">{task.processName}</span>
-                                </div>
-                              )}
-                              {task.autoCreated && (
-                                <span className="text-xs text-muted-foreground">Auto-created</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <span className="text-sm text-slate-600">
-                              {task.relatedEntityType}: {task.relatedEntityName}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center gap-1">
-                              <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-slate-600"}`}>
-                                {task.dueDate}
+                    <table className="w-full">
+                      <thead className={`bg-gray-50 border-b ${tasksToShow > 5 ? "sticky top-0 z-10" : ""}`}>
+                        <tr>
+                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Related Entity</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Due Date</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Priority</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th>
+                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Assigned To</th>
+                          <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {tasks.slice(0, tasksToShow).map((task) => (
+                          <tr key={task.id} className="hover:bg-gray-50">
+                            <td className="p-3">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-sm font-medium text-slate-800">{task.title}</span>
+                                {task.processName && (
+                                  <div className="flex items-center gap-1">
+                                    <Workflow className="h-3 w-3 text-teal-600" />
+                                    <span className="text-xs text-teal-600">{task.processName}</span>
+                                  </div>
+                                )}
+                                {task.autoCreated && (
+                                  <span className="text-xs text-muted-foreground">Auto-created</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <span className="text-sm text-slate-600">
+                                {task.relatedEntityType}: {task.relatedEntityName}
                               </span>
-                              {task.isOverdue && (
-                                <span className="text-xs text-red-500">(Overdue)</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${
-                                task.priority === "High" 
-                                  ? "bg-red-50 text-red-700 border-red-200" 
-                                  : task.priority === "Medium" 
-                                  ? "bg-yellow-50 text-yellow-700 border-yellow-200" 
-                                  : "bg-gray-50 text-gray-600 border-gray-200"
-                              }`}
-                            >
-                              {task.priority}
-                            </Badge>
-                          </td>
-                          <td className="p-3">
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${
-                                task.status === "In Progress" 
-                                  ? "bg-teal-50 text-teal-700 border-teal-200" 
-                                  : task.status === "Pending" 
-                                  ? "bg-teal-50 text-teal-600 border-teal-200" 
-                                  : task.status === "Skipped"
-                                  ? "bg-gray-100 text-gray-600 border-gray-300"
-                                  : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              }`}
-                            >
-                              {task.status}
-                            </Badge>
-                          </td>
-                          <td className="p-3">
-                            <span className="text-sm text-slate-600">{task.assignee}</span>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                title="View Task"
-                                onClick={() => handleViewTask(task)}
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-slate-600"}`}>
+                                  {task.dueDate}
+                                </span>
+                                {task.isOverdue && (
+                                  <span className="text-xs text-red-500">(Overdue)</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${task.priority === "High"
+                                  ? "bg-red-50 text-red-700 border-red-200"
+                                  : task.priority === "Medium"
+                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                    : "bg-gray-50 text-gray-600 border-gray-200"
+                                  }`}
                               >
-                                <Eye className="h-4 w-4 text-slate-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
-                                title="Edit Task"
-                                onClick={() => handleEditTask(task)}
+                                {task.priority}
+                              </Badge>
+                            </td>
+                            <td className="p-3">
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${task.status === "In Progress"
+                                  ? "bg-teal-50 text-teal-700 border-teal-200"
+                                  : task.status === "Pending"
+                                    ? "bg-teal-50 text-teal-600 border-teal-200"
+                                    : task.status === "Skipped"
+                                      ? "bg-gray-100 text-gray-600 border-gray-300"
+                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  }`}
                               >
-                                <Edit className="h-4 w-4 text-slate-500" />
-                              </Button>
-                              {task.status !== "Completed" && task.status !== "Skipped" && (
+                                {task.status}
+                              </Badge>
+                            </td>
+                            <td className="p-3">
+                              <span className="text-sm text-slate-600">{task.assignee}</span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center justify-end gap-1">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="h-8 w-8 p-0"
-                                  title="Mark Complete"
-                                  onClick={() => handleMarkComplete(task.id)}
+                                  title="View Task"
+                                  onClick={() => handleViewTask(task)}
                                 >
-                                  <Check className="h-4 w-4 text-slate-500" />
+                                  <Eye className="h-4 w-4 text-slate-500" />
                                 </Button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {tasks.length === 0 && (
-                        <tr>
-                          <td colSpan={7} className="p-4 text-center text-sm text-muted-foreground">
-                            No tasks yet. Click "New Task" to create one.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0"
+                                  title="Edit Task"
+                                  onClick={() => handleEditTask(task)}
+                                >
+                                  <Edit className="h-4 w-4 text-slate-500" />
+                                </Button>
+                                {task.status !== "Completed" && task.status !== "Skipped" && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    title="Mark Complete"
+                                    onClick={() => handleMarkComplete(task.id)}
+                                  >
+                                    <Check className="h-4 w-4 text-slate-500" />
+                                  </Button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {tasks.length === 0 && (
+                          <tr>
+                            <td colSpan={7} className="p-4 text-center text-sm text-muted-foreground">
+                              No tasks yet. Click "New Task" to create one.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
                 {/* View More / View Less Buttons */}
@@ -1305,17 +1328,16 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardContent className="p-4">
                 <h3 className="font-semibold text-slate-800 mb-3">Activity</h3>
-                
+
                 {/* Private Chat / Group Chat Sub-tabs */}
                 <div className="flex items-center gap-1 mb-4 border-b border-slate-200">
                   <button
                     type="button"
                     onClick={() => setActivityChatTab("private")}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                      activityChatTab === "private"
-                        ? "border-teal-600 text-teal-600"
-                        : "border-transparent text-slate-500 hover:text-slate-700"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activityChatTab === "private"
+                      ? "border-teal-600 text-teal-600"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      }`}
                   >
                     Private Chat
                     {communications.some(a => !a.isGroupChat && !a.isRead) && (
@@ -1325,11 +1347,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   <button
                     type="button"
                     onClick={() => setActivityChatTab("group")}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                      activityChatTab === "group"
-                        ? "border-teal-600 text-teal-600"
-                        : "border-transparent text-slate-500 hover:text-slate-700"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activityChatTab === "group"
+                      ? "border-teal-600 text-teal-600"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      }`}
                   >
                     Group Chat
                     {communications.some(a => a.isGroupChat && (a.unreadCount ?? 0) > 0) && (
@@ -1337,16 +1358,15 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                     )}
                   </button>
                 </div>
-                
+
                 {/* Summary Tiles */}
                 <div className="flex items-center gap-2 mb-4">
                   {/* All Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "all"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "all"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("all")}
                   >
                     <Bell className={`h-4 w-4 ${activityTileFilter === "all" ? "text-white" : "text-slate-500"}`} />
@@ -1362,11 +1382,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
 
                   {/* Emails Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "emails"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "emails"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("emails")}
                   >
                     <Mail className={`h-4 w-4 ${activityTileFilter === "emails" ? "text-white" : "text-slate-500"}`} />
@@ -1382,11 +1401,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
 
                   {/* SMS Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "sms"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "sms"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("sms")}
                   >
                     <MessageSquare className={`h-4 w-4 ${activityTileFilter === "sms" ? "text-white" : "text-slate-500"}`} />
@@ -1402,11 +1420,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
 
                   {/* Notes Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "notes"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "notes"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("notes")}
                   >
                     <FileText className={`h-4 w-4 ${activityTileFilter === "notes" ? "text-white" : "text-slate-500"}`} />
@@ -1502,8 +1519,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             onProcessStatusFilterChange={setProcessStatusFilter}
             onStartProcessClick={() => { setProcessSearchQuery(""); setShowStartProcessModal(true) }}
             onProcessClick={onNavigateToProcess ?? ((process, contactName) => nav.go("contactProcessDetail", { process, contactName }))}
-            onEditProcess={() => {}}
+            onEditProcess={() => { }}
             onRemoveNewProcess={(processId) => setNewlyStartedProcesses((prev) => prev.filter((p) => p.id !== processId))}
+            expandedProcesses={expandedProcesses}
+            onToggleProcessExpanded={toggleProcessExpanded}
             contactName={contact.name}
           />
         )}
@@ -1517,7 +1536,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             logs={TENANT_AUDIT_LOGS}
             onDeletedNoteClick={(entry) => {
               setSelectedDeletedNote(entry)
-                                setShowDeletedNoteModal(true)
+              setShowDeletedNoteModal(true)
             }}
           />
         )}
@@ -1575,11 +1594,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                       type="button"
                       disabled={alreadyStarted}
                       onClick={() => handleStartNewProcess(processType)}
-                      className={`flex items-center gap-4 w-full text-left py-3.5 px-4 transition-colors ${
-                        alreadyStarted
-                          ? "opacity-50 cursor-not-allowed bg-gray-50"
-                          : "hover:bg-teal-50 cursor-pointer"
-                      }`}
+                      className={`flex items-center gap-4 w-full text-left py-3.5 px-4 transition-colors ${alreadyStarted
+                        ? "opacity-50 cursor-not-allowed bg-gray-50"
+                        : "hover:bg-teal-50 cursor-pointer"
+                        }`}
                     >
                       <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
                         <FolderOpen className="h-5 w-5 text-white" />
@@ -1613,10 +1631,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 { id: "apt-14", name: "Legal Cases Complaints and Notices" },
                 { id: "apt-15", name: "Make Ready Process" },
               ].filter(p => p.name.toLowerCase().includes(processSearchQuery.toLowerCase())).length === 0 && (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  No processes found matching your search.
-                </div>
-              )}
+                  <div className="py-8 text-center text-sm text-muted-foreground">
+                    No processes found matching your search.
+                  </div>
+                )}
             </div>
           </div>
         </DialogContent>
@@ -2006,8 +2024,8 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                             </PopoverTrigger>
                             <PopoverContent className="w-[260px] p-0" align="end">
                               <Command>
-                                <CommandInput 
-                                  placeholder="Search by name or email..." 
+                                <CommandInput
+                                  placeholder="Search by name or email..."
                                   value={staffSearchQuery}
                                   onValueChange={setStaffSearchQuery}
                                 />
@@ -2015,7 +2033,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                                   <CommandEmpty>No staff found.</CommandEmpty>
                                   <CommandGroup>
                                     {allStaffMembers
-                                      .filter(staff => 
+                                      .filter(staff =>
                                         staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
                                         staff.email.toLowerCase().includes(staffSearchQuery.toLowerCase())
                                       )
@@ -2024,8 +2042,8 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                                           key={staff.id}
                                           value={`${staff.name} ${staff.email}`}
                                           onSelect={() => {
-                                            setAssignedTeam(assignedTeam.map(m => 
-                                              m.id === member.id 
+                                            setAssignedTeam(assignedTeam.map(m =>
+                                              m.id === member.id
                                                 ? { ...m, name: staff.name, email: staff.email }
                                                 : m
                                             ))
@@ -2071,7 +2089,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             }}>
               Cancel
             </Button>
-            <Button 
+            <Button
               className="bg-teal-600 hover:bg-teal-700"
               onClick={() => {
                 setShowTeamModal(false)
@@ -2132,7 +2150,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
         currentMessage={selectedSMSItem?.fullContent || selectedSMSItem?.content || ""}
         currentTimestamp={selectedSMSItem?.timestamp || ""}
       />
-      
+
       {/* Email Popup Modal */}
       <EmailPopupModal
         isOpen={showEmailModal}
@@ -2146,7 +2164,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
         currentBody={selectedEmailItem?.thread?.[0]?.content || selectedEmailItem?.content || ""}
         currentTimestamp={selectedEmailItem?.timestamp || ""}
       />
-      
+
       {/* Note View Modal */}
       <Dialog open={showNoteModal} onOpenChange={setShowNoteModal}>
         <DialogContent className="sm:max-w-[500px]">
@@ -2174,7 +2192,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Missing Information Modal */}
       <Dialog open={showMissingInfoModal} onOpenChange={setShowMissingInfoModal}>
         <DialogContent className="sm:max-w-[550px] max-h-[80vh] flex flex-col p-0 overflow-hidden">
@@ -2193,33 +2211,31 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               </div>
             </div>
           </DialogHeader>
-          
+
           {/* Tab Switcher */}
           <div className="flex border-b px-6 flex-shrink-0">
             <button
               type="button"
               onClick={() => setMissingInfoTab("fields")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                missingInfoTab === "fields"
-                  ? "border-teal-600 text-teal-600"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${missingInfoTab === "fields"
+                ? "border-teal-600 text-teal-600"
+                : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
             >
               Missing Fields ({tenantMissingFields.length})
             </button>
             <button
               type="button"
               onClick={() => setMissingInfoTab("documents")}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                missingInfoTab === "documents"
-                  ? "border-teal-600 text-teal-600"
-                  : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
+              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${missingInfoTab === "documents"
+                ? "border-teal-600 text-teal-600"
+                : "border-transparent text-slate-500 hover:text-slate-700"
+                }`}
             >
               Missing Documents ({TENANT_MISSING_DOCUMENTS.length})
             </button>
           </div>
-          
+
           {/* Content */}
           <div className="flex-1 overflow-auto p-6">
             {missingInfoTab === "fields" ? (
@@ -2276,7 +2292,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               </div>
             )}
           </div>
-          
+
           <DialogFooter className="px-6 py-4 border-t flex-shrink-0">
             <Button variant="outline" onClick={() => setShowMissingInfoModal(false)} className="bg-transparent">
               Close
@@ -2312,11 +2328,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   {isSMS && (
                     <div className={`flex ${isFromTenant ? "justify-start" : "justify-end"}`}>
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          isFromTenant
-                            ? "bg-slate-100 border border-slate-200"
-                            : "bg-teal-50 border border-teal-200"
-                        }`}
+                        className={`max-w-[80%] rounded-lg p-3 ${isFromTenant
+                          ? "bg-slate-100 border border-slate-200"
+                          : "bg-teal-50 border border-teal-200"
+                          }`}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <MessageSquare className="h-3.5 w-3.5 text-teal-600" />
@@ -2373,11 +2388,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   {isEmail && (
                     <div className={`flex ${isFromTenant ? "justify-start" : "justify-end"}`}>
                       <div
-                        className={`max-w-[90%] rounded-lg border ${
-                          isFromTenant
-                            ? "bg-blue-50 border-blue-200"
-                            : "bg-indigo-50 border-indigo-200"
-                        }`}
+                        className={`max-w-[90%] rounded-lg border ${isFromTenant
+                          ? "bg-blue-50 border-blue-200"
+                          : "bg-indigo-50 border-indigo-200"
+                          }`}
                       >
                         {/* Email Header - Always Visible */}
                         <div
@@ -2467,11 +2481,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 <button
                   type="button"
                   onClick={() => setThreadReplyChannel("email")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    threadReplyChannel === "email"
-                      ? "bg-blue-100 text-blue-700 border border-blue-300"
-                      : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${threadReplyChannel === "email"
+                    ? "bg-blue-100 text-blue-700 border border-blue-300"
+                    : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                    }`}
                 >
                   <Mail className="h-3.5 w-3.5" />
                   Email
@@ -2479,11 +2492,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 <button
                   type="button"
                   onClick={() => setThreadReplyChannel("sms")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    threadReplyChannel === "sms"
-                      ? "bg-teal-100 text-teal-700 border border-teal-300"
-                      : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${threadReplyChannel === "sms"
+                    ? "bg-teal-100 text-teal-700 border border-teal-300"
+                    : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                    }`}
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                   SMS

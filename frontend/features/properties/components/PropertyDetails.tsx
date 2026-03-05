@@ -22,6 +22,7 @@ import {
   Camera,
   StickyNote,
   CheckSquare,
+  Check,
   FolderPlus,
   Lock,
   Link2,
@@ -49,8 +50,14 @@ import {
   MapPin,
   Mail,
   Phone,
+  X,
+  MessageSquare,
+  AlertTriangle,
+  ListTodo,
+  RotateCcw,
+  FileWarning,
 } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar" // Import Avatar components
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -64,7 +71,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
-import { useNav } from "@/app/dashboard/page"
+import { useNav } from "@/components/dashboard-app"
 import { useQuickActions } from "@/context/QuickActionsContext"
 import { propertyDetailQuickActions } from "@/lib/quickActions"
 import {
@@ -81,7 +88,11 @@ import {
   MAINTENANCE_INFO_EXTENDED,
   PROPERTY_AUDIT_LOGS,
   ACTIVITY_LABELS,
+  PROPERTY_PROCESSES,
 } from "@/features/properties/data/propertyDetail"
+import { PROPERTY_MISSING_FIELDS, PROPERTY_MISSING_DOCUMENTS } from "@/features/properties/data/propertyDetail"
+import type { ProcessTask, PropertyProcess } from "@/features/properties/types"
+
 
 interface PropertyDetailPageProps {
   propertyId?: string
@@ -154,6 +165,7 @@ function getInitials(name: string) {
 }
 
 export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: PropertyDetailPageProps) {
+  useQuickActions(propertyDetailQuickActions, { subtitle: "Property" })
   const [isAddActivityOpen, setIsAddActivityOpen] = useState(false)
   const [activeTab, setActiveTab] = useState<"overview" | "units" | "tasks" | "media" | "processes" | "audit-log">("overview")
   const [showNewTaskModal, setShowNewTaskModal] = useState(false)
@@ -166,106 +178,11 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
   })
   const [tasks, setTasks] = useState(PROPERTY_TASKS)
 
-  // Process management state
-  interface ProcessTask {
-    id: string
-    taskName: string
-    startDate: string
-    completedDate: string
-    staffMember: string
-    staffEmail: string
-  }
-
-  interface PropertyProcess {
-    id: string
-    processName: string
-    stageBadge: string
-    stageBadgeColor: string
-    startedDate: string
-    status: "In Progress" | "Completed" | "Upcoming"
-    tasks: ProcessTask[]
-  }
-
-  const [propertyProcesses, setPropertyProcesses] = useState<PropertyProcess[]>([
-    {
-      id: "proc1",
-      processName: "Tenant Onboarding",
-      stageBadge: "Financial Paperwork",
-      stageBadgeColor: "amber",
-      startedDate: "01/10/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t1", taskName: "Send welcome email", startDate: "01/10/2026", completedDate: "01/10/2026", staffMember: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-        { id: "t2", taskName: "Schedule discovery call", startDate: "01/11/2026", completedDate: "01/12/2026", staffMember: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-        { id: "t3", taskName: "Complete needs assessment", startDate: "01/13/2026", completedDate: "", staffMember: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-        { id: "t4", taskName: "Verify property ownership", startDate: "", completedDate: "", staffMember: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-      ],
-    },
-    {
-      id: "proc2",
-      processName: "Property Evaluation Process",
-      stageBadge: "Collecting Information",
-      stageBadgeColor: "blue",
-      startedDate: "01/15/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t5", taskName: "Request property details", startDate: "01/15/2026", completedDate: "01/15/2026", staffMember: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-        { id: "t6", taskName: "Schedule property walkthrough", startDate: "01/16/2026", completedDate: "", staffMember: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-        { id: "t7", taskName: "Prepare management proposal", startDate: "", completedDate: "", staffMember: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-      ],
-    },
-    {
-      id: "proc3",
-      processName: "Lease Renewal",
-      stageBadge: "Completed",
-      stageBadgeColor: "green",
-      startedDate: "12/01/2025",
-      status: "Completed",
-      tasks: [
-        { id: "t8", taskName: "Send renewal notice", startDate: "12/01/2025", completedDate: "12/01/2025", staffMember: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-        { id: "t9", taskName: "Negotiate terms", startDate: "12/05/2025", completedDate: "12/10/2025", staffMember: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-      ],
-    },
-    {
-      id: "proc4",
-      processName: "Move-Out Inspection",
-      stageBadge: "Completed",
-      stageBadgeColor: "green",
-      startedDate: "11/15/2025",
-      status: "Completed",
-      tasks: [
-        { id: "t10", taskName: "Schedule inspection", startDate: "11/15/2025", completedDate: "11/16/2025", staffMember: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-        { id: "t11", taskName: "Conduct walkthrough", startDate: "11/18/2025", completedDate: "11/18/2025", staffMember: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-      ],
-    },
-    {
-      id: "proc5",
-      processName: "Annual Property Review",
-      stageBadge: "Scheduled",
-      stageBadgeColor: "slate",
-      startedDate: "02/01/2026",
-      status: "Upcoming",
-      tasks: [
-        { id: "t12", taskName: "Gather financial reports", startDate: "", completedDate: "", staffMember: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-        { id: "t13", taskName: "Review maintenance history", startDate: "", completedDate: "", staffMember: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-      ],
-    },
-    {
-      id: "proc6",
-      processName: "Insurance Renewal",
-      stageBadge: "Pending",
-      stageBadgeColor: "slate",
-      startedDate: "03/01/2026",
-      status: "Upcoming",
-      tasks: [
-        { id: "t14", taskName: "Request updated quotes", startDate: "", completedDate: "", staffMember: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-        { id: "t15", taskName: "Compare coverage options", startDate: "", completedDate: "", staffMember: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-      ],
-    },
-  ])
+  const [propertyProcesses, setPropertyProcesses] = useState<PropertyProcess[]>(PROPERTY_PROCESSES)
 
   const [processSubTab, setProcessSubTab] = useState<"in-progress" | "completed" | "upcoming">("in-progress")
-  const [expandedProcesses, setExpandedProcesses] = useState<Set<string>>(new Set(["proc1", "proc2"]))
+  const [expandedProcesses, setExpandedProcesses] = useState<Set<string>>(new Set())
+  const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null)
   const [showCreateProcessModal, setShowCreateProcessModal] = useState(false)
   const [showEditProcessModal, setShowEditProcessModal] = useState(false)
   const [showDeleteProcessModal, setShowDeleteProcessModal] = useState(false)
@@ -276,8 +193,6 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
     currentStage: "",
     assignedRole: "",
   })
-
-  useQuickActions(propertyDetailQuickActions, { subtitle: "Property" })
 
   const PROCESS_TYPES = ["Tenant Onboarding", "Maintenance Workflow", "Lease Renewal", "Move-Out Inspection", "Property Evaluation Process", "Annual Property Review", "Insurance Renewal"]
   const PROPERTY_UNITS = ["DN", "UP"]
@@ -296,6 +211,33 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
   const inProgressProcesses = propertyProcesses.filter((p) => p.status === "In Progress")
   const completedProcesses = propertyProcesses.filter((p) => p.status === "Completed")
   const upcomingProcesses = propertyProcesses.filter((p) => p.status === "Upcoming")
+
+  const handleMarkTaskComplete = (processId: string, taskId: string) => {
+    setPropertyProcesses((prevProcesses) => {
+      return prevProcesses.map((process) => {
+        if (process.id !== processId) return process
+        
+        const updatedTasks = process.tasks.map((task) => {
+          if (task.id !== taskId) return task
+          // Mark task as complete with current date/time
+          const now = new Date()
+          const completedDateTime = `${now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })} ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+          return { ...task, completedDate: completedDateTime }
+        })
+        
+        // Check if all tasks are now completed
+        const allTasksCompleted = updatedTasks.every((task) => task.completedDate !== "")
+        
+        return {
+          ...process,
+          tasks: updatedTasks,
+          status: allTasksCompleted ? "Completed" as const : process.status,
+          stageBadge: allTasksCompleted ? "Completed" : process.stageBadge,
+          stageBadgeColor: allTasksCompleted ? "green" : process.stageBadgeColor,
+        }
+      })
+    })
+  }
 
   const handleCreateProcess = () => {
     const newProcess: PropertyProcess = {
@@ -351,6 +293,10 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
   const [documents, setDocuments] = useState(SAMPLE_DOCUMENTS)
   const [showUploadForm, setShowUploadForm] = useState(false)
   const [showOwnerInfoModal, setShowOwnerInfoModal] = useState(false)
+  
+  // Missing info modal state
+  const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
+  const [missingInfoTab, setMissingInfoTab] = useState<"fields" | "documents">("fields")
   const [uploadingFile, setUploadingFile] = useState<File | null>(null)
   const [documentForm, setDocumentForm] = useState({
     type: "",
@@ -370,17 +316,21 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen">
+    <div className="flex-1 flex flex-col h-full">
       {/* Main Content */}
       <div className="flex-1 px-6 pb-6 pt-2 overflow-auto">
-        {/* Back Button */}
-        <button onClick={onBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-2">
-          <ArrowLeft className="h-4 w-4" />
-          <span>Back to Properties</span>
-        </button>
+        {/* Main Layout with Quick Actions Sidebar */}
+        <div className="flex gap-6">
+          {/* Left side - Main Content */}
+          <div className="flex-1">
+            {/* Back Button */}
+            <button onClick={onBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Back to Properties</span>
+            </button>
 
-        {/* Property Header Card */}
-        <Card className="mb-6">
+            {/* Property Header Card */}
+            <Card className="mb-4">
           <CardContent className="p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4">
@@ -390,7 +340,7 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-xl font-semibold text-slate-800">
-                      {`"${PROPERTY_DATA.name}" ${PROPERTY_DATA.address}`}
+                      {PROPERTY_DATA.address}, {PROPERTY_DATA.city}, {PROPERTY_DATA.state} {PROPERTY_DATA.zip}
                     </h1>
                     <Badge
                       variant="outline"
@@ -399,14 +349,19 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                       {PROPERTY_DATA.status}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                  <div className="flex items-center gap-6 text-sm text-muted-foreground mt-1">
                     <span className="flex items-center gap-1">
-                      <Home className="h-3 w-3" />
+                      <Home className="h-3.5 w-3.5" />
                       {PROPERTY_DATA.type}
                     </span>
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {PROPERTY_DATA.address}, {PROPERTY_DATA.city}, {PROPERTY_DATA.state} {PROPERTY_DATA.zip}
+                    <span className="flex items-center gap-1 text-xs">
+                      <span>Total Units: <span className="font-medium text-foreground">{PROPERTY_DATA.units.length}</span></span>
+                    </span>
+                    <span className="flex items-center gap-1 text-xs">
+                      <span>Occupied: <span className="font-medium text-emerald-600">{PROPERTY_DATA.units.filter(u => u.status === "Occupied").length}</span></span>
+                    </span>
+                    <span className="flex items-center gap-1 text-xs">
+                      <span>Vacant: <span className="font-medium text-amber-600">{PROPERTY_DATA.units.filter(u => u.status !== "Occupied").length}</span></span>
                     </span>
                   </div>
                 </div>
@@ -420,185 +375,243 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                 
               </div>
             </div>
-
-            {/* Property Information */}
-            <div className="border-t border-border mt-3 pt-3">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  
-                  
-                </div>
-                <div className="flex items-center gap-6 text-xs text-muted-foreground">
-                  <span>Year Built: <span className="font-medium text-foreground">{PROPERTY_DATA.propertyInfo.yearBuilt}</span></span>
-                  <span>Heat Type: <span className="font-medium text-foreground">{PROPERTY_DATA.propertyInfo.heatType}</span></span>
-                  <span>Living Area: <span className="font-medium text-foreground">{PROPERTY_DATA.propertyInfo.livingArea} sqft</span></span>
-                  <span>Avg Rent: <span className="font-medium text-foreground">${PROPERTY_DATA.propertyInfo.averageRent}</span></span>
-                  <span>Mgmt Start: <span className="font-medium text-foreground">{PROPERTY_DATA.propertyInfo.managementStartDate}</span></span>
-                </div>
-              </div>
-            </div>
-
-            {/* Units */}
-            <div className="border-t border-border mt-3 pt-3">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Home className="h-4 w-4 text-teal-600" />
-                  <span className="text-sm font-semibold text-foreground">Units ({PROPERTY_DATA.units.length})</span>
-                </div>
-                <div className="flex items-center gap-4">
-                  {PROPERTY_DATA.units.map((unit) => (
-                    <div key={unit.unit} className="flex items-center gap-2 text-xs">
-                      <button
-                        onClick={() => handleUnitClick(unit.unit)}
-                        className="text-teal-600 hover:underline font-medium"
-                      >
-                        {unit.unit}
-                      </button>
-                      <Badge
-                        variant="outline"
-                        className={`text-xs h-5 ${
-                          unit.status === "Occupied"
-                            ? "bg-emerald-100 text-emerald-700 border-emerald-200"
-                            : "bg-amber-100 text-amber-700 border-amber-200"
-                        }`}
-                      >
-                        {unit.status}
-                      </Badge>
-                      <span className="text-muted-foreground">{unit.monthlyRent}</span>
-                    </div>
-                  ))}
-                  
-                </div>
-              </div>
-            </div>
           </CardContent>
         </Card>
 
-        {/* Tabs */}
-        <div className="border-b mb-6">
-          <div className="flex">
-            {[
-              { id: "overview", label: "Overview", icon: LayoutDashboard },
-              { id: "units", label: "Units", icon: Building2 },
-              { id: "processes", label: "Processes", icon: Workflow },
-              { id: "media", label: "Documents", icon: FileText },
-              { id: "audit-log", label: "Audit Log", icon: History },
-            ].map((tab) => (
+        {/* Information Bars */}
+        <div className="space-y-2 mb-4">
+          {/* Bar 1: Pending Actions */}
+          <div className="flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-semibold text-amber-800">Pending Actions</span>
+            </div>
+            <div className="flex items-center">
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? "border-teal-600 text-teal-600"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
-                }`}
+                type="button"
+                onClick={() => {
+                  setMissingInfoTab("fields")
+                  setShowMissingInfoModal(true)
+                }}
+                className="flex items-center gap-1.5 px-3 border-r border-amber-300 hover:underline"
               >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
+                <FileWarning className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Missing Fields: "}
+                  <span className="font-semibold">{PROPERTY_MISSING_FIELDS.length}</span>
+                </span>
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => {
+                  setMissingInfoTab("documents")
+                  setShowMissingInfoModal(true)
+                }}
+                className="flex items-center gap-1.5 px-3 hover:underline"
+              >
+                <Upload className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Missing Documents: "}
+                  <span className="font-semibold">{PROPERTY_MISSING_DOCUMENTS.length}</span>
+                </span>
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Content Area */}
-        <div>
-        {activeTab === "overview" && (
-          <div className="flex gap-6">
-            <div className="flex-1 space-y-4">
+          {/* Bar 2: Task Overview */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab("overview")
+              setTimeout(() => {
+                const tasksSection = document.getElementById("property-tasks-section")
+                if (tasksSection) tasksSection.scrollIntoView({ behavior: "smooth" })
+              }, 100)
+            }}
+            className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-semibold text-amber-800">Task Overview</span>
+            </div>
+            <div className="flex items-center">
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <ListTodo className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Pending Tasks: "}
+                  <span className="font-semibold">{tasks.filter(t => t.status === "In Progress" || t.status === "Pending").length}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <RotateCcw className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Pending Processes: "}
+                  <span className="font-semibold">{inProgressProcesses.length}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                <span className="text-sm text-amber-700">
+                  {"Overdue Tasks: "}
+                  <span className="font-semibold">0</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3">
+                <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                <span className="text-sm text-red-700">
+                  {"Overdue Processes: "}
+                  <span className="font-semibold">{propertyProcesses.filter(p => p.status === "In Progress" && new Date(p.startedDate) < new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}</span>
+                </span>
+              </div>
+            </div>
+          </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="border-b border-border mb-6">
+              <div className="flex">
+                {[
+                  { id: "overview", label: "Overview", icon: LayoutDashboard },
+                  { id: "units", label: "Units", icon: Building2 },
+                  { id: "processes", label: "Processes", icon: Workflow },
+                  { id: "media", label: "Documents", icon: FileText },
+                  { id: "audit-log", label: "Audit Log", icon: History },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? "border-2 border-teal-600 text-slate-800 -mb-px"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <tab.icon className="h-4 w-4" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div>
+            {activeTab === "overview" && (
+              <div className="space-y-4">
                   {/* Tasks Section */}
-                  <div className="bg-white border border-border rounded-lg p-4">
+                  <div id="property-tasks-section" className="bg-white border border-border rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
-                        <ClipboardList className="h-5 w-5 text-primary" />
+                        <CheckSquare className="h-5 w-5 text-muted-foreground" />
                         <h3 className="text-lg font-semibold">Tasks ({tasks.length})</h3>
                       </div>
                       <Button 
                         onClick={() => setShowNewTaskModal(true)} 
-                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                        className="bg-teal-600 text-white hover:bg-teal-700"
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Add Task
+                        New Task
                       </Button>
                     </div>
-                    <div className="border rounded-lg">
+                    <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
-                          <TableRow className="bg-muted/50">
-                            <TableHead>Task</TableHead>
-                            <TableHead>Assigned To</TableHead>
-                            <TableHead>Due Date</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
+                          <TableRow className="bg-muted/30">
+                            <TableHead className="font-medium text-muted-foreground">Task</TableHead>
+                            <TableHead className="font-medium text-muted-foreground">Related Entity</TableHead>
+                            <TableHead className="font-medium text-muted-foreground">Due Date</TableHead>
+                            <TableHead className="font-medium text-muted-foreground">Priority</TableHead>
+                            <TableHead className="font-medium text-muted-foreground">Status</TableHead>
+                            <TableHead className="font-medium text-muted-foreground">Assigned To</TableHead>
+                            <TableHead className="font-medium text-muted-foreground text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
-                        <TableBody>
-                          {tasks.length > 0 ? (
-                            tasks.map((task) => (
-                              <TableRow key={task.id} className="hover:bg-muted/50">
-                                <TableCell>
-                                  <div>
-                                    <p className="font-medium text-primary">{task.title}</p>
-                                    <p className="text-sm text-muted-foreground">{task.description}</p>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Avatar className="h-7 w-7 bg-primary/15 text-primary border border-primary/30">
-                                      <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
-                                        {getInitials(task.assignedTo)}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <span className="text-sm">{task.assignedTo}</span>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-1 text-sm">
-                                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                                    {task.dueDate}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <Badge
-                                    variant="outline"
-                                    className={
-                                      task.status === "Completed"
-                                        ? "bg-success/10 text-success border-success/30"
-                                        : task.status === "In Progress"
-                                          ? "bg-amber-500/10 text-amber-600 border-amber-500/30"
-                                          : "bg-gray-100 text-gray-600 border-gray-300"
-                                    }
-                                  >
-                                    {task.status === "Completed" && <CheckCircle className="h-3 w-3 mr-1" />}
-                                    {task.status}
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center justify-end gap-2">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <CheckCircle className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive">
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          ) : (
-                            <TableRow>
-                              <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                      </Table>
+                      <div className="max-h-[280px] overflow-y-auto">
+                        <Table>
+                          <TableBody>
+                            {tasks.length > 0 ? (
+                              tasks.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-muted/30 border-b">
+                                  <TableCell className="align-top py-3">
+                                    <div>
+                                      <p className="font-medium text-foreground">{task.title}</p>
+                                      {task.processLink && (
+                                        <p className="text-sm text-teal-600 flex items-center gap-1 mt-0.5">
+                                          <Link2 className="h-3 w-3" />
+                                          {task.processLink}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="align-top py-3 text-sm text-muted-foreground">
+                                    {task.relatedEntity}
+                                  </TableCell>
+                                  <TableCell className="align-top py-3">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className={task.isOverdue ? "text-red-600 font-medium" : "text-sm"}>
+                                        {task.dueDate}
+                                      </span>
+                                      {task.isOverdue && (
+                                        <span className="text-red-500 text-sm">(Overdue)</span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="align-top py-3">
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        task.priority === "High"
+                                          ? "bg-red-50 text-red-600 border-red-200"
+                                          : task.priority === "Medium"
+                                            ? "bg-teal-50 text-teal-600 border-teal-200"
+                                            : "bg-gray-50 text-gray-600 border-gray-200"
+                                      }
+                                    >
+                                      {task.priority}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="align-top py-3">
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        task.status === "Pending"
+                                          ? "bg-teal-50 text-teal-600 border-teal-300"
+                                          : task.status === "In Progress"
+                                            ? "bg-teal-600 text-white border-teal-600"
+                                            : "bg-gray-100 text-gray-600 border-gray-300"
+                                      }
+                                    >
+                                      {task.status}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="align-top py-3 text-sm">
+                                    {task.assignedTo}
+                                  </TableCell>
+                                  <TableCell className="align-top py-3">
+                                    <div className="flex items-center justify-end gap-1">
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                                        <Edit className="h-4 w-4" />
+                                      </Button>
+                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            ) : (
+                              <TableRow>
+                                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                                 No tasks found for this property. Click "Add Task" to create one.
                               </TableCell>
                             </TableRow>
                           )}
-                        </TableBody>
-                      </Table>
+                          </TableBody>
+                        </Table>
+                      </div>
                     </div>
                   </div>
                     {/* Property Information - Expanded */}
@@ -744,10 +757,9 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                       </div>
                     </CollapsibleSection>
                 </div>
-          </div>
-          )}
+              )}
 
-          {/* Units Tab */}
+              {/* Units Tab */}
           {activeTab === "units" && (
             <div className="space-y-4">
               <div className="bg-white border border-border rounded-lg p-4">
@@ -812,184 +824,32 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
           )}
           
           {activeTab === "media" && (
-              <div className="space-y-6">
-                {/* Upload Area */}
-                <div className="bg-white border border-border rounded-lg p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Upload className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Upload Documents</h3>
+              <div className="bg-background border border-border rounded-lg p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-teal-600" />
+                    <h3 className="text-lg font-semibold">Documents ({documents.length})</h3>
                   </div>
-                  
-                  {!showUploadForm ? (
-                    <div 
-                      className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
-                      onClick={() => document.getElementById('file-upload')?.click()}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.add('border-primary', 'bg-primary/5')
-                      }}
-                      onDragLeave={(e) => {
-                        e.currentTarget.classList.remove('border-primary', 'bg-primary/5')
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.remove('border-primary', 'bg-primary/5')
-                        const files = e.dataTransfer.files
-                        if (files.length > 0) {
-                          setUploadingFile(files[0])
-                          setShowUploadForm(true)
-                        }
-                      }}
-                    >
-                      <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-sm font-medium text-foreground mb-1">Drag & drop files here or click to browse</p>
-                      <p className="text-xs text-muted-foreground">Supported formats: PDF, DOC, DOCX, JPG, PNG, ZIP</p>
-                      <input
-                        id="file-upload"
-                        type="file"
-                        className="hidden"
-                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
-                        onChange={(e) => {
-                          const files = e.target.files
-                          if (files && files.length > 0) {
-                            setUploadingFile(files[0])
-                            setShowUploadForm(true)
-                          }
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* File Info */}
-                      <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
-                        <FileText className="h-8 w-8 text-primary" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{uploadingFile?.name}</p>
-                          <p className="text-xs text-muted-foreground">{uploadingFile?.size ? `${(uploadingFile.size / 1024).toFixed(1)} KB` : ''}</p>
-                        </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => {
-                            setUploadingFile(null)
-                            setShowUploadForm(false)
-                            setDocumentForm({ type: "", assignedTo: "", comments: "" })
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-muted-foreground" />
-                        </Button>
-                      </div>
-                      
-                      {/* Form Fields */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="doc-type">File Type <span className="text-red-500">*</span></Label>
-                          <Select 
-                            value={documentForm.type} 
-                            onValueChange={(value) => setDocumentForm({...documentForm, type: value})}
-                          >
-                            <SelectTrigger id="doc-type">
-                              <SelectValue placeholder="Select document type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {DOCUMENT_TYPES.map((type) => (
-                                <SelectItem key={type} value={type}>{type}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="assign-to">Assign To (Optional)</Label>
-                          <Select 
-                            value={documentForm.assignedTo} 
-                            onValueChange={(value) => setDocumentForm({...documentForm, assignedTo: value})}
-                          >
-                            <SelectTrigger id="assign-to">
-                              <SelectValue placeholder="Select staff member" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STAFF_MEMBERS.map((staff) => (
-                                <SelectItem key={staff.id} value={staff.name}>
-                                  <div className="flex flex-col">
-                                    <span>{staff.name}</span>
-                                    <span className="text-xs text-muted-foreground">{staff.role}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="comments">Comments (Optional)</Label>
-                        <Textarea
-                          id="comments"
-                          placeholder="Add notes or context for this document..."
-                          value={documentForm.comments}
-                          onChange={(e) => setDocumentForm({...documentForm, comments: e.target.value})}
-                          rows={3}
-                        />
-                      </div>
-                      
-                      {/* Actions */}
-                      <div className="flex items-center gap-3 pt-2">
-                        <Button 
-                          className="bg-primary hover:bg-primary/90"
-                          disabled={!documentForm.type}
-                          onClick={() => {
-                            // Add new document to list
-                            const newDoc = {
-                              id: String(documents.length + 1),
-                              name: uploadingFile?.name || "Document",
-                              type: documentForm.type,
-                              uploadedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-                              uploadedBy: "Current User",
-                              assignedTo: documentForm.assignedTo || null,
-                            }
-                            setDocuments([newDoc, ...documents])
-                            setShowUploadForm(false)
-                            setUploadingFile(null)
-                            setDocumentForm({ type: "", assignedTo: "", comments: "" })
-                          }}
-                        >
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Document
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          className="bg-transparent"
-                          onClick={() => {
-                            setShowUploadForm(false)
-                            setUploadingFile(null)
-                            setDocumentForm({ type: "", assignedTo: "", comments: "" })
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+                  <Button
+                    className="bg-teal-600 hover:bg-teal-700 text-white"
+                    onClick={() => setShowUploadForm(true)}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Document
+                  </Button>
                 </div>
-                
-                {/* Documents List */}
-                <div className="bg-white border border-border rounded-lg overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-b">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      <span className="font-semibold">Uploaded Documents ({documents.length})</span>
-                    </div>
-                  </div>
+
+                {/* Documents Table */}
+                <div className="border border-border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-gray-50">
-                        <TableHead>Document Name</TableHead>
-                        <TableHead>File Type</TableHead>
-                        <TableHead>Uploaded Date</TableHead>
-                        <TableHead>Uploaded By</TableHead>
-                        <TableHead>Assigned To</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="text-xs font-medium text-muted-foreground">Document Name</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Property</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Received Date</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground">Received Time</TableHead>
+                        <TableHead className="text-xs font-medium text-muted-foreground text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -997,18 +857,18 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                         <TableRow key={doc.id} className="hover:bg-muted/50">
                           <TableCell>
                             <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-primary" />
-                              <span className="font-medium text-foreground">{doc.name}</span>
+                              <FileText className="h-4 w-4 text-red-400 shrink-0" />
+                              <span className="text-sm font-medium text-teal-700">{doc.name}</span>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="bg-gray-100 text-gray-700 border-gray-300">
-                              {doc.type}
-                            </Badge>
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">{doc.property}</p>
+                              <p className="text-xs text-muted-foreground">{doc.propertyAddress}</p>
+                            </div>
                           </TableCell>
-                          <TableCell className="text-muted-foreground">{doc.uploadedDate}</TableCell>
-                          <TableCell className="text-muted-foreground">{doc.uploadedBy}</TableCell>
-                          <TableCell className="text-muted-foreground">{doc.assignedTo || "-"}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{doc.receivedDate}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{doc.receivedTime}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -1023,8 +883,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                       ))}
                       {documents.length === 0 && (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                            No documents uploaded yet. Use the upload area above to add documents.
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            No documents uploaded yet. Click Upload Document to add documents.
                           </TableCell>
                         </TableRow>
                       )}
@@ -1037,6 +897,203 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
 {/* Processes Tab */}
             {activeTab === "processes" && (
               <div className="space-y-4">
+                {selectedProcessId ? (
+                  // Process Detail View
+                  (() => {
+                    const selectedProcess = propertyProcesses.find(p => p.id === selectedProcessId)
+                    if (!selectedProcess) return null
+                    
+                    const stageColors = ["bg-green-500", "bg-blue-500", "bg-orange-400", "bg-slate-200"]
+                    const activityItems = [
+                      { type: "email", user: "Sarah Johnson", initials: "SJ", action: "emailed", target: "Christopher Davis", subject: "Request for Required Information/Documents", preview: "Hi Christopher, I hope you are doing gre...", time: "Today, 7:21 PM" },
+                      { type: "completed", user: "Sarah Johnson", action: "completed", task: "(Owner) Request for Required Information/Documents", time: "Today, 7:21 PM" },
+                      { type: "completed", user: "Nina Patel", action: "completed", task: "Roles Assigned to Team? Signed PM agreement Attached to AF?", time: "Friday, 11:08 PM" },
+                      { type: "opened", action: "A recipient opened the email", task: "Welcome to B2B Property Management!", time: "Friday, 10:14 PM" },
+                      { type: "opened", action: "A recipient opened the email", task: "Welcome to B2B Property Management!", time: "Friday, 8:54 PM" },
+                      { type: "completed", user: "Sarah Johnson", action: "completed", task: "Welcome message", time: "Friday, 8:52 PM" },
+                      { type: "email", user: "Sarah Johnson", initials: "SJ", action: "emailed", target: "Christopher Davis, Nina Patel, Richard Surovi", subject: "Welcome to B2B Property Management!", preview: "Hi Christopher, First off, we'd like to welcome...", time: "Friday, 8:44 PM" },
+                      { type: "completed", user: "Sarah Johnson", action: "completed", task: "(Owner) Welcome Email", time: "Friday, 8:44 PM" },
+                      { type: "assigned", user: "Nina Patel", action: "assigned this process to", target: "Sarah Johnson", time: "Friday, 8:12 PM" },
+                      { type: "note", user: "Richard Surovi", initials: "RS", title: "Note", address: "3576 E 104th St, Cleveland, OH 44105", content: "The owner is interested in Sec 8", time: "Friday, 7:23 PM" },
+                    ]
+                    
+                    return (
+                      <div className="space-y-6">
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedProcessId(null)}
+                              className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                            >
+                              <ArrowLeft className="h-5 w-5 text-slate-600" />
+                            </button>
+                            <h2 className="text-lg font-semibold text-slate-900">{selectedProcess.processName}</h2>
+                          </div>
+                          <button type="button" className="p-2 hover:bg-slate-100 rounded cursor-pointer">
+                            <Workflow className="h-5 w-5 text-slate-500" />
+                          </button>
+                        </div>
+                        
+                        {/* Stage Progress */}
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-500">Stage:</span>
+                            <button type="button" className="text-sm text-amber-600 hover:text-amber-700 cursor-pointer flex items-center gap-1">
+                              {selectedProcess.stageBadge}
+                              <ChevronDown className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div className="flex gap-1">
+                            {stageColors.map((color, idx) => (
+                              <div key={idx} className={`h-2 flex-1 rounded-full ${color}`} />
+                            ))}
+                          </div>
+                        </div>
+                        
+                        {/* Tasks Section */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-slate-900">Tasks</h3>
+                            <Select defaultValue="upcoming">
+                              <SelectTrigger className="w-32 h-8 text-sm">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="upcoming">Upcoming</SelectItem>
+                                <SelectItem value="all">All</SelectItem>
+                                <SelectItem value="completed">Completed</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            {selectedProcess.tasks.filter(t => !t.completedDate).map((task) => (
+                              <div key={task.id} className="flex items-start gap-3 py-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleMarkTaskComplete(selectedProcess.id, task.id)}
+                                  className="mt-0.5 cursor-pointer text-slate-400 hover:text-teal-600 transition-colors"
+                                  title="Mark as Complete"
+                                >
+                                  <Check className="h-5 w-5" />
+                                </button>
+                                <div className="flex-1">
+                                  <p className="text-sm font-medium text-slate-900">{task.taskName}</p>
+                                  <p className="text-xs text-amber-600">{selectedProcess.stageBadge}</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <button type="button" className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 cursor-pointer">
+                                    <FileText className="h-3.5 w-3.5" />
+                                    Instructions
+                                  </button>
+                                  <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-xs font-medium text-amber-700">
+                                    {task.staffMember.split(' ').map(n => n[0]).join('')}
+                                  </div>
+                                  <span className="text-xs text-slate-500">{task.startDate ? `${task.startDate}` : "Pending"}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <hr className="border-slate-200" />
+                        
+                        {/* Activity Feed Header */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedProcessId(null)}
+                              className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                            >
+                              <ArrowLeft className="h-5 w-5 text-slate-600" />
+                            </button>
+                            <h2 className="text-lg font-semibold text-slate-900">{selectedProcess.processName}</h2>
+                          </div>
+                          <button type="button" className="p-2 hover:bg-slate-100 rounded cursor-pointer">
+                            <Workflow className="h-5 w-5 text-slate-500" />
+                          </button>
+                        </div>
+                        
+                        {/* Activity Feed */}
+                        <div className="space-y-3">
+                          {activityItems.map((item, idx) => (
+                            <div key={idx}>
+                              {item.type === "email" && (
+                                <div className="flex gap-3 p-4 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
+                                  <div className="w-8 h-8 rounded-full bg-amber-200 flex items-center justify-center text-xs font-medium text-amber-800 shrink-0">
+                                    {item.initials}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm">
+                                      <span className="font-semibold">{item.user}</span>
+                                      <span className="text-slate-600"> {item.action} </span>
+                                      <span className="font-semibold">{item.target}</span>
+                                    </p>
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                      <Mail className="h-3.5 w-3.5 text-slate-500" />
+                                      <span className="text-sm font-medium text-slate-900">{item.subject}</span>
+                                    </div>
+                                    <p className="text-sm text-slate-500 mt-0.5">{item.preview}</p>
+                                  </div>
+                                  <span className="text-xs text-slate-500 shrink-0">{item.time}</span>
+                                </div>
+                              )}
+                              {item.type === "completed" && (
+                                <div className="flex items-center gap-2 py-2">
+                                  <CheckCircle className="h-4 w-4 text-teal-500" />
+                                  <p className="text-sm text-slate-600">
+                                    <span className="font-medium text-slate-900">{item.user}</span> {item.action} "{item.task}" <span className="text-slate-400">{item.time}</span>
+                                  </p>
+                                </div>
+                              )}
+                              {item.type === "opened" && (
+                                <div className="flex items-center gap-2 py-2">
+                                  <Mail className="h-4 w-4 text-slate-400" />
+                                  <p className="text-sm text-slate-600">
+                                    {item.action} "{item.task}" <span className="text-slate-400">{item.time}</span>
+                                  </p>
+                                </div>
+                              )}
+                              {item.type === "assigned" && (
+                                <div className="flex items-center gap-2 py-2">
+                                  <Phone className="h-4 w-4 text-amber-500" />
+                                  <p className="text-sm text-slate-600">
+                                    <span className="font-medium text-slate-900">{item.user}</span> {item.action} <span className="font-medium text-slate-900">{item.target}</span> <span className="text-slate-400">{item.time}</span>
+                                  </p>
+                                </div>
+                              )}
+                              {item.type === "note" && (
+                                <div className="flex gap-3 p-4 bg-slate-50 rounded-lg">
+                                  <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-700 shrink-0">
+                                    {item.initials}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm">
+                                      <span className="font-semibold">{item.user}</span>
+                                      <span className="text-slate-600"> left a </span>
+                                      <span className="font-semibold">{item.title}</span>
+                                    </p>
+                                    <a href="#" className="text-sm text-blue-600 hover:underline">{item.address}</a>
+                                    <p className="text-sm text-slate-700 mt-1">{item.content}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-xs text-slate-500">{item.time}</span>
+                                    <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })()
+                ) : (
+                  // Process List View
+                  <>
                 {/* Header */}
                 <div className="flex items-center gap-2">
                   <Workflow className="h-5 w-5 text-teal-600" />
@@ -1105,13 +1162,24 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                             <div key={process.id} className="border rounded-lg">
                               {/* Process header row */}
                               <div
-                                className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
-                                onClick={() => toggleProcessExpanded(process.id)}
+                                className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors"
                               >
                                 <div className="flex items-center gap-3">
-                                  {isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground -rotate-90 transition-transform" />}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleProcessExpanded(process.id)}
+                                    className="cursor-pointer p-1 hover:bg-slate-100 rounded transition-colors"
+                                  >
+                                    {isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground -rotate-90 transition-transform" />}
+                                  </button>
                                   <div>
-                                    <p className="font-semibold text-sm text-foreground">{process.processName}</p>
+                                    <button
+                                      type="button"
+                                      onClick={() => setSelectedProcessId(process.id)}
+                                      className="font-semibold text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                                    >
+                                      {process.processName}
+                                    </button>
                                     <div className="flex items-center gap-2 mt-0.5">
                                       <Badge variant="outline" className={`text-xs ${badgeBg}`}>{process.stageBadge}</Badge>
                                       <span className="text-xs text-muted-foreground">Started: {process.startedDate}</span>
@@ -1162,9 +1230,9 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                                       <TableRow className="bg-muted/40">
                                         <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
                                         <TableHead className="font-medium text-xs">Start Date</TableHead>
-                                        <TableHead className="font-medium text-xs">Completed Date</TableHead>
+                                        <TableHead className="font-medium text-xs">Completed On</TableHead>
                                         <TableHead className="font-medium text-xs">Staff Member</TableHead>
-                                        <TableHead className="font-medium text-xs w-[120px]">Actions</TableHead>
+                                        <TableHead className="font-medium text-xs w-[150px]">Actions</TableHead>
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -1172,7 +1240,7 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                                         <TableRow key={task.id} className="hover:bg-muted/20">
                                           <TableCell className="text-sm pl-12">{task.taskName}</TableCell>
                                           <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
-                                          <TableCell className={`text-sm ${task.completedDate ? "text-teal-600" : "text-muted-foreground"}`}>
+                                          <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
                                             {task.completedDate || "\u2014"}
                                           </TableCell>
                                           <TableCell>
@@ -1183,14 +1251,30 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                                           </TableCell>
                                           <TableCell>
                                             <div className="flex items-center gap-2">
-                                              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                                              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
                                                 <Eye className="h-3.5 w-3.5" />
                                                 View
                                               </button>
-                                              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+                                              <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
                                                 <Edit className="h-3.5 w-3.5" />
                                                 Edit
                                               </button>
+                                              {!task.completedDate && (
+                                                <button 
+                                                  onClick={() => handleMarkTaskComplete(process.id, task.id)}
+                                                  className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                                  title="Mark as Complete"
+                                                >
+                                                  <Check className="h-4 w-4" />
+                                                  Complete
+                                                </button>
+                                              )}
+                                              {task.completedDate && (
+                                                <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                                  <Check className="h-4 w-4" />
+                                                  Done
+                                                </span>
+                                              )}
                                             </div>
                                           </TableCell>
                                         </TableRow>
@@ -1380,8 +1464,162 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                     </div>
                   </DialogContent>
                 </Dialog>
+                  </>
+                )}
               </div>
             )}
+
+            {/* Upload Document Dialog */}
+            <Dialog open={showUploadForm} onOpenChange={(open) => {
+              setShowUploadForm(open)
+              if (!open) {
+                setUploadingFile(null)
+                setDocumentForm({ type: "", assignedTo: "", comments: "" })
+              }
+            }}>
+              <DialogContent className="sm:max-w-[480px]">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5 text-teal-600" />
+                    Upload Document
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-5 py-2">
+                  {/* Upload File Area */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Upload File</Label>
+                    {!uploadingFile ? (
+                      <div
+                        className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-teal-500 hover:bg-teal-50/30 transition-colors"
+                        onClick={() => document.getElementById('upload-dialog-file')?.click()}
+                        onDragOver={(e) => {
+                          e.preventDefault()
+                          e.currentTarget.classList.add('border-teal-500', 'bg-teal-50/30')
+                        }}
+                        onDragLeave={(e) => {
+                          e.currentTarget.classList.remove('border-teal-500', 'bg-teal-50/30')
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault()
+                          e.currentTarget.classList.remove('border-teal-500', 'bg-teal-50/30')
+                          if (e.dataTransfer.files.length > 0) {
+                            setUploadingFile(e.dataTransfer.files[0])
+                          }
+                        }}
+                      >
+                        <Upload className="h-8 w-8 text-teal-600 mx-auto mb-2" />
+                        <p className="text-sm font-medium text-foreground">Click to upload or drag and drop</p>
+                        <p className="text-xs text-muted-foreground mt-1">PDF, DOC, DOCX, JPG, PNG</p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
+                        <FileText className="h-6 w-6 text-teal-600 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{uploadingFile.name}</p>
+                          <p className="text-xs text-muted-foreground">{(uploadingFile.size / 1024).toFixed(1)} KB</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 shrink-0"
+                          onClick={() => setUploadingFile(null)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <input
+                      id="upload-dialog-file"
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                          setUploadingFile(e.target.files[0])
+                        }
+                        e.target.value = ''
+                      }}
+                    />
+                  </div>
+
+                  {/* Document Type */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Document Type</Label>
+                    <Select
+                      value={documentForm.type}
+                      onValueChange={(value) => setDocumentForm({ ...documentForm, type: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select document type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {DOCUMENT_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>{type}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Assign This Document */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Assign this document</Label>
+                    <Select
+                      value={documentForm.assignedTo}
+                      onValueChange={(value) => setDocumentForm({ ...documentForm, assignedTo: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select property" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="oak-manor">Oak Manor</SelectItem>
+                        <SelectItem value="maple-heights">Maple Heights</SelectItem>
+                        <SelectItem value="pine-view">Pine View Apartments</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    className="bg-transparent"
+                    onClick={() => {
+                      setShowUploadForm(false)
+                      setUploadingFile(null)
+                      setDocumentForm({ type: "", assignedTo: "", comments: "" })
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="bg-teal-600 hover:bg-teal-700 text-white"
+                    disabled={!uploadingFile || !documentForm.type}
+                    onClick={() => {
+                      const newDoc = {
+                        id: String(documents.length + 1),
+                        name: uploadingFile?.name || "Document",
+                        type: documentForm.type,
+                        property: "Oak Manor",
+                        propertyAddress: "123 Oak Street, San Francisco, CA",
+                        receivedDate: new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }),
+                        receivedTime: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+                        uploadedDate: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                        uploadedBy: "Current User",
+                        assignedTo: null,
+                      }
+                      setDocuments([newDoc, ...documents])
+                      setShowUploadForm(false)
+                      setUploadingFile(null)
+                      setDocumentForm({ type: "", assignedTo: "", comments: "" })
+                    }}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Document
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
 
             {/* Audit Log Tab */}
             {activeTab === "audit-log" && (
@@ -1497,7 +1735,10 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                 </div>
               </div>
             )}
-      </div>
+            </div>
+          </div>
+
+        </div>
 
       {/* Owner Info Modal */}
       <Dialog open={showOwnerInfoModal} onOpenChange={setShowOwnerInfoModal}>
@@ -1844,9 +2085,12 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                     {
                       id: tasks.length + 1,
                       title: newTask.title,
-                      description: newTask.description,
+                      relatedEntity: "",
+                      processLink: "",
                       assignedTo: newTask.assignedTo,
                       dueDate: newTask.dueDate,
+                      isOverdue: false,
+                      priority: newTask.priority as "High" | "Medium" | "Low",
                       status: "Pending",
                     },
                   ])
@@ -1862,6 +2106,117 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
               }}
             >
               Create Task
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Missing Info Modal */}
+      <Dialog open={showMissingInfoModal} onOpenChange={setShowMissingInfoModal}>
+        <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden">
+          <div className="bg-amber-50 border-b border-amber-200 px-6 py-4">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold text-slate-800 flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <div>
+                  <span>Missing Information</span>
+                  <p className="text-sm font-normal text-muted-foreground mt-0.5">Complete these items to ensure accurate records</p>
+                </div>
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+
+          <div className="p-6">
+            {/* Tab buttons */}
+            <div className="flex gap-2 mb-4 border-b">
+              <button
+                onClick={() => setMissingInfoTab("fields")}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  missingInfoTab === "fields"
+                    ? "border-amber-500 text-amber-600"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Missing Fields ({PROPERTY_MISSING_FIELDS.length})
+              </button>
+              <button
+                onClick={() => setMissingInfoTab("documents")}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  missingInfoTab === "documents"
+                    ? "border-amber-500 text-amber-600"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                Missing Documents ({PROPERTY_MISSING_DOCUMENTS.length})
+              </button>
+            </div>
+
+            {/* Tab content */}
+            {missingInfoTab === "fields" && (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {PROPERTY_MISSING_FIELDS.map((field) => (
+                  <div
+                    key={field.id}
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border hover:bg-muted/80 transition-colors"
+                  >
+                    <div>
+                      <p className="font-medium text-sm">{field.fieldName}</p>
+                      <p className="text-xs text-muted-foreground">{field.section}</p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActiveTab(field.tab as typeof activeTab)
+                        setShowMissingInfoModal(false)
+                      }}
+                      className="text-xs"
+                    >
+                      Go to field
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {missingInfoTab === "documents" && (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                {PROPERTY_MISSING_DOCUMENTS.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border hover:bg-muted/80 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-sm">{doc.documentName}</p>
+                        {doc.required && (
+                          <span className="text-xs text-red-600">Required</span>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setActiveTab("media")
+                        setShowMissingInfoModal(false)
+                        setShowUploadForm(true)
+                      }}
+                      className="text-xs gap-1"
+                    >
+                      <Upload className="h-3 w-3" />
+                      Upload
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-3 px-6 py-4 bg-muted/30 border-t border-border">
+            <Button variant="outline" onClick={() => setShowMissingInfoModal(false)}>
+              Close
             </Button>
           </div>
         </DialogContent>

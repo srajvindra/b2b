@@ -130,7 +130,11 @@ export const PROPERTY_DATA = {
     moveOutFee: { type: "Flat(per)", perUnit: "—" },
     renewalFeeR: { type: "Flat(per)", perUnit: "$0.00" },
     additionalFeesList: [
-      { account: "1040 - Additional Fee Income", type: "$0.00 % Application Fee Income", expenses: "Yes" },
+      {
+        account: "1040 - Additional Fee Income",
+        type: "$0.00 % Application Fee Income",
+        expenses: "Yes",
+      },
     ],
   },
   lateFeePolicy: {
@@ -196,42 +200,303 @@ export const PROPERTY_DATA = {
     },
   ],
   attachments: [],
-}
+};
 
 export const PROPERTY_TASKS = [
   {
     id: 1,
-    title: "Schedule annual property inspection",
-    description: "Coordinate with tenant for annual property inspection",
-    assignedTo: "Sarah Johnson",
-    dueDate: "2025-12-15",
-    status: "In Progress",
+    title: "Follow up with tenant - Unit 204 lease renewal",
+    relatedEntity: "Tenant: John Smith",
+    processLink: "Lease Renewal Process",
+    assignedTo: "Nina Patel",
+    dueDate: "2025-12-20",
+    isOverdue: true,
+    priority: "High",
+    status: "Pending",
   },
   {
     id: 2,
-    title: "Review lease renewal for Unit UP",
-    description: "Review and prepare lease renewal documents for Jeff Mcjunkin",
-    assignedTo: "Mike Davis",
-    dueDate: "2025-01-15",
-    status: "Pending",
+    title: "Finish Move-out tenant in Appfolio and update property",
+    relatedEntity: "Property: Maple Heights",
+    processLink: "Move Out for 123 Oak Street",
+    assignedTo: "Richard Surovi",
+    dueDate: "2025-12-21",
+    isOverdue: true,
+    priority: "High",
+    status: "In Progress",
   },
   {
     id: 3,
-    title: "HVAC maintenance check",
-    description: "Schedule routine HVAC maintenance before winter",
-    assignedTo: "Richard Surovi",
-    dueDate: "2025-12-10",
-    status: "Completed",
+    title: "Review rental application - Sarah Johnson",
+    relatedEntity: "Lease Prospect: Sarah Johnson",
+    processLink: "Lease Prospect Onboarding",
+    assignedTo: "Nina Patel",
+    dueDate: "2025-12-23",
+    isOverdue: false,
+    priority: "High",
+    status: "Pending",
   },
   {
     id: 4,
-    title: "Update property insurance",
-    description: "Review and update property insurance policy",
-    assignedTo: "Sarah Johnson",
-    dueDate: "2025-12-20",
+    title: "Schedule maintenance for HVAC - Oak Manor",
+    relatedEntity: "Property: Oak Manor",
+    processLink: "",
+    assignedTo: "Mike Johnson",
+    dueDate: "2025-12-23",
+    isOverdue: false,
+    priority: "Medium",
     status: "Pending",
   },
-]
+  {
+    id: 5,
+    title: "Send lease agreement - Unit 305",
+    relatedEntity: "Lease Prospect: Unit 305",
+    processLink: "New Lease Signing",
+    assignedTo: "Sarah Chen",
+    dueDate: "2025-12-24",
+    isOverdue: false,
+    priority: "Medium",
+    status: "In Progress",
+  },
+  {
+    id: 6,
+    title: "Call owner about property updates",
+    relatedEntity: "Owner: Mike Davis",
+    processLink: "Owner Quarterly Review",
+    assignedTo: "Richard Surovi",
+    dueDate: "2025-12-25",
+    isOverdue: false,
+    priority: "Low",
+    status: "Skipped",
+  },
+  {
+    id: 7,
+    title: "Process security deposit refund",
+    relatedEntity: "Tenant: Emily Brown",
+    processLink: "Move Out Process",
+    assignedTo: "Nina Patel",
+    dueDate: "2025-12-26",
+    isOverdue: false,
+    priority: "Medium",
+    status: "Pending",
+  },
+  {
+    id: 8,
+    title: "Complete property walkthrough",
+    relatedEntity: "Property: Cedar Point",
+    processLink: "Annual Inspection",
+    assignedTo: "Mike Johnson",
+    dueDate: "2025-12-27",
+    isOverdue: false,
+    priority: "Medium",
+    status: "Pending",
+  },
+  {
+    id: 9,
+    title: "Update insurance documents",
+    relatedEntity: "Property: Oak Manor",
+    processLink: "",
+    assignedTo: "Sarah Chen",
+    dueDate: "2025-12-28",
+    isOverdue: false,
+    priority: "Low",
+    status: "Pending",
+  },
+  {
+    id: 10,
+    title: "Review maintenance request",
+    relatedEntity: "Tenant: James Wilson",
+    processLink: "Maintenance Workflow",
+    assignedTo: "Richard Surovi",
+    dueDate: "2025-12-29",
+    isOverdue: false,
+    priority: "High",
+    status: "Pending",
+  },
+];
+
+export const PROPERTY_PROCESSES = [
+  {
+    id: "proc1",
+    processName: "Tenant Onboarding",
+    stageBadge: "Financial Paperwork",
+    stageBadgeColor: "amber",
+    startedDate: "01/10/2026",
+    status: "In Progress",
+    tasks: [
+      {
+        id: "t1",
+        taskName: "Send welcome email",
+        startDate: "01/10/2026",
+        completedDate: "01/10/2026",
+        staffMember: "Sarah Johnson",
+        staffEmail: "sarah.johnson@heropm.com",
+      },
+      {
+        id: "t2",
+        taskName: "Schedule discovery call",
+        startDate: "01/11/2026",
+        completedDate: "01/12/2026",
+        staffMember: "Sarah Johnson",
+        staffEmail: "sarah.johnson@heropm.com",
+      },
+      {
+        id: "t3",
+        taskName: "Complete needs assessment",
+        startDate: "01/13/2026",
+        completedDate: "",
+        staffMember: "Nina Patel",
+        staffEmail: "nina.patel@heropm.com",
+      },
+      {
+        id: "t4",
+        taskName: "Verify property ownership",
+        startDate: "",
+        completedDate: "",
+        staffMember: "Richard Surovi",
+        staffEmail: "richard.surovi@heropm.com",
+      },
+    ],
+  },
+  {
+    id: "proc2",
+    processName: "Property Evaluation Process",
+    stageBadge: "Collecting Information",
+    stageBadgeColor: "blue",
+    startedDate: "01/15/2026",
+    status: "In Progress",
+    tasks: [
+      {
+        id: "t5",
+        taskName: "Request property details",
+        startDate: "01/15/2026",
+        completedDate: "01/15/2026",
+        staffMember: "Mike Davis",
+        staffEmail: "mike.davis@heropm.com",
+      },
+      {
+        id: "t6",
+        taskName: "Schedule property walkthrough",
+        startDate: "01/16/2026",
+        completedDate: "",
+        staffMember: "Mike Davis",
+        staffEmail: "mike.davis@heropm.com",
+      },
+      {
+        id: "t7",
+        taskName: "Prepare management proposal",
+        startDate: "",
+        completedDate: "",
+        staffMember: "Sarah Johnson",
+        staffEmail: "sarah.johnson@heropm.com",
+      },
+    ],
+  },
+  {
+    id: "proc3",
+    processName: "Lease Renewal",
+    stageBadge: "Completed",
+    stageBadgeColor: "green",
+    startedDate: "12/01/2025",
+    status: "Completed",
+    tasks: [
+      {
+        id: "t8",
+        taskName: "Send renewal notice",
+        startDate: "12/01/2025",
+        completedDate: "12/01/2025",
+        staffMember: "Sarah Johnson",
+        staffEmail: "sarah.johnson@heropm.com",
+      },
+      {
+        id: "t9",
+        taskName: "Negotiate terms",
+        startDate: "12/05/2025",
+        completedDate: "12/10/2025",
+        staffMember: "Nina Patel",
+        staffEmail: "nina.patel@heropm.com",
+      },
+    ],
+  },
+  {
+    id: "proc4",
+    processName: "Move-Out Inspection",
+    stageBadge: "Completed",
+    stageBadgeColor: "green",
+    startedDate: "11/15/2025",
+    status: "Completed",
+    tasks: [
+      {
+        id: "t10",
+        taskName: "Schedule inspection",
+        startDate: "11/15/2025",
+        completedDate: "11/16/2025",
+        staffMember: "Richard Surovi",
+        staffEmail: "richard.surovi@heropm.com",
+      },
+      {
+        id: "t11",
+        taskName: "Conduct walkthrough",
+        startDate: "11/18/2025",
+        completedDate: "11/18/2025",
+        staffMember: "Mike Davis",
+        staffEmail: "mike.davis@heropm.com",
+      },
+    ],
+  },
+  {
+    id: "proc5",
+    processName: "Annual Property Review",
+    stageBadge: "Scheduled",
+    stageBadgeColor: "slate",
+    startedDate: "02/01/2026",
+    status: "Upcoming",
+    tasks: [
+      {
+        id: "t12",
+        taskName: "Gather financial reports",
+        startDate: "",
+        completedDate: "",
+        staffMember: "Sarah Johnson",
+        staffEmail: "sarah.johnson@heropm.com",
+      },
+      {
+        id: "t13",
+        taskName: "Review maintenance history",
+        startDate: "",
+        completedDate: "",
+        staffMember: "Nina Patel",
+        staffEmail: "nina.patel@heropm.com",
+      },
+    ],
+  },
+  {
+    id: "proc6",
+    processName: "Insurance Renewal",
+    stageBadge: "Pending",
+    stageBadgeColor: "slate",
+    startedDate: "03/01/2026",
+    status: "Upcoming",
+    tasks: [
+      {
+        id: "t14",
+        taskName: "Request updated quotes",
+        startDate: "",
+        completedDate: "",
+        staffMember: "Mike Davis",
+        staffEmail: "mike.davis@heropm.com",
+      },
+      {
+        id: "t15",
+        taskName: "Compare coverage options",
+        startDate: "",
+        completedDate: "",
+        staffMember: "Richard Surovi",
+        staffEmail: "richard.surovi@heropm.com",
+      },
+    ],
+  },
+];
 
 export const STAFF_MEMBERS = [
   { id: "1", name: "Laura Taylor", role: "Property Manager" },
@@ -239,7 +504,7 @@ export const STAFF_MEMBERS = [
   { id: "3", name: "Jane Doe", role: "Accountant" },
   { id: "4", name: "John Smith", role: "Maintenance Coordinator" },
   { id: "5", name: "Sarah Williams", role: "Admin Assistant" },
-]
+];
 
 export const DOCUMENT_TYPES = [
   "Lease Agreement",
@@ -249,50 +514,91 @@ export const DOCUMENT_TYPES = [
   "Inspection Report",
   "Tax Document",
   "Other",
-]
+];
 
 export const SAMPLE_DOCUMENTS = [
   {
     id: "1",
-    name: "Lease_Agreement_Unit_UP.pdf",
+    name: "Management Agreement - Signed.pdf",
     type: "Lease Agreement",
+    property: "Oak Manor",
+    propertyAddress: "123 Oak Street, San Francisco, CA",
+    receivedDate: "12/03/2025",
+    receivedTime: "2:30 PM",
     uploadedDate: "Jan 15, 2026",
     uploadedBy: "Sarah Johnson",
     assignedTo: "Mike Johnson",
   },
   {
     id: "2",
-    name: "Property_Insurance_2026.pdf",
-    type: "Insurance",
+    name: "Property Inspection Report.pdf",
+    type: "Inspection Report",
+    property: "Maple Heights",
+    propertyAddress: "456 Maple Ave, San Francisco, CA",
+    receivedDate: "11/28/2025",
+    receivedTime: "10:15 AM",
     uploadedDate: "Jan 10, 2026",
     uploadedBy: "Mike Davis",
     assignedTo: null,
   },
   {
     id: "3",
-    name: "Annual_Inspection_Report.pdf",
-    type: "Inspection Report",
+    name: "Insurance Certificate 2025.pdf",
+    type: "Insurance",
+    property: "Pine View Apartments",
+    propertyAddress: "789 Pine Road, San Francisco, CA",
+    receivedDate: "11/25/2025",
+    receivedTime: "4:45 PM",
     uploadedDate: "Jan 8, 2026",
     uploadedBy: "Richard Surovi",
     assignedTo: "Laura Taylor",
   },
   {
     id: "4",
-    name: "Tax_Assessment_2025.pdf",
+    name: "W-9 Form.pdf",
     type: "Tax Document",
+    property: "Oak Manor",
+    propertyAddress: "123 Oak Street, San Francisco, CA",
+    receivedDate: "11/20/2025",
+    receivedTime: "11:00 AM",
     uploadedDate: "Jan 5, 2026",
     uploadedBy: "Nina Patel",
     assignedTo: null,
   },
+];
+
+export const PROPERTY_MISSING_FIELDS = [
   {
-    id: "5",
-    name: "Property_Photos_Exterior.zip",
-    type: "Property Image",
-    uploadedDate: "Jan 3, 2026",
-    uploadedBy: "Sarah Johnson",
-    assignedTo: "Jane Doe",
+    id: "1",
+    fieldName: "Purchase Date",
+    tab: "overview",
+    section: "Property Information",
   },
-]
+  {
+    id: "2",
+    fieldName: "Purchase Price",
+    tab: "overview",
+    section: "Property Information",
+  },
+  {
+    id: "3",
+    fieldName: "Year Renovated",
+    tab: "overview",
+    section: "Property Information",
+  },
+  {
+    id: "4",
+    fieldName: "Tax Authority",
+    tab: "overview",
+    section: "Property Information",
+  },
+];
+
+export const PROPERTY_MISSING_DOCUMENTS = [
+  { id: "1", documentName: "Property Deed", required: true },
+  { id: "2", documentName: "HOA Agreement", required: false },
+  { id: "3", documentName: "Current Insurance Policy", required: true },
+];
 
 export const FEDERAL_TAX_INFO = {
   taxpayerName: "Irtaza Ali khan",
@@ -301,7 +607,7 @@ export const FEDERAL_TAX_INFO = {
   send1099: "Yes",
   ownerConsentedElectronic1099: "No",
   sending1099Preference: "Paper & Electronic",
-}
+};
 
 export const ACCOUNTING_INFO = {
   checkConsolidation: "All bills on single check (hide extra stub detail)",
@@ -309,14 +615,14 @@ export const ACCOUNTING_INFO = {
   holdPayments: "No",
   emailECheckReceipt: "Yes",
   defaultCheckMemo: "--",
-}
+};
 
 export const BANK_ACCOUNT_INFO = {
   ownerPaidByACH: "No",
   bankRoutingNumber: "--",
   bankAccountNumber: "--",
   savingsAccount: "No",
-}
+};
 
 export const OWNER_STATEMENT_INFO = {
   showTransactionsDetail: "Yes",
@@ -326,7 +632,7 @@ export const OWNER_STATEMENT_INFO = {
   separateManagementFeesFromCashOut: "No",
   consolidateInHouseWorkOrderBillLineItems: "No",
   notesForTheOwner: "--",
-}
+};
 
 export const OWNER_PACKET_INFO = {
   sendViaEmail: "Yes",
@@ -335,11 +641,11 @@ export const OWNER_PACKET_INFO = {
   includePaidBillsAttachments: "No",
   glAccountMap: "None",
   includedReports: "Owner Statement (Enhanced)",
-}
+};
 
 export const MAINTENANCE_INFO_EXTENDED = {
   ownerSpecificNotes: "Need fix technicians for each property",
-}
+};
 
 export const PROPERTY_AUDIT_LOGS = [
   {
@@ -442,7 +748,7 @@ export const PROPERTY_AUDIT_LOGS = [
     description: "Added bank account ending in ****4521",
     source: "Web App",
   },
-]
+];
 
 export const ACTIVITY_LABELS = [
   { id: "1", name: "MOVE IN", color: "blue" },
@@ -450,5 +756,4 @@ export const ACTIVITY_LABELS = [
   { id: "3", name: "INSPECTION", color: "amber" },
   { id: "4", name: "RENEWAL", color: "emerald" },
   { id: "5", name: "MAINTENANCE", color: "purple" },
-]
-
+];

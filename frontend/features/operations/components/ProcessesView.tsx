@@ -1,8 +1,22 @@
 "use client"
 
-import { useState } from "react"
+import { Fragment, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Plus, Pencil, ChevronDown, FolderPlus, Copy, Users, Trash2 } from "lucide-react"
+import {
+  MoreHorizontal,
+  Plus,
+  Pencil,
+  ChevronDown,
+  FolderPlus,
+  Copy,
+  Users,
+  Trash2,
+  FolderOpen,
+  ChevronRight,
+  GripVertical,
+  MoreVertical,
+  Check,
+} from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -64,6 +78,9 @@ export function ProcessesView() {
     { id: "completed", label: "# Completed", value: 0, visible: true },
     { id: "timeToComplete", label: "Time To Complete", value: "n/a", visible: true },
   ])
+  const [expandedCategories, setExpandedCategories] = useState<string[]>([])
+  const [editingProcessId, setEditingProcessId] = useState<string | null>(null)
+  const [editingProcessName, setEditingProcessName] = useState("")
   
   // Modal states
   const [showNewProcessModal, setShowNewProcessModal] = useState(false)
@@ -218,6 +235,37 @@ export function ProcessesView() {
     }
   }
 
+  const startInlineEditProcess = (process: ProcessType) => {
+    setEditingProcessId(process.id)
+    setEditingProcessName(process.name)
+  }
+
+  const saveInlineEditProcess = () => {
+    if (!editingProcessId || !editingProcessName.trim()) {
+      setEditingProcessId(null)
+      setEditingProcessName("")
+      return
+    }
+    setProcessTypes(prev =>
+      prev.map(p => (p.id === editingProcessId ? { ...p, name: editingProcessName.trim() } : p)),
+    )
+    setEditingProcessId(null)
+    setEditingProcessName("")
+  }
+
+  const cancelInlineEditProcess = () => {
+    setEditingProcessId(null)
+    setEditingProcessName("")
+  }
+
+  const deleteInlineProcess = (processId: string) => {
+    setProcessTypes(prev => prev.filter(p => p.id !== processId))
+    if (editingProcessId === processId) {
+      setEditingProcessId(null)
+      setEditingProcessName("")
+    }
+  }
+
   const handleStageChange = (instanceId: string, newStage: string) => {
     setProcessInstances(prev => prev.map(p => 
       p.id === instanceId ? { ...p, stage: newStage } : p
@@ -248,6 +296,12 @@ export function ProcessesView() {
       setNewViewName("")
       setShowSaveViewModal(false)
     }
+  }
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories((prev) =>
+      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
+    )
   }
 
   // Filter instances based on active filters
@@ -311,6 +365,56 @@ export function ProcessesView() {
     }
     return bVal.localeCompare(aVal)
   })
+
+  // Derive high-level process categories (for collapsible view like lead stages)
+  const processCategories = [
+    {
+      id: "onboarding",
+      name: "Onboarding Processes",
+      matcher: (p: ProcessType) => p.name.toLowerCase().includes("onboarding"),
+    },
+    {
+      id: "lease-renewal",
+      name: "Lease Renewal Processes",
+      matcher: (p: ProcessType) => p.name.toLowerCase().includes("lease renewal"),
+    },
+    {
+      id: "termination",
+      name: "Termination / Offboarding",
+      matcher: (p: ProcessType) =>
+        p.name.toLowerCase().includes("termination") || p.name.toLowerCase().includes("termination process"),
+    },
+    {
+      id: "eviction",
+      name: "Eviction / Delinquency",
+      matcher: (p: ProcessType) =>
+        p.name.toLowerCase().includes("eviction") || p.name.toLowerCase().includes("delinquency"),
+    },
+    {
+      id: "accounting",
+      name: "Accounting / Month End",
+      matcher: (p: ProcessType) => p.name.toLowerCase().includes("accounting"),
+    },
+    {
+      id: "people",
+      name: "People / HR Processes",
+      matcher: (p: ProcessType) =>
+        p.name.toLowerCase().includes("employee") || p.name.toLowerCase().includes("hiring"),
+    },
+    {
+      id: "make-ready",
+      name: "Make Ready / Turns",
+      matcher: (p: ProcessType) => p.name.toLowerCase().includes("make ready"),
+    },
+  ]
+    .map((cat) => ({
+      id: cat.id,
+      name: cat.name,
+      processes: processTypes.filter(cat.matcher),
+    }))
+    .filter((cat) => cat.processes.length > 0)
+
+    
 
   // All Processes Dashboard View
   if (showDashboard) {
@@ -426,125 +530,192 @@ export function ProcessesView() {
         </p>
       </div>
 
-      {/* Unassigned Processes Section */}
-      <div className="px-6 py-4 bg-white">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Unassigned Processes</h2>
-          <span className="text-sm text-gray-500">{processTypes.length} processes</span>
+      {/* Process Categories - collapsible groups (like lead stages view) */}
+      <div className="px-6 py-4 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-gray-900">Process Categories</h2>
+          <span className="text-sm text-gray-500">
+            {processCategories.reduce((sum, cat) => sum + cat.processes.length, 0)} process types
+          </span>
         </div>
-
-        {/* Process List */}
-        <div className="divide-y divide-gray-200 border-t border-gray-200">
-          {processTypes.map((process) => (
-            <div
-              key={process.id}
-              className={`group flex items-center justify-between py-4 px-3 hover:bg-gray-50 transition-colors cursor-pointer ${
-                selectedProcess === process.id ? "bg-teal-50/40" : ""
-              }`}
-              onClick={() => setSelectedProcess(process.id)}
-            >
-              <div className="flex items-center gap-4">
-                {/* Teal folder icon */}
-                <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  </svg>
-                </div>
-                
-                {/* Process name - clickable */}
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleViewDashboard()
-                    }}
-                    className="text-[15px] font-semibold text-gray-900 hover:text-teal-700 text-left transition-colors"
+        <div className="border rounded-lg overflow-hidden bg-white">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b bg-muted/30">
+                <th className="text-left p-3 text-xs font-medium text-gray-500">Category Name</th>
+                <th className="text-left p-3 text-xs font-medium text-gray-500">Process Count</th>
+                <th className="text-left p-3 text-xs font-medium text-gray-500">Status</th>
+                <th className="text-right p-3 text-xs font-medium text-gray-500">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {processCategories.map((category) => (
+                <Fragment key={category.id}>
+                  <tr
+                    className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
+                    onClick={() => toggleCategory(category.id)}
                   >
-                    {process.name}
-                  </button>
-                  
-                  {/* Draft badge */}
-                  {process.isDraft && (
-                    <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">
-                      Draft
-                    </span>
-                  )}
+                    <td className="p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-teal-600">
+                          <FolderOpen className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="font-medium text-gray-900">{category.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700">
+                        {category.processes.length} processes
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">
+                        Active
+                      </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-800"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleCategory(category.id)
+                        }}
+                      >
+                        View Processes
+                        <ChevronRight className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
+                  </tr>
 
-                  {/* Team badge */}
-                  {process.team && (
-                    <span className="px-2 py-0.5 text-xs text-teal-600 bg-teal-50 rounded">
-                      {teams.find(t => t.id === process.team)?.name}
-                    </span>
-                  )}
-
-                  {/* Folder badge */}
-                  {process.folder && (
-                    <span className="px-2 py-0.5 text-xs text-purple-600 bg-purple-50 rounded">
-                      {folders.find(f => f.id === process.folder)?.name}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                {/* Stages count */}
-                <span className="text-sm text-gray-400">{process.stages} stages</span>
-                
-                {/* More menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleViewDashboard()}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit Process
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDuplicateProcess(process)}>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Duplicate
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedProcessForAction(process)
-                      setShowMoveToFolderModal(true)
-                    }}>
-                      <FolderPlus className="h-4 w-4 mr-2" />
-                      Move to Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedProcessForAction(process)
-                      setShowAssignToTeamModal(true)
-                    }}>
-                      <Users className="h-4 w-4 mr-2" />
-                      Assign to Team
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={() => {
-                        setSelectedProcessForAction(process)
-                        setShowDeleteConfirmModal(true)
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          ))}
+                  {expandedCategories.includes(category.id) &&
+                    category.processes.map((process, index) => (
+                      <tr
+                        key={`${category.id}-${process.id}`}
+                        className="border-b bg-card hover:bg-muted/40 transition-colors"
+                      >
+                        <td colSpan={4} className="p-0">
+                          <div className="flex items-center gap-4 px-8 py-3">
+                            <div className="text-muted-foreground hover:text-foreground cursor-grab">
+                              <GripVertical className="h-4 w-4" />
+                            </div>
+                            <div className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold shrink-0">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0 flex items-center gap-3">
+                              {editingProcessId === process.id ? (
+                                <>
+                                  <Input
+                                    value={editingProcessName}
+                                    onChange={(e) => setEditingProcessName(e.target.value)}
+                                    className="flex-1 h-8 text-sm"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") saveInlineEditProcess()
+                                      if (e.key === "Escape") cancelInlineEditProcess()
+                                    }}
+                                  />
+                                  <Button
+                                    size="icon"
+                                    className="h-7 w-7 bg-foreground text-background hover:bg-foreground/90"
+                                    onClick={saveInlineEditProcess}
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => deleteInlineProcess(process.id)}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="text-sm font-medium text-foreground hover:text-teal-700 hover:underline text-left truncate"
+                                    onClick={() => handleViewDashboard()}
+                                  >
+                                    {process.name}
+                                  </button>
+                                  <div className="ml-auto flex items-center gap-6 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-medium text-foreground/80">{process.stages}</span>
+                                      <span>Steps</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-medium text-foreground/80">7</span>
+                                      <span>Days</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-medium text-foreground/80">2</span>
+                                      <span>Processes</span>
+                                    </div>
+                                    {/* {process.isDraft && (
+                                      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                                        Draft
+                                      </span>
+                                    )} */}
+                                  </div>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-44">
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          startInlineEditProcess(process)
+                                        }}
+                                      >
+                                        <Pencil className="h-4 w-4 mr-2" />
+                                        Edit Name
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleViewDashboard()
+                                        }}
+                                      >
+                                        <ChevronRight className="h-4 w-4 mr-2" />
+                                        Open Process
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        className="text-destructive focus:text-destructive"
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          deleteInlineProcess(process.id)
+                                        }}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Process
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
+
+  
 
       {/* New Process Type Modal */}
       <Dialog open={showNewProcessModal} onOpenChange={setShowNewProcessModal}>

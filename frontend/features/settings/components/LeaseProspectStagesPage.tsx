@@ -1,9 +1,13 @@
 "use client"
 
+import { useRouter } from "next/navigation"
+
 import { StagesCategoriesPage } from "./StagesCategoriesPage"
 import { initialLeaseProspectCategories } from "../data/leaseProspectStages"
 
 export function LeaseProspectStagesPage() {
+  const router = useRouter()
+
   return (
     <StagesCategoriesPage
       title="Lease Prospect Categories"
@@ -11,9 +15,10 @@ export function LeaseProspectStagesPage() {
       initialCategories={initialLeaseProspectCategories}
       leadCountLabel="leads"
       showConfigureWorkflow
-      onOpenStageEdit={() => {
-        // TODO: open workflow config panel / route when implemented
+      onOpenStageEdit={(categoryId, _categoryName, status) => {
+        router.push(`/settings/stages/tenants/${categoryId}/${status.id}`)
       }}
     />
   )
 }
+

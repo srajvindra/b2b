@@ -312,7 +312,7 @@ export function CommunicationsCard({
             </label>
           </div>
         </CardHeader>
-        <CardContent className="px-4 pb-4">
+        {/* <CardContent className="px-4 pb-4">
           <div className="max-h-[240px] overflow-y-auto pr-1">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {filteredCommunications.length > 0 ? (
@@ -388,7 +388,64 @@ export function CommunicationsCard({
               )}
             </div>
           </div>
-        </CardContent>
+        </CardContent> */}
+                  <CardContent className="px-4 pb-4">
+            <div className="max-h-[260px] overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2">
+              {filteredCommunications.length > 0 ? (
+                filteredCommunications.map((comm) => (
+                  <div
+                    key={comm.id}
+                    onClick={() => handleCommunicationClick(comm)}
+                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all hover:shadow-sm rounded-lg border"
+                    style={{
+                      backgroundColor: comm.type === "email" ? "#E6F4EA" : comm.type === "call" ? "#E0F7F6" : "#E3F2FD",
+                      borderColor: comm.type === "email" ? "#c8e6cc" : comm.type === "call" ? "#b3e8e5" : "#BBDEFB",
+                    }}
+                  >
+                    <div
+                      className="p-2 rounded-full relative shrink-0"
+                      style={{
+                        backgroundColor: comm.type === "email" ? "#c8e6cc" : comm.type === "call" ? "#b3e8e5" : "#BBDEFB",
+                      }}
+                    >
+                      {comm.type === "email" ? (
+                        <Mail className="h-4 w-4 text-green-800" />
+                      ) : comm.type === "call" ? (
+                        <Phone className="h-4 w-4 text-teal-800" />
+                      ) : comm.isGroupSms ? (
+                        <Users className="h-4 w-4 text-blue-800" />
+                      ) : (
+                        <MessageSquare className="h-4 w-4 text-blue-800" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0 flex items-center gap-4">
+                      <div className="flex items-center gap-1.5 w-[160px] shrink-0 min-w-0">
+                        {!comm.read && <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>}
+                        <p className="text-sm font-medium truncate text-slate-800">{comm.from}</p>
+                        {comm.type === "text" && comm.isGroupSms && (
+                          <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full shrink-0" title={`Group SMS: ${comm.groupParticipants?.join(", ")}`}>
+                            Group
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-600 truncate flex-1 min-w-0">{comm.preview}</p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] text-slate-500 whitespace-nowrap">{comm.timestamp}</span>
+                        <span className="text-[11px] text-slate-400">•</span>
+                        <span className="text-[11px] text-slate-500 whitespace-nowrap">{comm.assignedTo}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8 text-slate-500">
+                  No communications found for {selectedStaff}
+                </div>
+              )}
+            </div>
+            </div>
+          </CardContent>
       </Card>
 
       <CommunicationModal

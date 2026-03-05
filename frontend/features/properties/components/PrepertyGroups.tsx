@@ -36,6 +36,7 @@ import type {
 } from "../types"
 import { MOCK_PROPERTIES } from "../data/mockProperties"
 import { allStaffMembers, departments, initialAssignedTeam, MOCK_STAFF } from "../data/propertyGroups"
+import { useRouter } from "next/navigation"
 
 // Get area/city from address
 const getAreaFromAddress = (address: string): string => {
@@ -59,7 +60,7 @@ const getInitials = (name: string) => {
 export default function PropertyGroupsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedStaff, setExpandedStaff] = useState<string[]>(MOCK_STAFF.map((s) => s.id))
-  
+  const router = useRouter()
   // Team management modal state
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [assignedTeam, setAssignedTeam] = useState<AssignedTeamMember[]>(initialAssignedTeam)
@@ -583,7 +584,7 @@ export default function PropertyGroupsPage() {
                         {areaProperties.map((property) => (
                           <div
                             key={property.id}
-                            // onClick={}
+                            onClick={() => router.push(`/properties/groups/${property.id}`)}
                             className="p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md bg-white border-gray-200 hover:border-gray-400"
                           >
                             <div className="flex justify-between items-start mb-2">

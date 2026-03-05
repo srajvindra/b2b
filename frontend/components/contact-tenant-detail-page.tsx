@@ -6,7 +6,7 @@ import { CardHeader } from "@/components/ui/card"
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import {
   ArrowLeft,
   Phone,
@@ -30,6 +30,7 @@ import {
   X,
   CheckSquare,
   Edit,
+  Check,
   CheckCircle2,
   Circle,
   Clock,
@@ -82,6 +83,7 @@ import {
   SearchCheck,
   Layers,
   Building,
+  FileWarning,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -95,11 +97,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarWidget } from "@/components/ui/calendar"
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns"
+import type { DateRange } from "react-day-picker"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { Check } from "lucide-react"
 import { SMSPopupModal } from "./sms-popup-modal"
 import { EmailPopupModal } from "./email-popup-modal"
-import { useNav } from "@/app/dashboard/page"
+import { useNav } from "./dashboard-app"
 
 type ContactStatus = "Active" | "Inactive" | "Pending"
 
@@ -138,6 +142,7 @@ interface CommunicationItem {
   isGroupChat?: boolean
   groupParticipants?: string[]
   unreadCount?: number
+  unreadCount?: number
   from: {
     name: string
     contact: string
@@ -157,11 +162,7 @@ interface CommunicationItem {
     timestamp: string
     fullDate: string
     isIncoming: boolean
-    emailOpens?: { openedAt: string }[]
-    attachments?: unknown[]
   }[]
-  fullContent?: string
-  phone?: string
   content?: string
   duration?: string
   appfolioLink?: string
@@ -509,7 +510,7 @@ Nina`,
         },
       ],
     },
-  ].sort((a, b) => b.date.getTime() - a.date.getTime()) as CommunicationItem[]
+  ].sort((a, b) => b.date.getTime() - a.date.getTime())
 }
 
 interface Document {
@@ -574,7 +575,6 @@ const getDocuments = (): Document[] => [
 interface Task {
   id: string
   title: string
-  description?: string
   processName: string
   relatedEntityType: "Tenant" | "Property" | "Lease Prospect" | "Owner" | "Owner Prospect"
   relatedEntityName: string
@@ -585,9 +585,6 @@ interface Task {
   dueDate: string
   isOverdue: boolean
   autoCreated?: boolean
-  createdDate?: string
-  propertyName?: string
-  propertyAddress?: string
 }
 
 const getTasks = (): Task[] => [
@@ -1068,6 +1065,7 @@ const tenantAuditLogs = [
 export default function ContactTenantDetailPage({ contact, onBack, onNavigateToUnitDetail }: ContactTenantDetailPageProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null)
+  const [selectedThreadEmailId, setSelectedThreadEmailId] = useState<string | null>(null)
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState("")
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set())
@@ -1089,7 +1087,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
 
   const [isTasksExpanded, setIsTasksExpanded] = useState(true)
   const [isDocumentsExpanded, setIsDocumentsExpanded] = useState(true)
-  const [tasksToShow, setTasksToShow] = useState(5)
+
 
   const [activeTab, setActiveTab] = useState<"overview" | "tenant-info" | "property" | "processes" | "communications" | "documents" | "audit-log">("overview")
 
@@ -1100,6 +1098,20 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   const [processStatusFilter, setProcessStatusFilter] = useState<"in-progress" | "completed" | "upcoming">("in-progress")
   const [expandedProcesses, setExpandedProcesses] = useState<string[]>([])
   const nav = useNav()
+
+  const handleNavigateToProcess = (processName: string) => {
+    setActiveTab("processes")
+    const allProcesses = [
+      ...tenantProcesses.inProgress,
+      ...tenantProcesses.upcoming,
+      ...tenantProcesses.completed,
+      ...newlyStartedProcesses,
+    ]
+    const match = allProcesses.find((p) => p.name === processName)
+    if (match) {
+      setExpandedProcesses((prev) => (prev.includes(match.id) ? prev : [...prev, match.id]))
+    }
+  }
 
   // Start new process modal
   const [showStartProcessModal, setShowStartProcessModal] = useState(false)
@@ -1259,6 +1271,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   const [activityTileFilter, setActivityTileFilter] = useState<"all" | "emails" | "sms" | "notes">("all")
   const [activityRadioFilter, setActivityRadioFilter] = useState<"all" | "unread" | "unresponded">("all")
   const [activityChatTab, setActivityChatTab] = useState<"private" | "group">("private")
+  // Activity date + search filters
+  const [activityDateRange, setActivityDateRange] = useState<DateRange | undefined>(undefined)
+  const [activityDatePopoverOpen, setActivityDatePopoverOpen] = useState(false)
+  const [activitySearchQuery, setActivitySearchQuery] = useState("")
 
   // Communication Thread Modal State
   const [showThreadModal, setShowThreadModal] = useState(false)
@@ -1280,6 +1296,11 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   const [commSubTab, setCommSubTab] = useState<"private" | "group">("private")
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [expandedCommEmails, setExpandedCommEmails] = useState<Set<string>>(new Set())
+  // Communications Tab filters (type, date, search)
+  const [commTabTypeFilter, setCommTabTypeFilter] = useState<"all" | "email" | "sms" | "call">("all")
+  const [commTabDateRange, setCommTabDateRange] = useState<DateRange | undefined>(undefined)
+  const [commTabDatePopoverOpen, setCommTabDatePopoverOpen] = useState(false)
+  const [commTabSearchQuery, setCommTabSearchQuery] = useState("")
   const [emailComposeCc, setEmailComposeCc] = useState("")
   const [emailComposeBcc, setEmailComposeBcc] = useState("")
   const [emailComposeSubject, setEmailComposeSubject] = useState("")
@@ -1352,8 +1373,46 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   }
 
   const pinnedCommunications = chatTabFilteredComms.filter((item) => pinnedIds.has(item.id))
+
+  // Highlight search matches in text
+  const highlightText = (text: string | undefined | null): ReactNode => {
+    if (!text) return text
+    const q = activitySearchQuery.trim()
+    if (!q) return text
+    try {
+      const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi")
+      const parts = text.split(regex)
+      if (parts.length <= 1) return text
+      return parts.map((part, i) =>
+        regex.test(part)
+          ? <mark key={i} className="bg-yellow-200 text-slate-900 rounded-sm px-0.5">{part}</mark>
+          : part
+      )
+    } catch {
+      return text
+    }
+  }
   
-  // Filter unpinned communications based on tile and radio filters
+  // Highlight search matches for Communications Tab
+  const highlightCommTabText = (text: string | undefined | null): ReactNode => {
+    if (!text) return text
+    const q = commTabSearchQuery.trim()
+    if (!q) return text
+    try {
+      const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi")
+      const parts = text.split(regex)
+      if (parts.length <= 1) return text
+      return parts.map((part, i) =>
+        regex.test(part)
+          ? <mark key={i} className="bg-yellow-200 text-slate-900 rounded-sm px-0.5">{part}</mark>
+          : part
+      )
+    } catch {
+      return text
+    }
+  }
+
+  // Filter unpinned communications based on tile, radio, and date filters
   const unpinnedCommunications = chatTabFilteredComms
     .filter((item) => !pinnedIds.has(item.id))
     .filter((item) => {
@@ -1373,6 +1432,16 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
         return item.isIncoming && item.isRead && !item.isResponded
       }
       
+      return true
+    })
+    .filter((item) => {
+      // Date range filter
+      if (activityDateRange?.from) {
+        const msgDate = item.date
+        const from = startOfDay(activityDateRange.from)
+        const to = activityDateRange.to ? endOfDay(activityDateRange.to) : endOfDay(activityDateRange.from)
+        if (!isWithinInterval(msgDate, { start: from, end: to })) return false
+      }
       return true
     })
 
@@ -1535,13 +1604,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   const getActionVerbColor = (type: CommunicationType) => {
     switch (type) {
       case "email":
-        return "text-emerald-600"
+        return "text-blue-400"
       case "sms":
-        return "text-amber-600"
+        return "text-green-400"
       case "call":
-        return "text-emerald-600"
+        return "text-amber-400"
       case "note":
-        return "text-amber-600"
+        return "text-orange-400"
     }
   }
 
@@ -1627,8 +1696,8 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     // Special rendering for email_open type
     if (item.type === "email_open") {
       return (
-        <div key={item.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-          <div className={`p-4 ${isPinned ? "border-l-4 border-slate-500" : ""}`}>
+        <div key={item.id} className="bg-white">
+          <div className="p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-3">
                 <div className="h-10 w-10 flex items-center justify-center">
@@ -1654,20 +1723,177 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       )
     }
 
+  // Collapsed email header rendering
+  if (item.type === "email") {
+    const emailSubject = item.subject || item.emailSubject || "No Subject"
+    const isExpanded = expandedId === item.id
+    const threadCount = item.thread ? item.thread.length : 0
+
     return (
-    <div key={item.id} className={`${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-      <div
-        className={`p-4 cursor-pointer hover:bg-slate-100 transition-colors ${isPinned ? "border-l-4 border-slate-500" : ""}`}
-        onClick={() => {
-          // For SMS and Email, open the thread modal
-          if (item.type === "sms" || item.type === "email") {
-            openThreadModal()
-            return
-          }
-          // For calls and notes, toggle inline expansion
-          setExpandedId(expandedId === item.id ? null : item.id)
-        }}
-      >
+      <div key={item.id} className="bg-white">
+        {/* Collapsed email header bar */}
+        <div
+          className="px-4 py-3 cursor-pointer hover:bg-blue-50/60 transition-colors bg-blue-50/40"
+          onClick={() => setExpandedId(isExpanded ? null : item.id)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <Mail className="h-4 w-4 text-blue-500 shrink-0" />
+              <span className="text-sm font-medium text-foreground truncate">{highlightText(emailSubject)}</span>
+              {!item.isRead && <div className="h-2 w-2 rounded-full bg-blue-400 shrink-0" />}
+            </div>
+            <div className="flex items-center gap-2 ml-3 shrink-0">
+              <span className="text-xs text-muted-foreground whitespace-nowrap">{item.timestamp}</span>
+              <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+              <button
+                onClick={(e) => handleTogglePin(e, item.id)}
+                className={`p-1 rounded hover:bg-blue-100 ${pinnedIds.has(item.id) ? "text-blue-600" : "text-muted-foreground"}`}
+              >
+                <Pin className={`h-4 w-4 ${pinnedIds.has(item.id) ? "fill-current" : ""}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Expanded email content */}
+        {isExpanded && (
+          <div className="px-4 pb-4 border-t border-blue-100 bg-blue-50/20">
+            <div className="pt-4 space-y-4">
+              {/* Sender info */}
+              <div className="flex items-start gap-3">
+                <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-medium bg-slate-200 text-slate-700">
+                  {getInitials(item.from.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium text-foreground">{item.from.name}</span>
+                    <span className="text-xs text-muted-foreground">{item.fullDate}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">To: {item.to.name} ({item.to.contact})</p>
+                </div>
+              </div>
+
+              {/* Email body */}
+              <div className="text-sm text-foreground whitespace-pre-line pl-11">{highlightText(item.content || item.preview)}</div>
+
+              {/* Reply action */}
+              <div className="pl-11">
+                {replyingToId === item.id ? (
+                  <div className="space-y-2">
+                    <div className="border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary bg-white">
+                      <Textarea
+                        placeholder="Reply via email..."
+                        value={replyContent}
+                        onChange={(e) => setReplyContent(e.target.value)}
+                        className="min-h-[80px] border-0 focus-visible:ring-0 resize-none"
+                      />
+                      <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">
+                        <label className="cursor-pointer">
+                          <input type="file" multiple className="hidden" accept="image/*,.pdf,.doc,.docx" />
+                          <div className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                            <Paperclip className="h-4 w-4" />
+                            <span className="text-xs">Attach files</span>
+                          </div>
+                        </label>
+                        <span className="text-xs text-muted-foreground">Attach documents, images, or PDFs</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleSendReply(item.id, item.type)}>
+                        <Send className="h-3 w-3 mr-1" /> Send
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setReplyingToId(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" onClick={() => setReplyingToId(item.id)}>
+                    <Send className="h-3 w-3 mr-1" /> Reply
+                  </Button>
+                )}
+              </div>
+
+              {/* Email thread */}
+              {item.thread && threadCount > 0 && (
+                <div className="border-t border-blue-100 pt-3 pl-11">
+                  <button
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setExpandedThreadId(expandedThreadId === item.id ? null : item.id)
+                    }}
+                  >
+                    <ChevronDown className={`h-3 w-3 transition-transform ${expandedThreadId === item.id ? "rotate-180" : ""}`} />
+                    <span>View full thread ({threadCount} previous messages)</span>
+                  </button>
+                  {expandedThreadId === item.id && (
+                    <div className="mt-3 space-y-2">
+                      {item.thread.map((email) => (
+                        <div
+                          key={email.id}
+                          className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                            selectedThreadEmailId === email.id
+                              ? "border-blue-300 bg-blue-50 border"
+                              : "border hover:border-blue-200 hover:bg-blue-50/30"
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedThreadEmailId(selectedThreadEmailId === email.id ? null : email.id)
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-xs">{email.from}</span>
+                              <span className="text-xs text-muted-foreground">{email.email}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{email.timestamp}</span>
+                          </div>
+                          {selectedThreadEmailId === email.id ? (
+                            <p className="text-sm whitespace-pre-line mt-2">{highlightText(email.content)}</p>
+                          ) : (
+                            <p className="text-xs text-muted-foreground line-clamp-1">{highlightText(email.content)}</p>
+                          )}
+                          {/* Email Opens */}
+                          {selectedThreadEmailId === email.id && !email.isIncoming && email.emailOpens && email.emailOpens.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-dashed">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">Email Opened</p>
+                              <div className="space-y-1">
+                                {email.emailOpens.map((open: { openedAt: string }, idx: number) => (
+                                  <div key={idx} className="flex items-center gap-2 text-xs text-amber-500">
+                                    <Eye className="h-3 w-3" />
+                                    <span>Recipient opened this email on {open.openedAt}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Non-email items (SMS, call, note)
+  return (
+  <div key={item.id} className="bg-white">
+  <div
+  className="p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+  onClick={() => {
+  if (item.type === "sms") {
+  openThreadModal()
+  return
+  }
+  setExpandedId(expandedId === item.id ? null : item.id)
+  }}
+  >
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className="relative">
@@ -1678,27 +1904,29 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               >
                 {getInitials(item.from.name)}
               </div>
-              <div
-                className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center ${
-                  item.type === "email"
-                    ? "bg-emerald-500"
-                    : item.type === "sms" || item.type === "note"
-                      ? "bg-amber-500"
-                      : "bg-emerald-500"
-                }`}
-              >
-                {item.type === "email" && <Mail className="h-3 w-3 text-white" />}
-                {(item.type === "sms" || item.type === "note") && <MessageSquare className="h-3 w-3 text-white" />}
-                {item.type === "call" && <PhoneCall className="h-3 w-3 text-white" />}
+                  <div
+                  className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center ${
+                  item.type === "sms"
+                  ? "bg-green-50 border border-green-200"
+                  : item.type === "call"
+                  ? "bg-amber-50 border border-amber-200"
+                  : item.type === "note"
+                  ? "bg-orange-50 border border-orange-200"
+                  : "bg-gray-50 border border-gray-200"
+                  }`}
+                  >
+                {item.type === "sms" && <MessageSquare className="h-3 w-3 text-green-400" />}
+                {item.type === "note" && <MessageSquare className="h-3 w-3 text-orange-400" />}
+                {item.type === "call" && <PhoneCall className="h-3 w-3 text-amber-400" />}
               </div>
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="flex items-center flex-wrap gap-1 text-sm">
+              <div className="flex items-center flex-wrap gap-2 text-sm">
                 {item.type === "note" ? (
                   <>
                     <span className="font-medium text-slate-800">{item.from.name}</span>
-                    <span className="text-amber-600 font-medium">left a Note</span>
+                    <span className="text-orange-400 font-medium">left a Note</span>
                   </>
                 ) : (
                   <>
@@ -1717,17 +1945,17 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                     : `${item.groupParticipants[0]} + ${item.groupParticipants.length - 1} others`}
                 </p>
               )}
-              <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{item.preview}</p>
+              <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{highlightText(item.preview)}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 ml-4 shrink-0">
             {item.isGroupChat && (item.unreadCount ?? 0) > 0 && (
-              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-500 text-white text-xs font-medium">
+              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-100 text-green-600 text-xs font-medium">
                 {item.unreadCount}
               </span>
             )}
-            {!item.isRead && !item.isGroupChat && <div className="h-2 w-2 rounded-full bg-blue-500" />}
+            {!item.isRead && !item.isGroupChat && <div className="h-2 w-2 rounded-full bg-blue-400" />}
             <span className="text-xs text-muted-foreground whitespace-nowrap">{item.timestamp}</span>
             <ChevronDown
               className={`h-4 w-4 text-muted-foreground transition-transform ${expandedId === item.id ? "rotate-180" : ""}`}
@@ -1745,41 +1973,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       {expandedId === item.id && (
         <div className="px-4 pb-4 border-t bg-slate-50">
           <div className="pt-4 pl-12 space-y-4">
-            {item.type === "email" && item.thread && (
-              <div className="space-y-3">
-                {item.thread.map((email, idx) => (
-                  <div
-                    key={email.id}
-                    className={`p-3 rounded-lg ${email.isIncoming ? "bg-white border" : "bg-slate-100"}`}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{email.from}</span>
-                        <span className="text-xs text-muted-foreground">{email.email}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">{email.timestamp}</span>
-                    </div>
-                    <p className="text-sm whitespace-pre-line">{email.content}</p>
-                    {/* Email Opens */}
-                    {!email.isIncoming && email.emailOpens && email.emailOpens.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-dashed">
-                        <p className="text-xs font-medium text-muted-foreground mb-2">Email Opened</p>
-                        <div className="space-y-1">
-                          {email.emailOpens.map((open: { openedAt: string }, idx: number) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs text-amber-600">
-                              <Eye className="h-3 w-3" />
-                              <span>Recipient opened this email on {open.openedAt}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {item.type === "sms" && <p className="text-sm">{item.content}</p>}
+            {item.type === "sms" && <p className="text-sm">{highlightText(item.content)}</p>}
 
             {item.type === "call" && (
               <div className="space-y-2">
@@ -1790,24 +1984,23 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 {item.notes && (
                   <div>
                     <span className="text-sm text-muted-foreground">Notes:</span>
-                    <p className="text-sm mt-1">{item.notes}</p>
+                    <p className="text-sm mt-1">{highlightText(item.notes)}</p>
                   </div>
                 )}
               </div>
             )}
 
-            {item.type === "note" && <p className="text-sm">{item.content}</p>}
+            {item.type === "note" && <p className="text-sm">{highlightText(item.content)}</p>}
 
             {replyingToId === item.id ? (
               <div className="space-y-2">
                 <div className="border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary bg-white">
                   <Textarea
-                    placeholder={`Reply via ${item.type === "email" ? "email" : "SMS"}...`}
+                    placeholder="Reply via SMS..."
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
                     className="min-h-[80px] border-0 focus-visible:ring-0 resize-none"
                   />
-                  {/* Attachment Toolbar */}
                   <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">
                     <label className="cursor-pointer">
                       <input type="file" multiple className="hidden" accept="image/*,.pdf,.doc,.docx" />
@@ -1829,7 +2022,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 </div>
               </div>
             ) : (
-              (item.type === "email" || item.type === "sms") && (
+              item.type === "sms" && (
                 <Button size="sm" variant="outline" onClick={() => setReplyingToId(item.id)}>
                   <Send className="h-3 w-3 mr-1" /> Reply
                 </Button>
@@ -1841,6 +2034,55 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     </div>
   )
   }
+
+  // Communications Tab: precomputed filtered message lists
+  const commTabAllPrivate = communications
+    .filter(c => !c.isGroupChat && c.type !== "note")
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+  const commTabPrivateFiltered = commTabAllPrivate.filter(c => {
+    if (commTabTypeFilter !== "all" && c.type !== commTabTypeFilter) return false
+    if (commTabDateRange?.from) {
+      const from = startOfDay(commTabDateRange.from)
+      const to = commTabDateRange.to ? endOfDay(commTabDateRange.to) : endOfDay(commTabDateRange.from)
+      if (!isWithinInterval(c.date, { start: from, end: to })) return false
+    }
+    return true
+  })
+
+  // Communications Tab: precomputed group data
+  const commTabGroupComms = communications.filter(c => c.isGroupChat)
+  const commTabGroupMap = new Map<string, { name: string; participants: string[]; messages: typeof commTabGroupComms; unreadCount: number; lastMessage: typeof commTabGroupComms[0] }>()
+  commTabGroupComms.forEach(msg => {
+    const groupName = msg.to?.name || "Unknown Group"
+    if (!commTabGroupMap.has(groupName)) {
+      commTabGroupMap.set(groupName, {
+        name: groupName,
+        participants: msg.to?.participants || [],
+        messages: [],
+        unreadCount: 0,
+        lastMessage: msg
+      })
+    }
+    const group = commTabGroupMap.get(groupName)!
+    group.messages.push(msg)
+    group.unreadCount += msg.unreadCount ?? 0
+    if (msg.date.getTime() > group.lastMessage.date.getTime()) {
+      group.lastMessage = msg
+    }
+  })
+  const commTabGroups = Array.from(commTabGroupMap.values()).sort((a, b) => b.lastMessage.date.getTime() - a.lastMessage.date.getTime())
+  const commTabSelectedGroup = selectedGroupId ? commTabGroups.find(g => g.name === selectedGroupId) : null
+  const commTabGroupFiltered = commTabSelectedGroup
+    ? commTabSelectedGroup.messages.filter(c => {
+        if (commTabTypeFilter !== "all" && c.type !== commTabTypeFilter) return false
+        if (commTabDateRange?.from) {
+          const from = startOfDay(commTabDateRange.from)
+          const to = commTabDateRange.to ? endOfDay(commTabDateRange.to) : endOfDay(commTabDateRange.from)
+          if (!isWithinInterval(c.date, { start: from, end: to })) return false
+        }
+        return true
+      }).sort((a, b) => a.date.getTime() - b.date.getTime())
+    : []
 
   return (
     <div className="flex flex-col lg:flex-row gap-6">
@@ -1854,32 +2096,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
           Back to Tenants
         </button>
 
-        {/* Tenant Summary Bar */}
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-            <p className="text-sm font-semibold text-foreground">
-              {tenantSummary.propertyLabel}
-              <span className="font-normal text-muted-foreground">{" | "}{tenantSummary.fullAddress}</span>
-            </p>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
-            {[
-              { label: "RECURRING CHARGES", value: `$${tenantSummary.recurringCharges.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-              { label: "CURRENT BALANCE", value: `$${tenantSummary.currentBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-              { label: "DEPOSIT PAID", value: `$${tenantSummary.depositPaid.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-              { label: "LAST RECEIPT", value: tenantSummary.lastReceipt },
-              { label: "LEASE END DATE", value: tenantSummary.leaseEndDate },
-              { label: "ONLINE PORTAL STATUS", value: `${tenantSummary.activePortals}/${tenantSummary.totalPortals} Active Portals` },
-            ].map(({ label, value }) => (
-              <div key={label} className="px-4 py-3 text-center">
-                <p className="text-sm font-bold text-primary">{value}</p>
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">{label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Header Card */}
+        {/* Header Card - Tenant Information */}
         <Card>
           <CardContent className="p-4">
             {/* Stage Color Bar */}
@@ -1895,7 +2112,9 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 null
               ))}
               <Select value={tenantStage} onValueChange={setTenantStage}>
-                
+                <SelectTrigger className="h-8 w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="move-in">Move-in</SelectItem>
                   <SelectItem value="current">Current</SelectItem>
@@ -1971,6 +2190,31 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             </div>
           </CardContent>
         </Card>
+
+        {/* Tenant Summary Bar */}
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="px-4 py-2.5 border-b border-border bg-muted/30">
+            <p className="text-sm font-semibold text-foreground">
+              {tenantSummary.propertyLabel}
+              <span className="font-normal text-muted-foreground">{" | "}{tenantSummary.fullAddress}</span>
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-border">
+            {[
+              { label: "RECURRING CHARGES", value: `$${tenantSummary.recurringCharges.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
+              { label: "CURRENT BALANCE", value: `$${tenantSummary.currentBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
+              { label: "DEPOSIT PAID", value: `$${tenantSummary.depositPaid.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
+              { label: "LAST RECEIPT", value: tenantSummary.lastReceipt },
+              { label: "LEASE END DATE", value: tenantSummary.leaseEndDate },
+              { label: "ONLINE PORTAL STATUS", value: `${tenantSummary.activePortals}/${tenantSummary.totalPortals} Active Portals` },
+            ].map(({ label, value }) => (
+              <div key={label} className="px-4 py-3 text-center">
+                <p className="text-sm font-bold text-primary">{value}</p>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground mt-0.5">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
         
         {/* Bar 1: Pending Communications */}
         <button
@@ -2028,7 +2272,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               }}
               className="flex items-center gap-1.5 px-3 border-r border-amber-300 hover:underline"
             >
-              <FileText className="h-3.5 w-3.5 text-amber-600" />
+              <FileWarning className="h-3.5 w-3.5 text-amber-600" />
               <span className="text-sm text-amber-800">
                 {"Missing Fields: "}
                 <span className="font-semibold">{tenantMissingFields.length}</span>
@@ -2099,35 +2343,31 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
           </div>
         </button>
 
-        <div className="border-b">
-          <div className="flex">
-            {[
-              { id: "overview", label: "Overview" },
-              { id: "tenant-info", label: "Tenant Information" },
-              { id: "property", label: "Unit Information" },
-              { id: "communications", label: "Communications", count: communications.filter(c => c.type !== "note").length },
-              { id: "processes", label: "Processes", count: tenantProcesses.inProgress.length + tenantProcesses.upcoming.length + tenantProcesses.completed.length },
-              { id: "documents", label: "Documents", count: documents.length },
-              { id: "audit-log", label: "Audit Log" },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? "border-teal-600 text-teal-600"
-                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
-                }`}
-              >
-                {tab.label}
-                {tab.count !== undefined && (
-                  <Badge variant="secondary" className="ml-2 text-xs">
-                    {tab.count}
-                  </Badge>
-                )}
-              </button>
-            ))}
-          </div>
+        <div className="flex items-stretch border-b border-border">
+          {[
+            { id: "overview", label: "Overview" },
+            { id: "tenant-info", label: "Details" },
+            { id: "property", label: "Properties" },
+            { id: "communications", label: "Communications", count: communications.filter(c => c.type !== "note").length },
+            { id: "processes", label: "Processes", count: tenantProcesses.inProgress.length + tenantProcesses.upcoming.length + tenantProcesses.completed.length },
+            { id: "documents", label: "Documents", count: documents.length },
+            { id: "audit-log", label: "Audit Log" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as typeof activeTab)}
+              className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                activeTab === tab.id
+                  ? "border border-success text-foreground bg-background"
+                  : "border border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {tab.count !== undefined && (
+                <span className="text-xs text-muted-foreground">{tab.count}</span>
+              )}
+            </button>
+          ))}
         </div>
 
         {activeTab === "overview" && (
@@ -2149,10 +2389,9 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                     New Task
                   </Button>
                 </div>
-                <div className="border rounded-lg overflow-hidden">
-                  <div className={tasksToShow > 5 ? "max-h-[320px] overflow-y-auto" : ""}>
+                <div className="border rounded-lg overflow-hidden max-h-[360px] overflow-y-auto">
                   <table className="w-full">
-                    <thead className={`bg-gray-50 border-b ${tasksToShow > 5 ? "sticky top-0 z-10" : ""}`}>
+                    <thead className="bg-gray-50 border-b sticky top-0 z-10">
                       <tr>
                         <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
                         <th className="text-left text-xs font-medium text-muted-foreground p-3">Related Entity</th>
@@ -2164,16 +2403,20 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {tasks.slice(0, tasksToShow).map((task) => (
+                      {tasks.map((task) => (
                         <tr key={task.id} className="hover:bg-gray-50">
                           <td className="p-3">
                             <div className="flex flex-col gap-1">
                               <span className="text-sm font-medium text-slate-800">{task.title}</span>
                               {task.processName && (
-                                <div className="flex items-center gap-1">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleNavigateToProcess(task.processName) }}
+                                  className="flex items-center gap-1 hover:underline cursor-pointer"
+                                >
                                   <Workflow className="h-3 w-3 text-teal-600" />
                                   <span className="text-xs text-teal-600">{task.processName}</span>
-                                </div>
+                                </button>
                               )}
                               {task.autoCreated && (
                                 <span className="text-xs text-muted-foreground">Auto-created</span>
@@ -2272,32 +2515,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                       )}
                     </tbody>
                   </table>
-                  </div>
                 </div>
-                {/* View More / View Less Buttons */}
-                {tasks.length > 5 && (
-                  <div className="flex items-center justify-center gap-3 mt-3">
-                    {tasksToShow <= 5 ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs bg-transparent"
-                        onClick={() => setTasksToShow(prev => Math.min(prev + 5, tasks.length))}
-                      >
-                        View More
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs bg-transparent"
-                        onClick={() => setTasksToShow(5)}
-                      >
-                        View Less
-                      </Button>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -2472,7 +2690,88 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   </div>
                 </div>
 
-                <div className="divide-y border rounded-lg max-h-[500px] overflow-y-auto">
+                {/* Date Filter + Search Bar */}
+                <div className="flex flex-wrap items-center gap-3 mb-4 p-2.5 rounded-lg border border-slate-200 bg-white">
+                  {/* Date range picker */}
+                  <Popover open={activityDatePopoverOpen} onOpenChange={setActivityDatePopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                          activityDateRange?.from
+                            ? "bg-teal-50 text-teal-700 border-teal-200"
+                            : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                        }`}
+                      >
+                        <Calendar className="h-3 w-3" />
+                        {activityDateRange?.from ? (
+                          activityDateRange.to
+                            ? `${format(activityDateRange.from, "MMM d")} - ${format(activityDateRange.to, "MMM d, yyyy")}`
+                            : format(activityDateRange.from, "MMM d, yyyy")
+                        ) : (
+                          "Date"
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <CalendarWidget
+                        mode="range"
+                        selected={activityDateRange}
+                        onSelect={(range) => {
+                          setActivityDateRange(range)
+                          if (range?.to) setActivityDatePopoverOpen(false)
+                        }}
+                        numberOfMonths={1}
+                      />
+                      {activityDateRange?.from && (
+                        <div className="border-t p-2 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => { setActivityDateRange(undefined); setActivityDatePopoverOpen(false) }}
+                            className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      )}
+                    </PopoverContent>
+                  </Popover>
+
+                  <div className="h-5 w-px bg-slate-200" />
+
+                  {/* Search bar */}
+                  <div className="relative flex-1 min-w-[140px]">
+                    <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                    <input
+                      type="text"
+                      value={activitySearchQuery}
+                      onChange={(e) => setActivitySearchQuery(e.target.value)}
+                      placeholder="Search conversations..."
+                      className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
+                    />
+                    {activitySearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setActivitySearchQuery("")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+
+                  {(activityDateRange?.from || activitySearchQuery) && (
+                    <button
+                      type="button"
+                      onClick={() => { setActivityDateRange(undefined); setActivitySearchQuery("") }}
+                      className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                </div>
+
+                <div className="divide-y border rounded-lg max-h-[360px] overflow-y-auto">
                   {unpinnedCommunications.length > 0 ? (
                     unpinnedCommunications.map((item, index) => renderCommunicationItem(item, index))
                   ) : (
@@ -3046,7 +3345,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
           </div>
         )}
 
-        {/* Communications Tab Removed - Activity tab is the single communication surface */}
+        {/* Communications Tab */}
         {activeTab === "communications" && (
           <Card className="flex flex-col h-[900px]">
             <CardContent className="p-4 flex flex-col h-full">
@@ -3085,23 +3384,128 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               </div>
 
               {/* ======= PRIVATE SUB-TAB ======= */}
-              {commSubTab === "private" && (() => {
-                const privateComms = communications
-                  .filter(c => !c.isGroupChat && c.type !== "note")
-                  .sort((a, b) => a.date.getTime() - b.date.getTime())
-                
-                return (
+              {commSubTab === "private" && (
                   <>
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="font-semibold text-slate-800">Private Conversation</h3>
-                      <span className="text-xs text-muted-foreground">{privateComms.length} messages</span>
+                      <span className="text-xs text-muted-foreground">{commTabPrivateFiltered.length} messages</span>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap items-center gap-3 mb-3 p-2.5 rounded-lg border border-slate-200 bg-white">
+                      {/* Type radio buttons */}
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Type</span>
+                        <div className="flex items-center gap-1">
+                          {(["all", "email", "sms", "call"] as const).map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setCommTabTypeFilter(t)}
+                              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                                commTabTypeFilter === t
+                                  ? t === "email"
+                                    ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
+                                    : t === "sms"
+                                      ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
+                                      : t === "call"
+                                        ? "bg-[#E8EAF6] text-indigo-800 border border-[#c5cae9]"
+                                        : "bg-teal-50 text-teal-700 border border-teal-200"
+                                  : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                              }`}
+                            >
+                              {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Calls"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="h-5 w-px bg-slate-200" />
+
+                      {/* Date range picker */}
+                      <Popover open={commTabDatePopoverOpen} onOpenChange={setCommTabDatePopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                              commTabDateRange?.from
+                                ? "bg-teal-50 text-teal-700 border-teal-200"
+                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                            }`}
+                          >
+                            <Calendar className="h-3 w-3" />
+                            {commTabDateRange?.from ? (
+                              commTabDateRange.to
+                                ? `${format(commTabDateRange.from, "MMM d")} - ${format(commTabDateRange.to, "MMM d, yyyy")}`
+                                : format(commTabDateRange.from, "MMM d, yyyy")
+                            ) : (
+                              "Date"
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarWidget
+                            mode="range"
+                            selected={commTabDateRange}
+                            onSelect={(range) => {
+                              setCommTabDateRange(range)
+                              if (range?.to) setCommTabDatePopoverOpen(false)
+                            }}
+                            numberOfMonths={1}
+                          />
+                          {commTabDateRange?.from && (
+                            <div className="border-t p-2 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => { setCommTabDateRange(undefined); setCommTabDatePopoverOpen(false) }}
+                                className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+
+                      <div className="h-5 w-px bg-slate-200" />
+
+                      {/* Search bar */}
+                      <div className="relative flex-1 min-w-[140px]">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                        <input
+                          type="text"
+                          value={commTabSearchQuery}
+                          onChange={(e) => setCommTabSearchQuery(e.target.value)}
+                          placeholder="Search conversations..."
+                          className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
+                        />
+                        {commTabSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setCommTabSearchQuery("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+
+                      {(commTabTypeFilter !== "all" || commTabDateRange?.from || commTabSearchQuery) && (
+                        <button
+                          type="button"
+                          onClick={() => { setCommTabTypeFilter("all"); setCommTabDateRange(undefined); setCommTabSearchQuery("") }}
+                          className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                        >
+                          Clear all
+                        </button>
+                      )}
                     </div>
 
                     {/* Chat Messages */}
                     <div className="min-h-[250px] flex-1 overflow-y-auto space-y-3 mb-4 pr-2 border rounded-lg p-4 bg-slate-50 flex flex-col-reverse">
                       <div className="flex flex-col gap-3">
-                        {privateComms.length > 0 ? (
-                          privateComms.map((item) => {
+                        {commTabPrivateFiltered.length > 0 ? (
+                          commTabPrivateFiltered.map((item) => {
                             const isOutgoing = !item.isIncoming
                             const contactName = contact.name
                             const staffName = "Richard Surovi"
@@ -3111,111 +3515,183 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                               <div key={item.id} className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
                                 <div className={`max-w-[75%] ${
                                   isOutgoing
-                                    ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                                    : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
-                                } p-3 shadow-sm`}>
+                                    ? "rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                    : "rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                                } ${
+                                  item.type === "email"
+                                    ? "bg-[#E6F4EA] border border-[#c8e6cf]"
+                                    : item.type === "sms"
+                                      ? isOutgoing
+                                        ? "bg-[#BBDEFB] border border-[#90CAF9]"
+                                        : "bg-[#E3F2FD] border border-[#BBDEFB]"
+                                      : "bg-[#E0F7F6] border border-[#b8e8e6]"
+                                } text-slate-900 p-3 shadow-sm`}>
                                   {/* Sender & Channel Badge */}
                                   <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                                    <span className={`text-xs font-medium ${isOutgoing ? "text-teal-100" : "text-slate-500"}`}>
+                                    <span className="text-xs font-medium text-slate-500">
                                       {isOutgoing ? staffName : contactName}
                                     </span>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                                       item.type === "email"
-                                        ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
+                                        ? "bg-[#c8e6cf] text-green-800"
                                         : item.type === "sms"
-                                        ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-green-100 text-green-600"
-                                        : isOutgoing ? "bg-teal-500 text-teal-100" : "bg-orange-100 text-orange-600"
+                                        ? isOutgoing
+                                          ? "bg-[#90CAF9] text-blue-900"
+                                          : "bg-[#BBDEFB] text-blue-800"
+                                        : "bg-[#b8e8e6] text-teal-800"
                                     }`}>
                                       {item.type === "email" ? "Email" : item.type === "sms" ? "SMS" : "Call"}
                                     </span>
                                   </div>
 
-                                  {/* Email: Collapsed by default */}
+                                  {/* Email - collapsed by default with subject header */}
                                   {item.type === "email" ? (
                                     <div>
-                                      {item.subject && (
-                                        <button
-                                          onClick={() => setExpandedCommEmails(prev => {
-                                            const next = new Set(prev)
-                                            next.has(item.id) ? next.delete(item.id) : next.add(item.id)
-                                            return next
-                                          })}
-                                          className={`text-sm font-medium mb-1 flex items-center gap-1 w-full text-left ${isOutgoing ? "text-white hover:text-teal-100" : "text-slate-800 hover:text-teal-600"}`}
-                                        >
-                                          <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${isEmailExpanded ? "rotate-0" : "-rotate-90"}`} />
-                                          {item.subject}
-                                        </button>
-                                      )}
-                                      {isEmailExpanded ? (
-                                        <div className="space-y-2 mt-1">
-                                          {item.thread ? item.thread.map((threadItem, idx) => (
-                                            <div key={threadItem.id} className={idx > 0 ? "pt-2 border-t border-dashed border-opacity-30 " + (isOutgoing ? "border-teal-300" : "border-slate-300") : ""}>
-                                              {idx > 0 && (
-                                                <div className={`text-xs mb-1 ${isOutgoing ? "text-teal-200" : "text-slate-500"}`}>
-                                                  {threadItem.isIncoming ? contactName : staffName} - {threadItem.timestamp}
-                                                </div>
-                                              )}
-                                              <p className={`text-sm whitespace-pre-line ${isOutgoing ? "text-white" : "text-slate-700"}`}>
-                                                {threadItem.content}
-                                              </p>
-                                              {threadItem.attachments && threadItem.attachments.length > 0 && (
-                                                <div className="mt-1 flex flex-wrap gap-1">
-                                                  {threadItem.attachments.map((att: { name: string; size: string }, aIdx: number) => (
-                                                    <span key={aIdx} className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded ${isOutgoing ? "bg-teal-500/50 text-teal-100" : "bg-slate-100 text-slate-600"}`}>
-                                                      <Paperclip className="h-2.5 w-2.5" />
-                                                      {att.name} ({att.size})
-                                                    </span>
-                                                  ))}
-                                                </div>
-                                              )}
-                                              {!threadItem.isIncoming && threadItem.emailOpens && threadItem.emailOpens.length > 0 && (
-                                                <div className={`flex items-center gap-1 text-[10px] mt-1 ${isOutgoing ? "text-teal-200" : "text-green-600"}`}>
-                                                  <Eye className="h-3 w-3" />
-                                                  Opened by tenant at {threadItem.emailOpens[0].openedAt}
-                                                </div>
-                                              )}
-                                            </div>
-                                          )) : (
-                                            <p className={`text-sm whitespace-pre-line ${isOutgoing ? "text-white" : "text-slate-700"}`}>
-                                              {item.content || item.preview}
-                                            </p>
-                                          )}
+                                      <button
+                                        onClick={() => setExpandedCommEmails(prev => {
+                                          const next = new Set(prev)
+                                          next.has(item.id) ? next.delete(item.id) : next.add(item.id)
+                                          return next
+                                        })}
+                                        className="w-full text-left flex items-center justify-between gap-2 group"
+                                      >
+                                        <div className="flex items-center gap-1.5 min-w-0">
+                                          <Mail className="h-3.5 w-3.5 shrink-0 text-green-700" />
+                                          <span className="text-sm font-semibold text-slate-800 truncate">
+                                            {highlightCommTabText(item.subject || "Email")}
+                                          </span>
                                         </div>
-                                      ) : (
-                                        <p className={`text-xs mt-0.5 ${isOutgoing ? "text-teal-200" : "text-slate-400"}`}>
-                                          {item.preview || (item.content ? item.content.slice(0, 80) + "..." : "")}
+                                        <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 group-hover:text-slate-600 transition-transform ${isEmailExpanded ? "rotate-180" : "rotate-0"}`} />
+                                      </button>
+
+                                      {!isEmailExpanded && (
+                                        <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                                          {highlightCommTabText(item.preview || (item.content ? item.content.slice(0, 80) + "..." : ""))}
                                         </p>
                                       )}
-                                      {/* Email open time (top-level collapsed) */}
-                                      {!item.isIncoming && item.thread && item.thread[0]?.emailOpens && item.thread[0].emailOpens.length > 0 && !isEmailExpanded && (
-                                        <div className={`flex items-center gap-1 text-[10px] mt-1 ${isOutgoing ? "text-teal-200" : "text-green-600"}`}>
+                                      {!isEmailExpanded && !item.isIncoming && item.thread && item.thread[0]?.emailOpens && item.thread[0].emailOpens.length > 0 && (
+                                        <div className="flex items-center gap-1 text-[10px] mt-1 text-green-600">
                                           <Eye className="h-3 w-3" />
                                           Opened at {item.thread[0].emailOpens[0].openedAt}
                                         </div>
                                       )}
+
+                                      {/* Expanded: email content + attachments + thread */}
+                                      {isEmailExpanded && (
+                                        <div className="mt-2">
+                                          {/* Main email content */}
+                                          <p className="text-sm whitespace-pre-line text-slate-700">
+                                            {highlightCommTabText(item.thread ? item.thread[0]?.content : (item.content || item.preview))}
+                                          </p>
+                                          {item.thread && item.thread[0]?.attachments && item.thread[0].attachments.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                              {item.thread[0].attachments.map((att: { name: string; size: string }, ai: number) => (
+                                                <span key={ai} className="inline-flex items-center gap-1 text-xs bg-white/70 border border-[#c8e6cf] rounded px-2 py-1 text-slate-600">
+                                                  <Paperclip className="h-3 w-3" />{att.name} ({att.size})
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                          {item.thread && !item.thread[0]?.isIncoming && item.thread[0]?.emailOpens && item.thread[0].emailOpens.length > 0 && (
+                                            <div className="flex items-center gap-1 text-[10px] mt-1.5 text-green-600">
+                                              <Eye className="h-3 w-3" />
+                                              Opened by tenant at {item.thread[0].emailOpens[0].openedAt}
+                                            </div>
+                                          )}
+
+                                          {/* Email thread at bottom */}
+                                          {item.thread && item.thread.length > 1 && (
+                                            <div className="mt-3 pt-2 border-t border-[#c8e6cf]">
+                                              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Thread ({item.thread.length - 1} earlier)</p>
+                                              <div className="space-y-1">
+                                                {item.thread.slice(1).map((threadItem) => {
+                                                  const isThreadExp = expandedCommEmails.has(`thread-${threadItem.id}`)
+                                                  return (
+                                                    <div key={threadItem.id} className="rounded-md bg-white/60 border border-[#c8e6cf]">
+                                                      <button
+                                                        onClick={(e) => {
+                                                          e.stopPropagation()
+                                                          setExpandedCommEmails(prev => {
+                                                            const next = new Set(prev)
+                                                            const key = `thread-${threadItem.id}`
+                                                            next.has(key) ? next.delete(key) : next.add(key)
+                                                            return next
+                                                          })
+                                                        }}
+                                                        className="w-full text-left px-2.5 py-1.5 flex items-center justify-between gap-2"
+                                                      >
+                                                        <div className="min-w-0">
+                                                          <span className="text-xs font-medium text-slate-700">{threadItem.isIncoming ? contactName : staffName}</span>
+                                                          <span className="text-[10px] text-slate-400 ml-2">{threadItem.timestamp}</span>
+                                                        </div>
+                                                        <ChevronDown className={`h-3 w-3 shrink-0 text-slate-400 transition-transform ${isThreadExp ? "rotate-180" : "rotate-0"}`} />
+                                                      </button>
+                                                      {isThreadExp && (
+                                                        <div className="px-2.5 pb-2">
+                                                          <p className="text-sm whitespace-pre-line text-slate-700">{highlightCommTabText(threadItem.content)}</p>
+                                                          {threadItem.attachments && threadItem.attachments.length > 0 && (
+                                                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                                              {threadItem.attachments.map((att: { name: string; size: string }, ai: number) => (
+                                                                <span key={ai} className="inline-flex items-center gap-1 text-xs bg-white/70 border border-[#c8e6cf] rounded px-2 py-1 text-slate-600">
+                                                                  <Paperclip className="h-3 w-3" />{att.name} ({att.size})
+                                                                </span>
+                                                              ))}
+                                                            </div>
+                                                          )}
+                                                          {!threadItem.isIncoming && threadItem.emailOpens && threadItem.emailOpens.length > 0 && (
+                                                            <div className="flex items-center gap-1 text-[10px] mt-1 text-green-600">
+                                                              <Eye className="h-3 w-3" />
+                                                              Opened by tenant at {threadItem.emailOpens[0].openedAt}
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  )
+                                                })}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   ) : item.type === "call" ? (
-                                    <div className="space-y-1">
-                                      <div className={`flex items-center gap-2 ${isOutgoing ? "text-teal-100" : "text-slate-600"}`}>
-                                        <Phone className="h-4 w-4" />
+                                    <details className="group/call">
+                                      <summary className="flex items-center gap-2 text-slate-600 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+                                        <Phone className="h-4 w-4 shrink-0" />
                                         <span className="text-sm">
                                           {item.isIncoming ? "Incoming call" : "Outgoing call"} - {item.duration}
                                         </span>
+                                        {item.notes && (
+                                          <span className="text-sm text-slate-400 truncate ml-1">
+                                            {"- " + (item.notes.length > 40 ? item.notes.slice(0, 40) + "..." : item.notes)}
+                                          </span>
+                                        )}
+                                        <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform group-open/call:rotate-180 shrink-0 ml-auto" />
+                                      </summary>
+                                      <div className="mt-2 pt-2 border-t border-slate-200 space-y-2">
+                                        {item.notes && (
+                                          <p className="text-sm text-slate-700">
+                                            <span className="font-medium">Notes:</span> {highlightCommTabText(item.notes)}
+                                          </p>
+                                        )}
+                                        <button
+                                          type="button"
+                                          className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-700 transition-colors mt-1"
+                                        >
+                                          <PlayCircle className="h-4 w-4" />
+                                          Play Recording
+                                        </button>
                                       </div>
-                                      {item.notes && (
-                                        <p className={`text-sm ${isOutgoing ? "text-teal-50" : "text-slate-700"}`}>
-                                          <span className="font-medium">Notes:</span> {item.notes}
-                                        </p>
-                                      )}
-                                    </div>
+                                    </details>
                                   ) : (
-                                    <p className={`text-sm ${isOutgoing ? "text-white" : "text-slate-700"}`}>
-                                      {item.content || item.preview}
+                                    <p className="text-sm text-slate-700">
+                                      {highlightCommTabText(item.content || item.preview)}
                                     </p>
                                   )}
 
                                   {/* Timestamp */}
-                                  <div className={`text-[10px] mt-2 ${isOutgoing ? "text-teal-200 text-right" : "text-slate-400"}`}>
+                                  <div className={`text-[10px] mt-2 text-slate-400 ${isOutgoing ? "text-right" : ""}`}>
                                     {item.timestamp}
                                   </div>
                                 </div>
@@ -3224,7 +3700,9 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                           })
                         ) : (
                           <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-                            No private communications yet.
+                            {commTabTypeFilter !== "all" || commTabDateRange?.from || commTabSearchQuery
+                              ? "No messages match the selected filters."
+                              : "No private communications yet."}
                           </div>
                         )}
                       </div>
@@ -3236,15 +3714,15 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                         <span className="text-sm font-medium text-slate-700">Reply</span>
                         <div className="flex items-center gap-2">
                           <button type="button" onClick={() => setCommChannel("email")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-blue-100 text-blue-700 border border-blue-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                             <Mail className="h-3.5 w-3.5" /> Email
                           </button>
                           <button type="button" onClick={() => setCommChannel("sms")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-teal-100 text-teal-700 border border-teal-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                             <MessageSquare className="h-3.5 w-3.5" /> SMS
                           </button>
                           <button type="button" onClick={() => setCommChannel("call")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "call" ? "bg-green-100 text-green-700 border border-green-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "call" ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                             <PhoneCall className="h-3.5 w-3.5" /> Call
                           </button>
                         </div>
@@ -3329,35 +3807,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                       )}
                     </div>
                   </>
-                )
-              })()}
+              )}
 
               {/* ======= GROUP SUB-TAB ======= */}
-              {commSubTab === "group" && (() => {
-                const groupComms = communications.filter(c => c.isGroupChat)
-                const groupMap = new Map<string, { name: string; participants: string[]; messages: typeof groupComms; unreadCount: number; lastMessage: typeof groupComms[0] }>()
-                groupComms.forEach(msg => {
-                  const groupName = msg.to?.name || "Unknown Group"
-                  if (!groupMap.has(groupName)) {
-                    groupMap.set(groupName, {
-                      name: groupName,
-                      participants: msg.groupParticipants || [],
-                      messages: [],
-                      unreadCount: 0,
-                      lastMessage: msg,
-                    })
-                  }
-                  const group = groupMap.get(groupName)!
-                  group.messages.push(msg)
-                  if ((msg.unreadCount ?? 0) > 0) group.unreadCount += (msg.unreadCount ?? 0)
-                  if (msg.date > group.lastMessage.date) group.lastMessage = msg
-                })
-                const groups = Array.from(groupMap.values()).sort((a, b) => b.lastMessage.date.getTime() - a.lastMessage.date.getTime())
-
-                const selectedGroup = selectedGroupId ? groups.find(g => g.name === selectedGroupId) : null
-                const groupMessages = selectedGroup ? [...selectedGroup.messages].sort((a, b) => a.date.getTime() - b.date.getTime()) : []
-
-                return selectedGroup ? (
+              {commSubTab === "group" && commTabSelectedGroup && (
                   <>
                     {/* Group conversation header */}
                     <div className="flex items-center gap-3 mb-3">
@@ -3365,15 +3818,117 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                         <ChevronLeft className="h-5 w-5" />
                       </button>
                       <div>
-                        <h3 className="font-semibold text-slate-800">{selectedGroup.name}</h3>
-                        <p className="text-xs text-slate-500">{selectedGroup.participants.join(", ")}</p>
+                        <h3 className="font-semibold text-slate-800">{commTabSelectedGroup.name}</h3>
+                        <p className="text-xs text-slate-500">{commTabSelectedGroup.participants.join(", ")}</p>
                       </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="flex flex-wrap items-center gap-3 mb-3 p-2.5 rounded-lg border border-slate-200 bg-white">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Type</span>
+                        <div className="flex items-center gap-1">
+                          {(["all", "email", "sms", "call"] as const).map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setCommTabTypeFilter(t)}
+                              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                                commTabTypeFilter === t
+                                  ? t === "email"
+                                    ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
+                                    : t === "sms"
+                                      ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
+                                      : t === "call"
+                                        ? "bg-[#E8EAF6] text-indigo-800 border border-[#c5cae9]"
+                                        : "bg-teal-50 text-teal-700 border border-teal-200"
+                                  : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                              }`}
+                            >
+                              {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Calls"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="h-5 w-px bg-slate-200" />
+                      <Popover open={commTabDatePopoverOpen} onOpenChange={setCommTabDatePopoverOpen}>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                              commTabDateRange?.from
+                                ? "bg-teal-50 text-teal-700 border-teal-200"
+                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                            }`}
+                          >
+                            <Calendar className="h-3 w-3" />
+                            {commTabDateRange?.from ? (
+                              commTabDateRange.to
+                                ? `${format(commTabDateRange.from, "MMM d")} - ${format(commTabDateRange.to, "MMM d, yyyy")}`
+                                : format(commTabDateRange.from, "MMM d, yyyy")
+                            ) : (
+                              "Date"
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarWidget
+                            mode="range"
+                            selected={commTabDateRange}
+                            onSelect={(range) => {
+                              setCommTabDateRange(range)
+                              if (range?.to) setCommTabDatePopoverOpen(false)
+                            }}
+                            numberOfMonths={1}
+                          />
+                          {commTabDateRange?.from && (
+                            <div className="border-t p-2 flex justify-end">
+                              <button
+                                type="button"
+                                onClick={() => { setCommTabDateRange(undefined); setCommTabDatePopoverOpen(false) }}
+                                className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                      <div className="h-5 w-px bg-slate-200" />
+                      <div className="relative flex-1 min-w-[140px]">
+                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                        <input
+                          type="text"
+                          value={commTabSearchQuery}
+                          onChange={(e) => setCommTabSearchQuery(e.target.value)}
+                          placeholder="Search conversations..."
+                          className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
+                        />
+                        {commTabSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setCommTabSearchQuery("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                      {(commTabTypeFilter !== "all" || commTabDateRange?.from || commTabSearchQuery) && (
+                        <button
+                          type="button"
+                          onClick={() => { setCommTabTypeFilter("all"); setCommTabDateRange(undefined); setCommTabSearchQuery("") }}
+                          className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                        >
+                          Clear all
+                        </button>
+                      )}
                     </div>
 
                     {/* Group Chat Messages */}
                     <div className="min-h-[250px] flex-1 overflow-y-auto space-y-3 mb-4 pr-2 border rounded-lg p-4 bg-slate-50 flex flex-col-reverse">
                       <div className="flex flex-col gap-3">
-                        {groupMessages.map((item) => {
+                        {commTabGroupFiltered.length > 0 ? commTabGroupFiltered.map((item) => {
                           const isOutgoing = !item.isIncoming
                           const senderName = item.from?.name || "Unknown"
                           const isEmailExpanded2 = expandedCommEmails.has(item.id)
@@ -3382,19 +3937,29 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                             <div key={item.id} className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
                               <div className={`max-w-[75%] ${
                                 isOutgoing
-                                  ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                                  : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
-                              } p-3 shadow-sm`}>
+                                  ? "rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                  : "rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                              } ${
+                                item.type === "email"
+                                  ? "bg-[#E6F4EA] border border-[#c8e6cf]"
+                                  : item.type === "sms"
+                                    ? isOutgoing
+                                      ? "bg-[#BBDEFB] border border-[#90CAF9]"
+                                      : "bg-[#E3F2FD] border border-[#BBDEFB]"
+                                    : "bg-[#E0F7F6] border border-[#b8e8e6]"
+                              } text-slate-900 p-3 shadow-sm`}>
                                 <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                                  <span className={`text-xs font-medium ${isOutgoing ? "text-teal-100" : "text-slate-500"}`}>
+                                  <span className="text-xs font-medium text-slate-500">
                                     {senderName}
                                   </span>
-                                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                                     item.type === "email"
-                                      ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
+                                      ? "bg-[#c8e6cf] text-green-800"
                                       : item.type === "sms"
-                                      ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-green-100 text-green-600"
-                                      : isOutgoing ? "bg-teal-500 text-teal-100" : "bg-orange-100 text-orange-600"
+                                      ? isOutgoing
+                                        ? "bg-[#90CAF9] text-blue-900"
+                                        : "bg-[#BBDEFB] text-blue-800"
+                                      : "bg-[#b8e8e6] text-teal-800"
                                   }`}>
                                     {item.type === "email" ? "Email" : item.type === "sms" ? "SMS" : "Call"}
                                   </span>
@@ -3402,70 +3967,135 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
 
                                 {item.type === "email" ? (
                                   <div>
-                                    {item.subject && (
-                                      <button
-                                        onClick={() => setExpandedCommEmails(prev => {
-                                          const next = new Set(prev)
-                                          next.has(item.id) ? next.delete(item.id) : next.add(item.id)
-                                          return next
-                                        })}
-                                        className={`text-sm font-medium mb-1 flex items-center gap-1 w-full text-left ${isOutgoing ? "text-white hover:text-teal-100" : "text-slate-800 hover:text-teal-600"}`}
-                                      >
-                                        <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${isEmailExpanded2 ? "rotate-0" : "-rotate-90"}`} />
-                                        {item.subject}
-                                      </button>
+                                    <button
+                                      onClick={() => setExpandedCommEmails(prev => {
+                                        const next = new Set(prev)
+                                        next.has(item.id) ? next.delete(item.id) : next.add(item.id)
+                                        return next
+                                      })}
+                                      className="w-full text-left flex items-center justify-between gap-2 group"
+                                    >
+                                      <div className="flex items-center gap-1.5 min-w-0">
+                                        <Mail className="h-3.5 w-3.5 shrink-0 text-green-700" />
+                                        <span className="text-sm font-semibold text-slate-800 truncate">
+                                          {highlightCommTabText(item.subject || "Email")}
+                                        </span>
+                                      </div>
+                                      <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 group-hover:text-slate-600 transition-transform ${isEmailExpanded2 ? "rotate-180" : "rotate-0"}`} />
+                                    </button>
+
+                                    {!isEmailExpanded2 && (
+                                      <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                                        {highlightCommTabText(item.preview || (item.content ? item.content.slice(0, 80) + "..." : ""))}
+                                      </p>
                                     )}
-                                    {isEmailExpanded2 ? (
-                                      <div className="space-y-2 mt-1">
-                                        {item.thread ? item.thread.map((threadItem, idx) => (
-                                          <div key={threadItem.id} className={idx > 0 ? "pt-2 border-t border-dashed border-opacity-30 " + (isOutgoing ? "border-teal-300" : "border-slate-300") : ""}>
-                                            <p className={`text-sm whitespace-pre-line ${isOutgoing ? "text-white" : "text-slate-700"}`}>
-                                              {threadItem.content}
-                                            </p>
-                                            {!threadItem.isIncoming && threadItem.emailOpens && threadItem.emailOpens.length > 0 && (
-                                              <div className={`flex items-center gap-1 text-[10px] mt-1 ${isOutgoing ? "text-teal-200" : "text-green-600"}`}>
-                                                <Eye className="h-3 w-3" />
-                                                Opened at {threadItem.emailOpens[0].openedAt}
-                                              </div>
-                                            )}
+
+                                    {isEmailExpanded2 && (
+                                      <div className="mt-2">
+                                        <p className="text-sm whitespace-pre-line text-slate-700">
+                                          {highlightCommTabText(item.thread ? item.thread[0]?.content : (item.content || item.preview))}
+                                        </p>
+                                        {item.thread && !item.thread[0]?.isIncoming && item.thread[0]?.emailOpens && item.thread[0].emailOpens.length > 0 && (
+                                          <div className="flex items-center gap-1 text-[10px] mt-1.5 text-green-600">
+                                            <Eye className="h-3 w-3" />
+                                            Opened at {item.thread[0].emailOpens[0].openedAt}
                                           </div>
-                                        )) : (
-                                          <p className={`text-sm ${isOutgoing ? "text-white" : "text-slate-700"}`}>{item.content || item.preview}</p>
+                                        )}
+
+                                        {item.thread && item.thread.length > 1 && (
+                                          <div className="mt-3 pt-2 border-t border-[#c8e6cf]">
+                                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Thread ({item.thread.length - 1} earlier)</p>
+                                            <div className="space-y-1">
+                                              {item.thread.slice(1).map((threadItem) => {
+                                                const isThreadExp = expandedCommEmails.has(`thread-${threadItem.id}`)
+                                                return (
+                                                  <div key={threadItem.id} className="rounded-md bg-white/60 border border-[#c8e6cf]">
+                                                    <button
+                                                      onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setExpandedCommEmails(prev => {
+                                                          const next = new Set(prev)
+                                                          const key = `thread-${threadItem.id}`
+                                                          next.has(key) ? next.delete(key) : next.add(key)
+                                                          return next
+                                                        })
+                                                      }}
+                                                      className="w-full text-left px-2.5 py-1.5 flex items-center justify-between gap-2"
+                                                    >
+                                                      <div className="min-w-0">
+                                                        <span className="text-xs font-medium text-slate-700">{threadItem.isIncoming ? senderName : "You"}</span>
+                                                        <span className="text-[10px] text-slate-400 ml-2">{threadItem.timestamp}</span>
+                                                      </div>
+                                                      <ChevronDown className={`h-3 w-3 shrink-0 text-slate-400 transition-transform ${isThreadExp ? "rotate-180" : "rotate-0"}`} />
+                                                    </button>
+                                                    {isThreadExp && (
+                                                      <div className="px-2.5 pb-2">
+                                                        <p className="text-sm whitespace-pre-line text-slate-700">{highlightCommTabText(threadItem.content)}</p>
+                                                        {!threadItem.isIncoming && threadItem.emailOpens && threadItem.emailOpens.length > 0 && (
+                                                          <div className="flex items-center gap-1 text-[10px] mt-1 text-green-600">
+                                                            <Eye className="h-3 w-3" />
+                                                            Opened at {threadItem.emailOpens[0].openedAt}
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                )
+                                              })}
+                                            </div>
+                                          </div>
                                         )}
                                       </div>
-                                    ) : (
-                                      <p className={`text-xs mt-0.5 ${isOutgoing ? "text-teal-200" : "text-slate-400"}`}>
-                                        {item.preview || (item.content ? item.content.slice(0, 80) + "..." : "")}
-                                      </p>
                                     )}
                                   </div>
                                 ) : item.type === "call" ? (
-                                  <div className="space-y-1">
-                                    <div className={`flex items-center gap-2 ${isOutgoing ? "text-teal-100" : "text-slate-600"}`}>
-                                      <Phone className="h-4 w-4" />
+                                  <details className="group/call">
+                                    <summary className="flex items-center gap-2 text-slate-600 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+                                      <Phone className="h-4 w-4 shrink-0" />
                                       <span className="text-sm">
                                         {item.isIncoming ? "Incoming call" : "Outgoing call"} - {item.duration}
                                       </span>
+                                      {item.notes && (
+                                        <span className="text-sm text-slate-400 truncate ml-1">
+                                          {"- " + (item.notes.length > 40 ? item.notes.slice(0, 40) + "..." : item.notes)}
+                                        </span>
+                                      )}
+                                      <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform group-open/call:rotate-180 shrink-0 ml-auto" />
+                                    </summary>
+                                    <div className="mt-2 pt-2 border-t border-slate-200 space-y-2">
+                                      {item.notes && (
+                                        <p className="text-sm text-slate-700">
+                                          <span className="font-medium">Notes:</span> {highlightCommTabText(item.notes)}
+                                        </p>
+                                      )}
+                                      <button
+                                        type="button"
+                                        className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-700 transition-colors mt-1"
+                                      >
+                                        <PlayCircle className="h-4 w-4" />
+                                        Play Recording
+                                      </button>
                                     </div>
-                                    {item.notes && (
-                                      <p className={`text-sm ${isOutgoing ? "text-teal-50" : "text-slate-700"}`}>
-                                        <span className="font-medium">Notes:</span> {item.notes}
-                                      </p>
-                                    )}
-                                  </div>
+                                  </details>
                                 ) : (
-                                  <p className={`text-sm ${isOutgoing ? "text-white" : "text-slate-700"}`}>
-                                    {item.content || item.preview}
+                                  <p className="text-sm text-slate-700">
+                                    {highlightCommTabText(item.content || item.preview)}
                                   </p>
                                 )}
 
-                                <div className={`text-[10px] mt-2 ${isOutgoing ? "text-teal-200 text-right" : "text-slate-400"}`}>
+                                <div className={`text-[10px] mt-2 text-slate-400 ${isOutgoing ? "text-right" : ""}`}>
                                   {item.timestamp}
                                 </div>
                               </div>
                             </div>
                           )
-                        })}
+                        }) : (
+                          <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+                            {commTabTypeFilter !== "all" || commTabDateRange?.from || commTabSearchQuery
+                              ? "No messages match the selected filters."
+                              : "No group messages yet."}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -3475,15 +4105,15 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                         <span className="text-sm font-medium text-slate-700">Reply</span>
                         <div className="flex items-center gap-2">
                           <button type="button" onClick={() => setCommChannel("email")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-blue-100 text-blue-700 border border-blue-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                             <Mail className="h-3.5 w-3.5" /> Email
                           </button>
                           <button type="button" onClick={() => setCommChannel("sms")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-teal-100 text-teal-700 border border-teal-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                             <MessageSquare className="h-3.5 w-3.5" /> SMS
                           </button>
                           <button type="button" onClick={() => setCommChannel("call")}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "call" ? "bg-green-100 text-green-700 border border-green-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "call" ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                             <PhoneCall className="h-3.5 w-3.5" /> Call
                           </button>
                         </div>
@@ -3568,11 +4198,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                       )}
                     </div>
                   </>
-                ) : (
+              )}
+
+              {commSubTab === "group" && !commTabSelectedGroup && (
                   <>
                     <h3 className="font-semibold text-slate-800 mb-3">Communication Groups</h3>
                     <div className="flex-1 overflow-y-auto space-y-2">
-                      {groups.length > 0 ? groups.map((group) => (
+                      {commTabGroups.length > 0 ? commTabGroups.map((group) => (
                         <button
                           key={group.name}
                           onClick={() => setSelectedGroupId(group.name)}
@@ -3602,8 +4234,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                       )}
                     </div>
                   </>
-                )
-              })()}
+              )}
             </CardContent>
           </Card>
         )}
@@ -3723,14 +4354,28 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   <h4 className="font-semibold text-foreground">In Progress ({tenantProcesses.inProgress.length + newlyStartedProcesses.length})</h4>
                 </div>
                 <div className="space-y-2">
-                  {newlyStartedProcesses.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden border-teal-200 bg-teal-50/30 cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}>
+                  {newlyStartedProcesses.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden border-teal-200 bg-teal-50/30">
                       <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-medium text-foreground">{process.name}</p>
+                              <button
+                                type="button"
+                                onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}
+                                className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                              >
+                                {process.name}
+                              </button>
                               <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">New</Badge>
                             </div>
                             <div className="flex items-center gap-2 mt-1">
@@ -3768,15 +4413,90 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                           </DropdownMenu>
                         </div>
                       </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task: { id: string; name: string; startDate: string | null; completedDate: string | null; staffName: string; staffEmail: string }) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
                     </div>
-                  ))}
-                  {tenantProcesses.inProgress.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}>
+                    )
+                  })}
+                  {tenantProcesses.inProgress.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden">
                       <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
                           <div>
-                            <p className="font-medium text-foreground">{process.name}</p>
+                            <button
+                              type="button"
+                              onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}
+                              className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                            >
+                              {process.name}
+                            </button>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
                                 {process.prospectingStage}
@@ -3813,8 +4533,69 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                           </DropdownMenu>
                         </div>
                       </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
               )}
@@ -3827,13 +4608,27 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   <h4 className="font-semibold text-foreground">Upcoming ({tenantProcesses.upcoming.length})</h4>
                 </div>
                 <div className="space-y-2">
-                  {tenantProcesses.upcoming.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}>
+                  {tenantProcesses.upcoming.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden">
                       <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
                           <div>
-                            <p className="font-medium text-foreground">{process.name}</p>
+                            <button
+                              type="button"
+                              onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}
+                              className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                            >
+                              {process.name}
+                            </button>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
                                 {process.prospectingStage}
@@ -3868,8 +4663,69 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                           </DropdownMenu>
                         </div>
                       </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
               )}
@@ -3882,13 +4738,27 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   <h4 className="font-semibold text-foreground">Completed ({tenantProcesses.completed.length})</h4>
                 </div>
                 <div className="space-y-2">
-                  {tenantProcesses.completed.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}>
+                  {tenantProcesses.completed.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden">
                       <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
                         <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
                           <div>
-                            <p className="font-medium text-foreground">{process.name}</p>
+                            <button
+                              type="button"
+                              onClick={() => nav.go("contactProcessDetail", { process, contactName: contact.name })}
+                              className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                            >
+                              {process.name}
+                            </button>
                             <div className="flex items-center gap-2 mt-1">
                               <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
                                 {process.prospectingStage}
@@ -3926,8 +4796,69 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                           </DropdownMenu>
                         </div>
                       </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
               )}
@@ -4103,8 +5034,8 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       </div>
 
       {/* Quick Actions Sidebar */}
-      <div className="w-full lg:w-56 shrink-0">
-        <Card className="sticky top-4">
+      <div className="w-full lg:w-56 shrink-0 sticky top-0 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
+        <Card>
           <CardContent className="p-5">
             <h3 className="text-base font-semibold text-foreground mb-5">Quick Actions</h3>
 
@@ -4129,8 +5060,9 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   { icon: SearchCheck, label: "View Inspections", disabled: false },
                   { icon: Layers, label: "View Unit Turn Board", disabled: false },
                   { icon: Building, label: "Manage Subsidy Programs", disabled: false, isNew: true },
-                  { icon: Mail, label: "Email Unit", disabled: false },
-                  { icon: MessageSquare, label: "Text Unit", disabled: false },
+                  { icon: Mail, label: "Send Email", disabled: false },
+                  { icon: MessageSquare, label: "Send SMS", disabled: false },
+                  { icon: Phone, label: "Make Call", disabled: false },
                   { icon: Globe, label: "View Online Portal", disabled: false },
                   { icon: Download, label: "Download Text History", disabled: false },
                   { icon: Send, label: "Send Resident Form to Unit", disabled: false },
@@ -4814,10 +5746,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
           setShowSMSModal(false)
           setSelectedSMSItem(null)
         }}
-        contactName={typeof selectedSMSItem?.from === "object" && selectedSMSItem?.from !== null ? selectedSMSItem.from.name : (selectedSMSItem?.from as string) ?? contact.name}
-        contactPhone={selectedSMSItem?.phone ?? (typeof selectedSMSItem?.from === "object" && selectedSMSItem?.from !== null ? selectedSMSItem.from.contact : "") ?? contact.phone ?? ""}
-        currentMessage={selectedSMSItem?.fullContent ?? selectedSMSItem?.content ?? ""}
-        currentTimestamp={selectedSMSItem?.date instanceof Date ? selectedSMSItem.date.toISOString() : selectedSMSItem?.fullDate ?? ""}
+        contactName={selectedSMSItem?.from || contact.name}
+        contactPhone={selectedSMSItem?.phone || contact.phone || ""}
+        currentMessage={selectedSMSItem?.fullContent || selectedSMSItem?.content || ""}
+        currentTimestamp={selectedSMSItem?.date || ""}
       />
       
       {/* Email Popup Modal */}

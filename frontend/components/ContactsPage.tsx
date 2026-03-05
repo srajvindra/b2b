@@ -1,24 +1,24 @@
-"use client"
+// "use client"
 
-import type { ContactPageType } from "@/features/contacts/types"
-import OwnersTenantsPage from "./OwnersTenantsPage"
-import StaffVendorsPage from "./StaffVendorsPage"
+// import type { ContactPageType } from "@/features/contacts/types"
+// import OwnersTenantsPage from "./OwnersTenantsPage"
+// import StaffVendorsPage from "./StaffVendorsPage"
 
-interface ContactsPageProps {
-  type: ContactPageType
-}
+// interface ContactsPageProps {
+//   type: ContactPageType
+// }
 
-export default function ContactsPage({ type }: ContactsPageProps) {
-  if (type === "owner" || type === "tenant") {
-    return <OwnersTenantsPage type={type} />
-  }
+// export default function ContactsPage({ type }: ContactsPageProps) {
+//   if (type === "owner" || type === "tenant") {
+//     return <OwnersTenantsPage type={type} />
+//   }
 
-  if (type === "vendor" || type === "property-technician" || type === "leasing-agent") {
-    return <StaffVendorsPage type={type} />
-  }
+//   if (type === "vendor" || type === "property-technician" || type === "leasing-agent") {
+//     return <StaffVendorsPage type={type} />
+//   }
 
-  return null
-}
+//   return null
+// }
 
 "use client"
 

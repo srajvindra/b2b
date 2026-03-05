@@ -48,6 +48,8 @@ import {
   CalendarDays,
   FileWarning,
   ClipboardList,
+  HelpCircle,
+  Workflow,
 } from "lucide-react"
 
 // ----- Dashboard -----
@@ -103,6 +105,7 @@ export function getOwnerContactQuickActions(handlers: {
 }
 
 // ----- Tenant contact (detail page) - Tasks, Reports, Letters -----
+// Matches the static sidebar in `contact-tenant-detail-page.tsx`
 const tenantContactTasks = [
   { icon: ArrowLeftRight, label: "Transfer Tenant" },
   { icon: FileText, label: "Send Lease or Addendum" },
@@ -117,8 +120,9 @@ const tenantContactTasks = [
   { icon: SearchCheck, label: "View Inspections" },
   { icon: Layers, label: "View Unit Turn Board" },
   { icon: Building, label: "Manage Subsidy Programs" },
-  { icon: Mail, label: "Email Unit" },
-  { icon: MessageSquare, label: "Text Unit" },
+  { icon: Mail, label: "Send Email" },
+  { icon: MessageSquare, label: "Send SMS" },
+  { icon: Phone, label: "Make Call" },
   { icon: Globe, label: "View Online Portal" },
   { icon: Download, label: "Download Text History" },
   { icon: Send, label: "Send Resident Form to Unit" },
@@ -126,7 +130,8 @@ const tenantContactTasks = [
 const tenantContactReports = [
   { icon: FileText, label: "Tenant Ledger" },
   { icon: DollarSign, label: "Tenant Unpaid Charges" },
-  { icon: BarChart3, label: "Work Order Activities Summary" },
+  { icon: Wrench, label: "Work Order" },
+  { icon: BarChart3, label: "Activities Summary" },
   { icon: AlertTriangle, label: "Debt Collections Status" },
   { icon: Shield, label: "Tenant Insurance Coverage" },
 ]
@@ -142,13 +147,8 @@ export const tenantContactQuickActions: QuickActionGroup[] = [
   { id: "letters", title: "Letters", actions: tenantContactLetters.map((a) => ({ ...a })) },
 ]
 
-// ----- Property detail -----
-const propertyTasks = [
-  { icon: Building2, label: "New Property" },
-  { icon: FolderPlus, label: "New Property Group" },
-  { icon: Lock, label: "Manage Lockboxes" },
-  { icon: Link2, label: "New Association" },
-]
+// ----- Property: list vs detail -----
+// Shared reports/statements for property-related views
 const propertyReports = [
   { icon: BookOpen, label: "Property Directory" },
   { icon: BarChart3, label: "Unit Directory" },
@@ -158,8 +158,40 @@ const propertyReports = [
 ]
 const propertyStatements = [{ icon: Settings, label: "Bulk Update Statement Settings" }]
 
+const propertyHelpTopics = [
+  { icon: HelpCircle, label: "View, Edit & Add Properties" },
+  { icon: HelpCircle, label: "Managing Property Groups" },
+]
+
+// Quick actions used on the All Properties listing page
+const propertyListTasks = [
+  { icon: Building2, label: "New Property" },
+  { icon: FolderPlus, label: "New Property Group" },
+  { icon: Key, label: "Manage Lockboxes" },
+  { icon: Building, label: "New Association" },
+]
+
+export const propertyListQuickActions: QuickActionGroup[] = [
+  { id: "tasks", title: "Tasks", actions: propertyListTasks },
+  { id: "reports", title: "Reports", actions: propertyReports },
+  { id: "statements", title: "Statements", actions: propertyStatements },
+  { id: "help", title: "Help Topics", actions: propertyHelpTopics },
+]
+
+// Quick actions used on the Property Details page
+const propertyDetailTasks = [
+  { icon: Building2, label: "New Property" },
+  { icon: FolderPlus, label: "New Property Group" },
+  { icon: Key, label: "Manage Lockboxes" },
+  { icon: Building, label: "New Association" },
+  { icon: Workflow, label: "Initiate Process" },
+  { icon: Wrench, label: "Create a Work Order" },
+  { icon: Mail, label: "Email Property" },
+  { icon: MessageSquare, label: "Text Property" },
+]
+
 export const propertyDetailQuickActions: QuickActionGroup[] = [
-  { id: "tasks", title: "Tasks", actions: propertyTasks },
+  { id: "tasks", title: "Tasks", actions: propertyDetailTasks },
   { id: "reports", title: "Reports", actions: propertyReports },
   { id: "statements", title: "Statements", actions: propertyStatements },
 ]

@@ -1741,7 +1741,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
           >
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-semibold text-amber-800">Pending Communications</span>
+              <span className="text-sm font-semibold text-amber-800">Pending Communications 1</span>
             </div>
             <div className="flex items-center">
               <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">

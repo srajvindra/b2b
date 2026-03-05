@@ -9,6 +9,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Calendar,
+  Search,
+  X,
   Paperclip,
   Eye,
   Send,
@@ -23,11 +26,16 @@ import {
   Trash2,
   ExternalLink,
 } from "lucide-react"
+import { format } from "date-fns"
+import { endOfDay, isWithinInterval, startOfDay } from "date-fns"
+import type { DateRange } from "react-day-picker"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarWidget } from "@/components/ui/calendar"
 import type { CommunicationItem } from "../types"
 
 const STAFF_NAME = "Richard Surovi"
@@ -47,6 +55,8 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
   const [commSubTab, setCommSubTab] = useState<"private" | "group">("private")
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   const [expandedCommEmails, setExpandedCommEmails] = useState<Set<string>>(new Set())
+
+  // Composer state
   const [commChannel, setCommChannel] = useState<"email" | "sms" | "call">("email")
   const [showCcBcc, setShowCcBcc] = useState(false)
   const [emailComposeCc, setEmailComposeCc] = useState("")
@@ -54,6 +64,12 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
   const [emailComposeSubject, setEmailComposeSubject] = useState("")
   const [emailComposeBody, setEmailComposeBody] = useState("")
   const [commMessage, setCommMessage] = useState("")
+
+  // Communications tab filters (type, date, search)
+  const [commTabTypeFilter, setCommTabTypeFilter] = useState<"all" | "email" | "sms" | "call">("all")
+  const [commTabDateRange, setCommTabDateRange] = useState<DateRange | undefined>(undefined)
+  const [commTabDatePopoverOpen, setCommTabDatePopoverOpen] = useState(false)
+  const [commTabSearchQuery, setCommTabSearchQuery] = useState("")
 
   const handleSubTabChange = (v: "private" | "group") => {
     setCommSubTab(v)
@@ -101,6 +117,42 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
   const groupMessages = selectedGroup
     ? [...selectedGroup.messages].sort((a, b) => a.date.getTime() - b.date.getTime())
     : []
+
+  const filteredPrivateComms = privateComms.filter((c) => {
+    if (commTabTypeFilter !== "all" && c.type !== commTabTypeFilter) return false
+
+    if (commTabDateRange?.from) {
+      const from = startOfDay(commTabDateRange.from)
+      const to = commTabDateRange.to ? endOfDay(commTabDateRange.to) : endOfDay(commTabDateRange.from)
+      if (!isWithinInterval(c.date, { start: from, end: to })) return false
+    }
+
+    if (commTabSearchQuery.trim()) {
+      const q = commTabSearchQuery.trim().toLowerCase()
+      const haystack = `${c.subject ?? ""} ${c.content ?? ""} ${c.preview ?? ""}`.toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
+
+    return true
+  })
+
+  const filteredGroupMessages = groupMessages.filter((c) => {
+    if (commTabTypeFilter !== "all" && c.type !== commTabTypeFilter) return false
+
+    if (commTabDateRange?.from) {
+      const from = startOfDay(commTabDateRange.from)
+      const to = commTabDateRange.to ? endOfDay(commTabDateRange.to) : endOfDay(commTabDateRange.from)
+      if (!isWithinInterval(c.date, { start: from, end: to })) return false
+    }
+
+    if (commTabSearchQuery.trim()) {
+      const q = commTabSearchQuery.trim().toLowerCase()
+      const haystack = `${c.subject ?? ""} ${c.content ?? ""} ${c.preview ?? ""}`.toLowerCase()
+      if (!haystack.includes(q)) return false
+    }
+
+    return true
+  })
 
   const toggleExpandedEmail = (id: string) => {
     setExpandedCommEmails((prev) => {
@@ -299,27 +351,29 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
         <div
           className={`max-w-[75%] ${
             isOutgoing
-              ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-              : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
-          } p-3 shadow-sm`}
+              ? "rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+              : "rounded-tl-xl rounded-tr-xl rounded-br-xl"
+          } ${
+            item.type === "email"
+              ? "bg-[#E6F4EA] border border-[#c8e6cf]"
+              : item.type === "sms"
+                ? isOutgoing
+                  ? "bg-[#BBDEFB] border border-[#90CAF9]"
+                  : "bg-[#E3F2FD] border border-[#BBDEFB]"
+                : "bg-[#E0F7F6] border border-[#b8e8e6]"
+          } text-slate-900 p-3 shadow-sm`}
         >
           <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
-            <span className={`text-xs font-medium ${isOutgoing ? "text-teal-100" : "text-slate-500"}`}>
-              {senderLabel}
-            </span>
+            <span className="text-xs font-medium text-slate-500">{senderLabel}</span>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded ${
+              className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
                 item.type === "email"
-                  ? isOutgoing
-                    ? "bg-teal-500 text-teal-100"
-                    : "bg-blue-100 text-blue-600"
+                  ? "bg-[#c8e6cf] text-green-800"
                   : item.type === "sms"
                     ? isOutgoing
-                      ? "bg-teal-500 text-teal-100"
-                      : "bg-green-100 text-green-600"
-                    : isOutgoing
-                      ? "bg-teal-500 text-teal-100"
-                      : "bg-orange-100 text-orange-600"
+                      ? "bg-[#90CAF9] text-blue-900"
+                      : "bg-[#BBDEFB] text-blue-800"
+                    : "bg-[#b8e8e6] text-teal-800"
               }`}
             >
               {item.type === "email" ? "Email" : item.type === "sms" ? "SMS" : "Call"}
@@ -331,7 +385,7 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
               {item.subject && (
                 <button
                   onClick={() => toggleExpandedEmail(item.id)}
-                  className={`text-sm font-medium mb-1 flex items-center gap-1 w-full text-left ${isOutgoing ? "text-white hover:text-teal-100" : "text-slate-800 hover:text-teal-600"}`}
+                  className="text-sm font-medium mb-1 flex items-center gap-1 w-full text-left text-slate-800 hover:text-teal-600"
                 >
                   <ChevronDown
                     className={`h-3 w-3 shrink-0 transition-transform ${isEmailExpanded ? "rotate-0" : "-rotate-90"}`}
@@ -392,13 +446,13 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                       </div>
                     ))
                   ) : (
-                    <p className={`text-sm whitespace-pre-line ${isOutgoing ? "text-white" : "text-slate-700"}`}>
+                    <p className="text-sm whitespace-pre-line text-slate-700">
                       {item.content || item.preview}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className={`text-xs mt-0.5 ${isOutgoing ? "text-teal-200" : "text-slate-400"}`}>
+                <p className="text-xs mt-0.5 text-slate-400">
                   {item.preview || (item.content ? item.content.slice(0, 80) + "..." : "")}
                 </p>
               )}
@@ -407,9 +461,7 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                 item.thread[0]?.emailOpens &&
                 item.thread[0].emailOpens.length > 0 &&
                 !isEmailExpanded && (
-                  <div
-                    className={`flex items-center gap-1 text-[10px] mt-1 ${isOutgoing ? "text-teal-200" : "text-green-600"}`}
-                  >
+                  <div className="flex items-center gap-1 text-[10px] mt-1 text-green-600">
                     <Eye className="h-3 w-3" />
                     Opened at {item.thread[0].emailOpens[0].openedAt}
                   </div>
@@ -417,27 +469,25 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
             </div>
           ) : item.type === "call" ? (
             <div className="space-y-1">
-              <div className={`flex items-center gap-2 ${isOutgoing ? "text-teal-100" : "text-slate-600"}`}>
+              <div className="flex items-center gap-2 text-slate-600">
                 <Phone className="h-4 w-4" />
                 <span className="text-sm">
                   {item.isIncoming ? "Incoming call" : "Outgoing call"} - {item.duration}
                 </span>
               </div>
               {item.notes && (
-                <p className={`text-sm ${isOutgoing ? "text-teal-50" : "text-slate-700"}`}>
+                <p className="text-sm text-slate-700">
                   <span className="font-medium">Notes:</span> {item.notes}
                 </p>
               )}
             </div>
           ) : (
-            <p className={`text-sm ${isOutgoing ? "text-white" : "text-slate-700"}`}>
+            <p className="text-sm text-slate-700">
               {item.content || item.preview}
             </p>
           )}
 
-          <div
-            className={`text-[10px] mt-2 ${isOutgoing ? "text-teal-200 text-right" : "text-slate-400"}`}
-          >
+          <div className={`text-[10px] mt-2 text-slate-400 ${isOutgoing ? "text-right" : ""}`}>
             {item.timestamp}
           </div>
         </div>
@@ -486,12 +536,130 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
             <>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-slate-800">Private Conversation</h3>
-                <span className="text-xs text-muted-foreground">{privateComms.length} messages</span>
+                <span className="text-xs text-muted-foreground">{filteredPrivateComms.length} messages</span>
               </div>
+
+              {/* Filters row (Type, Date, Search) */}
+              <div className="flex flex-wrap items-center gap-3 mb-3 p-2.5 rounded-lg border border-slate-200 bg-white">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Type</span>
+                  <div className="flex items-center gap-1">
+                    {(["all", "email", "sms", "call"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setCommTabTypeFilter(t)}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                          commTabTypeFilter === t
+                            ? t === "email"
+                              ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
+                              : t === "sms"
+                                ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
+                                : t === "call"
+                                  ? "bg-[#E8EAF6] text-indigo-800 border border-[#c5cae9]"
+                                  : "bg-teal-50 text-teal-700 border border-teal-200"
+                            : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                        }`}
+                      >
+                        {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Calls"}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-5 w-px bg-slate-200" />
+
+                <Popover open={commTabDatePopoverOpen} onOpenChange={setCommTabDatePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                        commTabDateRange?.from
+                          ? "bg-teal-50 text-teal-700 border-teal-200"
+                          : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                      }`}
+                    >
+                      <Calendar className="h-3 w-3" />
+                      {commTabDateRange?.from ? (
+                        commTabDateRange.to
+                          ? `${format(commTabDateRange.from, "MMM d")} - ${format(
+                              commTabDateRange.to,
+                              "MMM d, yyyy",
+                            )}`
+                          : format(commTabDateRange.from, "MMM d, yyyy")
+                      ) : (
+                        "Date"
+                      )}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <CalendarWidget
+                      mode="range"
+                      selected={commTabDateRange}
+                      onSelect={(range) => {
+                        setCommTabDateRange(range)
+                        if (range?.to) setCommTabDatePopoverOpen(false)
+                      }}
+                      numberOfMonths={1}
+                    />
+                    {commTabDateRange?.from && (
+                      <div className="border-t p-2 flex justify-end">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCommTabDateRange(undefined)
+                            setCommTabDatePopoverOpen(false)
+                          }}
+                          className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+
+                <div className="h-5 w-px bg-slate-200" />
+
+                <div className="relative flex-1 min-w-[140px]">
+                  <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                  <input
+                    type="text"
+                    value={commTabSearchQuery}
+                    onChange={(e) => setCommTabSearchQuery(e.target.value)}
+                    placeholder="Search conversations..."
+                    className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
+                  />
+                  {commTabSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setCommTabSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
+                {(commTabTypeFilter !== "all" || commTabDateRange?.from || commTabSearchQuery) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCommTabTypeFilter("all")
+                      setCommTabDateRange(undefined)
+                      setCommTabSearchQuery("")
+                    }}
+                    className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                  >
+                    Clear all
+                  </button>
+                )}
+              </div>
+
               <div className="min-h-[250px] flex-1 overflow-y-auto space-y-3 mb-4 pr-2 border rounded-lg p-4 bg-slate-50 flex flex-col-reverse">
                 <div className="flex flex-col gap-3">
-                  {privateComms.length > 0 ? (
-                    privateComms.map((item) =>
+                  {filteredPrivateComms.length > 0 ? (
+                    filteredPrivateComms.map((item) =>
                       renderMessageBubble(item, {
                         isOutgoing: !item.isIncoming,
                         senderLabel: item.isIncoming ? contactName : STAFF_NAME,
@@ -525,7 +693,7 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                 </div>
                 <div className="min-h-[250px] flex-1 overflow-y-auto space-y-3 mb-4 pr-2 border rounded-lg p-4 bg-slate-50 flex flex-col-reverse">
                   <div className="flex flex-col gap-3">
-                    {groupMessages.map((item) =>
+                    {filteredGroupMessages.map((item) =>
                       renderMessageBubble(item, {
                         isOutgoing: !item.isIncoming,
                         senderLabel: item.from?.name || "Unknown",

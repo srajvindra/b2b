@@ -57,7 +57,7 @@ export function QuickActionSidebar({
   className,
 }: QuickActionSidebarProps) {
   const rootClassName =
-    "w-64 border-l border-border bg-muted/10 flex flex-col max-h-screen sticky top-0" +
+    "w-64 border-l border-border bg-muted/10 flex flex-col h-full" +
     (className ? ` ${className}` : "")
 
   return (
@@ -67,7 +67,7 @@ export function QuickActionSidebar({
         {subtitle ? <p className="text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3">
+      <div className="flex-1 min-h-0 overflow-y-auto p-3">
         <div className="flex flex-col gap-4">
           {actions.map((group) => (
             <div key={group.id} className="flex flex-col gap-2">

@@ -427,7 +427,7 @@ function StagesOwnersPage() {
   const [newStatusName, setNewStatusName] = useState("")
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
-  
+
   // Stage Edit View state
   const [selectedStageForEdit, setSelectedStageForEdit] = useState<{
     categoryId: string
@@ -446,7 +446,7 @@ function StagesOwnersPage() {
     { id: "5", name: "Onboarding Meeting", timing: "1 day after previous step", day: 2, completed: false, type: "meet", assignee: "Sarah Johnson" },
     { id: "6", name: "Document Review", timing: "2 hours after previous step", day: 2, completed: false, type: "process", processName: "Document Verification" },
   ])
-  
+
   // Available processes for linking
   const availableProcesses = [
     { id: "proc-1", name: "Document Verification" },
@@ -484,28 +484,28 @@ function StagesOwnersPage() {
 
   // Staff assignment state
   const [selectedAssignee, setSelectedAssignee] = useState<string>("")
-  
+
   // Auto-send toggle for email/text
   const [autoSendEnabled, setAutoSendEnabled] = useState(false)
-  
+
   // Process selection for Create Process
   const [selectedProcessForStep, setSelectedProcessForStep] = useState<string>("")
-  
+
   // Linking dialog state
   const [linkingDialogOpen, setLinkingDialogOpen] = useState(false)
   const [linkingStepId, setLinkingStepId] = useState<string | null>(null)
   const [linkedSteps, setLinkedSteps] = useState<{ [stepId: string]: string[] }>({})
   const [selectedLinkedSteps, setSelectedLinkedSteps] = useState<string[]>([])
-  
+
   // Custom fields for Todo tasks (Owner-related processes only)
   const [selectedTodoCustomFields, setSelectedTodoCustomFields] = useState<string[]>([])
-  
+
   // Instructions dialog state
   const [instructionsDialogOpen, setInstructionsDialogOpen] = useState(false)
   const [instructionsStepId, setInstructionsStepId] = useState<string | null>(null)
   const [instructionsText, setInstructionsText] = useState("")
   const [stepInstructions, setStepInstructions] = useState<{ [stepId: string]: string }>({})
-  
+
   // Step Conditions dialog state
   const [conditionsDialogOpen, setConditionsDialogOpen] = useState(false)
   const [conditionsStepId, setConditionsStepId] = useState<string | null>(null)
@@ -514,7 +514,7 @@ function StagesOwnersPage() {
     { field: "", operator: "is", value: "" }
   ])
   const [savedStepConditions, setSavedStepConditions] = useState<{ [stepId: string]: { type: string; conditions: Array<{ field: string; operator: string; value: string }> } }>({})
-  
+
   // Available condition fields (from Custom Fields)
   const conditionFields = [
     { value: "any_occupied_units", label: "Any Occupied Units", options: ["Yes", "No"] },
@@ -524,14 +524,14 @@ function StagesOwnersPage() {
     { value: "any_information_missing", label: "Any Information Missing?", options: ["Yes", "No"] },
     { value: "property_condition_rating", label: "Property Condition Rating", options: ["Excellent", "Good", "Fair", "Poor"] },
   ]
-  
+
   const conditionOperators = [
     { value: "is", label: "is" },
     { value: "is_not", label: "is not" },
     { value: "contains", label: "contains" },
     { value: "does_not_contain", label: "does not contain" },
   ]
-  
+
   // Available field tags for instructions
   const availableFieldTags = [
     { tag: "process.no_of_units", label: "No of Units" },
@@ -545,7 +545,7 @@ function StagesOwnersPage() {
     { tag: "process.any_information_missing", label: "Any Information Missing?" },
     { tag: "process.property_condition_rating", label: "Property Condition Rating" },
   ]
-  
+
   const ownerCustomFields = [
     { id: "cf-1", label: "Existing Tenant Moving Out?", dataType: "Multiple Choice", processTypes: ["2 Property Onboarding Process"] },
     { id: "cf-2", label: "Existing Owner or New Owner?", dataType: "Multiple Choice", processTypes: ["2 Property Onboarding Process"] },
@@ -643,21 +643,21 @@ function StagesOwnersPage() {
 
   const handleSimpleActionConfirm = () => {
     if (simpleActionName.trim()) {
-      const processName = simpleActionType === "process" && selectedProcessForStep 
-        ? availableProcesses.find(p => p.id === selectedProcessForStep)?.name 
+      const processName = simpleActionType === "process" && selectedProcessForStep
+        ? availableProcesses.find(p => p.id === selectedProcessForStep)?.name
         : undefined
       handleAddWorkflowStep(simpleActionType, simpleActionName.trim(), undefined, processName)
     }
     setSimpleActionDialogOpen(false)
   }
-  
+
   // Linking handlers
   const openLinkingDialog = (stepId: string) => {
     setLinkingStepId(stepId)
     setSelectedLinkedSteps(linkedSteps[stepId] || [])
     setLinkingDialogOpen(true)
   }
-  
+
   const handleLinkingConfirm = () => {
     if (linkingStepId) {
       setLinkedSteps(prev => ({ ...prev, [linkingStepId]: selectedLinkedSteps }))
@@ -665,13 +665,13 @@ function StagesOwnersPage() {
     setLinkingDialogOpen(false)
     setLinkingStepId(null)
   }
-  
+
   const toggleLinkedStep = (stepId: string) => {
-    setSelectedLinkedSteps(prev => 
+    setSelectedLinkedSteps(prev =>
       prev.includes(stepId) ? prev.filter(id => id !== stepId) : [...prev, stepId]
     )
   }
-  
+
   // Get type icon for workflow step
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -876,98 +876,98 @@ function StagesOwnersPage() {
                 {index < stageWorkflowSteps.length - 1 && <div className="w-0.5 h-12 bg-border" />}
               </div>
 
-{/* Step content */}
-                  <div className="flex-1 ml-4">
-                    <div className="bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group">
-                      <div className="flex items-center gap-2">
-                        {/* Type Icon */}
-                        <span title={step.type.charAt(0).toUpperCase() + step.type.slice(1)}>
-                          {getTypeIcon(step.type)}
-                        </span>
-                        {/* Auto-send lightning icon for email/text */}
-                        {(step.type === "email" || step.type === "text") && step.autoSend && (
-                          <span title="Auto-send enabled" className="text-chart-4">
-                            <Zap className="h-3.5 w-3.5" />
-                          </span>
-                        )}
-                        <button
-                          type="button"
-                          className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left"
-                          onClick={() => {
-                            alert(`Edit step: ${step.name}`)
-                          }}
-                        >
-                          {step.name}
-                        </button>
-                        {/* Process name badge aligned to the right of step name */}
-                        {step.processName && (
-                          <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full border border-primary/20">
-                            {step.processName}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-primary hover:bg-primary/10" 
-                          title="Instructions"
-                          onClick={() => {
-                            setInstructionsStepId(step.id)
-                            setInstructionsText(stepInstructions[step.id] || "")
-                            setInstructionsDialogOpen(true)
-                          }}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Manual Action">
-                          <Hand className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Required">
-                          <Asterisk className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" title="Run Process">
-                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/5">
-                            <span className="text-xs font-semibold text-primary">P</span>
-                          </div>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Set Timer">
-                          <Timer className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" 
-                          title="Step Conditions"
-                          onClick={() => {
-                            setConditionsStepId(step.id)
-                            const saved = savedStepConditions[step.id]
-                            if (saved) {
-                              setDisplayConditionType(saved.type)
-                              setStepConditions(saved.conditions)
-                            } else {
-                              setDisplayConditionType("any")
-                              setStepConditions([{ field: "", operator: "is", value: "" }])
-                            }
-                            setConditionsDialogOpen(true)
-                          }}
-                        >
-                          <Network className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                          title="Delete Step"
-                          onClick={() => {
-                            setStageWorkflowSteps((prev) => prev.filter((s) => s.id !== step.id))
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
+              {/* Step content */}
+              <div className="flex-1 ml-4">
+                <div className="bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group">
+                  <div className="flex items-center gap-2">
+                    {/* Type Icon */}
+                    <span title={step.type.charAt(0).toUpperCase() + step.type.slice(1)}>
+                      {getTypeIcon(step.type)}
+                    </span>
+                    {/* Auto-send lightning icon for email/text */}
+                    {(step.type === "email" || step.type === "text") && step.autoSend && (
+                      <span title="Auto-send enabled" className="text-chart-4">
+                        <Zap className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left"
+                      onClick={() => {
+                        alert(`Edit step: ${step.name}`)
+                      }}
+                    >
+                      {step.name}
+                    </button>
+                    {/* Process name badge aligned to the right of step name */}
+                    {step.processName && (
+                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full border border-primary/20">
+                        {step.processName}
+                      </span>
+                    )}
                   </div>
+                  <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-primary hover:bg-primary/10"
+                      title="Instructions"
+                      onClick={() => {
+                        setInstructionsStepId(step.id)
+                        setInstructionsText(stepInstructions[step.id] || "")
+                        setInstructionsDialogOpen(true)
+                      }}
+                    >
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Manual Action">
+                      <Hand className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Required">
+                      <Asterisk className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" title="Run Process">
+                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/5">
+                        <span className="text-xs font-semibold text-primary">P</span>
+                      </div>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Set Timer">
+                      <Timer className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                      title="Step Conditions"
+                      onClick={() => {
+                        setConditionsStepId(step.id)
+                        const saved = savedStepConditions[step.id]
+                        if (saved) {
+                          setDisplayConditionType(saved.type)
+                          setStepConditions(saved.conditions)
+                        } else {
+                          setDisplayConditionType("any")
+                          setStepConditions([{ field: "", operator: "is", value: "" }])
+                        }
+                        setConditionsDialogOpen(true)
+                      }}
+                    >
+                      <Network className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      title="Delete Step"
+                      onClick={() => {
+                        setStageWorkflowSteps((prev) => prev.filter((s) => s.id !== step.id))
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -1117,10 +1117,10 @@ function StagesOwnersPage() {
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-<span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
                 </div>
               </div>
 
@@ -1175,7 +1175,7 @@ function StagesOwnersPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {/* Auto-send Toggle */}
               <div className="flex items-center justify-between p-3 bg-chart-4/10 border border-chart-4/30 rounded-lg">
                 <div className="flex items-center gap-2">
@@ -1238,7 +1238,7 @@ function StagesOwnersPage() {
                   autoFocus
                 />
               </div>
-              
+
               {/* Process Selection - only shown for Create Process */}
               {simpleActionType === "process" && (
                 <div className="space-y-2">
@@ -1262,10 +1262,10 @@ function StagesOwnersPage() {
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-<span className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
                 </div>
               </div>
 
@@ -1387,7 +1387,7 @@ function StagesOwnersPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-        
+
         {/* Linking Dialog */}
         <Dialog open={linkingDialogOpen} onOpenChange={setLinkingDialogOpen}>
           <DialogContent className="sm:max-w-lg">
@@ -1400,7 +1400,7 @@ function StagesOwnersPage() {
                 Select which steps this action should be linked to. Linked steps will be triggered or depend on this step.
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground/80">Available Steps to Link</Label>
@@ -1408,18 +1408,16 @@ function StagesOwnersPage() {
                   {stageWorkflowSteps
                     .filter(step => step.id !== linkingStepId)
                     .map((step) => (
-                      <div 
+                      <div
                         key={step.id}
-                        className={`flex items-center gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted transition-colors ${
-                          selectedLinkedSteps.includes(step.id) ? "bg-primary/10 border-l-2 border-l-primary" : ""
-                        }`}
+                        className={`flex items-center gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted transition-colors ${selectedLinkedSteps.includes(step.id) ? "bg-primary/10 border-l-2 border-l-primary" : ""
+                          }`}
                         onClick={() => toggleLinkedStep(step.id)}
                       >
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          selectedLinkedSteps.includes(step.id) 
-                            ? "bg-primary border-primary" 
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedLinkedSteps.includes(step.id)
+                            ? "bg-primary border-primary"
                             : "border-border"
-                        }`}>
+                          }`}>
                           {selectedLinkedSteps.includes(step.id) && (
                             <Check className="h-3 w-3 text-primary-foreground" />
                           )}
@@ -1443,14 +1441,14 @@ function StagesOwnersPage() {
                   )}
                 </div>
               </div>
-              
+
               {selectedLinkedSteps.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   <strong className="text-foreground">{selectedLinkedSteps.length}</strong> step(s) selected for linking
                 </div>
               )}
             </div>
-            
+
             <DialogFooter>
               <Button variant="outline" onClick={() => setLinkingDialogOpen(false)} className="bg-transparent">
                 Cancel
@@ -1594,8 +1592,8 @@ function StagesOwnersPage() {
                   <div key={index} className="flex items-end gap-2">
                     <div className="flex-1 space-y-1">
                       <Label className="text-xs text-muted-foreground">Field</Label>
-                      <Select 
-                        value={condition.field} 
+                      <Select
+                        value={condition.field}
                         onValueChange={(value) => {
                           const updated = [...stepConditions]
                           updated[index].field = value
@@ -1617,8 +1615,8 @@ function StagesOwnersPage() {
                     </div>
                     <div className="w-28 space-y-1">
                       <Label className="text-xs text-muted-foreground">Operator</Label>
-                      <Select 
-                        value={condition.operator} 
+                      <Select
+                        value={condition.operator}
                         onValueChange={(value) => {
                           const updated = [...stepConditions]
                           updated[index].operator = value
@@ -1639,8 +1637,8 @@ function StagesOwnersPage() {
                     </div>
                     <div className="w-28 space-y-1">
                       <Label className="text-xs text-muted-foreground">Value</Label>
-                      <Select 
-                        value={condition.value} 
+                      <Select
+                        value={condition.value}
                         onValueChange={(value) => {
                           const updated = [...stepConditions]
                           updated[index].value = value
@@ -1781,7 +1779,7 @@ function StagesOwnersPage() {
             <Input
               placeholder="Search categories..."
               value={editingCategoryName && editingCategoryId === null ? editingCategoryName : ""}
-              onChange={() => {}}
+              onChange={() => { }}
               className="pl-10"
             />
           </div>
@@ -1911,9 +1909,8 @@ function StagesOwnersPage() {
                         {category.statuses.map((status, index) => (
                           <tr
                             key={status.id}
-                            className={`border-b transition-all duration-150 ${
-                              editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
-                            }`}
+                            className={`border-b transition-all duration-150 ${editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
+                              }`}
                           >
                             <td colSpan={4} className="p-0">
                               <div className="p-4 pl-16 flex items-center gap-4">
@@ -2234,14 +2231,14 @@ function StagesTenantsPage() {
   const [newStatusName, setNewStatusName] = useState("")
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
-  
+
   // Workflow view state
   const [selectedStageForEdit, setSelectedStageForEdit] = useState<{
     categoryId: string
     categoryName: string
     status: { id: string; name: string; steps: number; days: number; processes: number }
   } | null>(null)
-  
+
   // Workflow steps for the selected stage
   const [stageWorkflowSteps, setStageWorkflowSteps] = useState([
     { id: "1", type: "email", name: "Banking", timing: "immediately", day: 1, autoSend: true, processName: null, instructions: "" },
@@ -2800,7 +2797,7 @@ function StagesTenantsPage() {
             <Input
               placeholder="Search categories..."
               value={editingCategoryName && editingCategoryId === null ? editingCategoryName : ""}
-              onChange={() => {}}
+              onChange={() => { }}
               className="pl-10"
             />
           </div>
@@ -2930,9 +2927,8 @@ function StagesTenantsPage() {
                         {category.statuses.map((status, index) => (
                           <tr
                             key={status.id}
-                            className={`border-b transition-all duration-150 ${
-                              editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
-                            }`}
+                            className={`border-b transition-all duration-150 ${editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
+                              }`}
                           >
                             <td colSpan={4} className="p-0">
                               <div className="p-4 pl-16 flex items-center gap-4">
@@ -3855,11 +3851,10 @@ function TemplateManagementPage() {
           <button
             type="button"
             onClick={() => setActiveTab("email")}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "email"
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "email"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -3872,11 +3867,10 @@ function TemplateManagementPage() {
           <button
             type="button"
             onClick={() => setActiveTab("sms")}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === "sms"
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "sms"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -3965,9 +3959,8 @@ function TemplateManagementPage() {
               <tr key={template.id} className="hover:bg-muted transition-colors">
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                      activeTab === "email" ? "bg-chart-1/20" : "bg-chart-2/20"
-                    }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === "email" ? "bg-chart-1/20" : "bg-chart-2/20"
+                      }`}>
                       {activeTab === "email" ? (
                         <Mail className="h-4 w-4 text-chart-1" />
                       ) : (
@@ -4088,9 +4081,8 @@ function TemplateManagementPage() {
                     setEditingTemplate({ ...editingTemplate, content: e.target.value })
                   }
                   disabled={isViewMode}
-                  className={`w-full min-h-[200px] p-3 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
-                    isViewMode ? "bg-muted" : ""
-                  }`}
+                  className={`w-full min-h-[200px] p-3 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${isViewMode ? "bg-muted" : ""
+                    }`}
                 />
                 {!isViewMode && (
                   <p className="text-xs text-muted-foreground">

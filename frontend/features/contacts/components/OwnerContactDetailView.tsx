@@ -1535,6 +1535,8 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
                 onProcessClick={onNavigateToProcess ?? ((process, contactName) => nav.go("contactProcessDetail", { process, contactName }))}
                 onEditProcess={handleEditProcess}
                 onRemoveNewProcess={(id) => setNewlyStartedProcesses(prev => prev.filter(p => p.id !== id))}
+                expandedProcesses={expandedProcesses}
+                onToggleProcessExpanded={toggleProcessExpanded}
                 contactName={contact.name}
               />
             </TabsContent>
