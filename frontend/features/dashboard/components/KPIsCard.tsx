@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { KPIGridOrChart } from "./KPIGridOrChart"
 import type { KPIData } from "../types"
-import type { KPIViewMode } from "../hooks/useKPIs"
+import type { KPIViewMode } from "../types"
 
 interface KPIsCardProps {
   kpiData: KPIData

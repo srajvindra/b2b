@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import LoginScreen from "@/components/login-screen"
+import { LoginPage } from "@/features/auth/components/loginPage"
 
 export default function Page() {
   const router = useRouter()
@@ -39,5 +39,5 @@ export default function Page() {
     return null
   }
 
-  return <LoginScreen onLogin={handleLogin} />
+  router.push("/login")
 }

@@ -115,6 +115,7 @@ import {
   TENANT_AUDIT_LOGS,
 } from "@/features/contacts/tenant/data"
 import { teamMembers, initialAssignedTeam, allStaffMembers } from "@/features/contacts/data/ownerDetailData"
+import { tenantMissingFields } from "@/features/contacts/data/contactDetailMock"
 import {
   TenantInformationTab,
   TenantUnitInformationTab,
@@ -169,7 +170,15 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   const [expandedProcesses, setExpandedProcesses] = useState<string[]>([])
   const nav = useNav()
 
-  useQuickActions(tenantContactQuickActions, { subtitle: "Tenant" })
+  useQuickActions(tenantContactQuickActions, {
+    subtitle: "Tenant",
+    aiSuggestedPrompts: [
+      "Summarize this tenant",
+      "Open tasks for this tenant",
+      "Lease and payment history",
+    ],
+    aiPlaceholder: "Ask about this tenant...",
+  })
 
   // Start new process modal
   const [showStartProcessModal, setShowStartProcessModal] = useState(false)
@@ -205,6 +214,20 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     setProcessStatusFilter("in-progress")
   }
 
+  const handleNavigateToProcess = (processName: string) => {
+    setActiveTab("processes")
+    const allProcesses = [
+      ...TENANT_PROCESSES.inProgress,
+      ...TENANT_PROCESSES.upcoming,
+      ...TENANT_PROCESSES.completed,
+      ...newlyStartedProcesses,
+    ]
+    const match = allProcesses.find((p) => p.name === processName)
+    if (match) {
+      setExpandedProcesses((prev) => (prev.includes(match.id) ? prev : [...prev, match.id]))
+    }
+  }
+
   const [showNewTaskModal, setShowNewTaskModal] = useState(false)
 
   // SMS Modal state
@@ -222,15 +245,6 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   // Missing Information Modal state
   const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
   const [missingInfoTab, setMissingInfoTab] = useState<"fields" | "documents">("fields")
-
-  // Tenant-specific missing information data
-  const tenantMissingFields = [
-    { id: 1, fieldName: "Emergency Contact", section: "Tenant Information", tab: "tenant-info" },
-    { id: 2, fieldName: "Date of Birth", section: "Screening", tab: "tenant-info" },
-    { id: 3, fieldName: "Driver's License", section: "Screening", tab: "tenant-info" },
-    { id: 4, fieldName: "Vehicle Information", section: "Additional Info", tab: "tenant-info" },
-    { id: 5, fieldName: "Employer Details", section: "Employment", tab: "tenant-info" },
-  ]
 
   // Notes modal state
   const [selectedNote, setSelectedNote] = useState<{
@@ -1127,11 +1141,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                activeTab === tab.id
+              className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${activeTab === tab.id
                   ? "border border-success text-foreground bg-background"
                   : "border border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
             >
               {tab.label}
               {tab.count !== undefined && (
@@ -1161,9 +1174,9 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   </Button>
                 </div>
                 <div className="border rounded-lg overflow-hidden">
-                  <div className={tasksToShow > 5 ? "max-h-[320px] overflow-y-auto" : ""}>
+                  <div className="max-h-[320px] overflow-y-auto">
                     <table className="w-full">
-                      <thead className={`bg-gray-50 border-b ${tasksToShow > 5 ? "sticky top-0 z-10" : ""}`}>
+                      <thead className="bg-gray-50 border-b sticky top-0 z-10">
                         <tr>
                           <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
                           <th className="text-left text-xs font-medium text-muted-foreground p-3">Related Entity</th>
@@ -1175,16 +1188,20 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {tasks.slice(0, tasksToShow).map((task) => (
+                        {tasks.map((task) => (
                           <tr key={task.id} className="hover:bg-gray-50">
                             <td className="p-3">
                               <div className="flex flex-col gap-1">
                                 <span className="text-sm font-medium text-slate-800">{task.title}</span>
                                 {task.processName && (
-                                  <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); handleNavigateToProcess(task.processName || "") }}
+                                    className="flex items-center gap-1 hover:underline cursor-pointer"
+                                  >
                                     <Workflow className="h-3 w-3 text-teal-600" />
                                     <span className="text-xs text-teal-600">{task.processName}</span>
-                                  </div>
+                                  </button>
                                 )}
                                 {task.autoCreated && (
                                   <span className="text-xs text-muted-foreground">Auto-created</span>
@@ -1210,10 +1227,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                               <Badge
                                 variant="outline"
                                 className={`text-xs ${task.priority === "High"
-                                  ? "bg-red-50 text-red-700 border-red-200"
-                                  : task.priority === "Medium"
-                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                    : "bg-gray-50 text-gray-600 border-gray-200"
+                                    ? "bg-red-50 text-red-700 border-red-200"
+                                    : task.priority === "Medium"
+                                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                      : "bg-gray-50 text-gray-600 border-gray-200"
                                   }`}
                               >
                                 {task.priority}
@@ -1223,12 +1240,12 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                               <Badge
                                 variant="outline"
                                 className={`text-xs ${task.status === "In Progress"
-                                  ? "bg-teal-50 text-teal-700 border-teal-200"
-                                  : task.status === "Pending"
-                                    ? "bg-teal-50 text-teal-600 border-teal-200"
-                                    : task.status === "Skipped"
-                                      ? "bg-gray-100 text-gray-600 border-gray-300"
-                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                    ? "bg-teal-50 text-teal-700 border-teal-200"
+                                    : task.status === "Pending"
+                                      ? "bg-teal-50 text-teal-600 border-teal-200"
+                                      : task.status === "Skipped"
+                                        ? "bg-gray-100 text-gray-600 border-gray-300"
+                                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                   }`}
                               >
                                 {task.status}
@@ -1283,30 +1300,7 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                     </table>
                   </div>
                 </div>
-                {/* View More / View Less Buttons */}
-                {tasks.length > 5 && (
-                  <div className="flex items-center justify-center gap-3 mt-3">
-                    {tasksToShow <= 5 ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs bg-transparent"
-                        onClick={() => setTasksToShow(prev => Math.min(prev + 5, tasks.length))}
-                      >
-                        View More
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-xs bg-transparent"
-                        onClick={() => setTasksToShow(5)}
-                      >
-                        View Less
-                      </Button>
-                    )}
-                  </div>
-                )}
+
               </CardContent>
             </Card>
 

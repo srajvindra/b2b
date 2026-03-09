@@ -17,7 +17,15 @@ export default function Page() {
       }),
     []
   )
-  useQuickActions(calendarQuickActions, { subtitle: "Calendar" })
+  useQuickActions(calendarQuickActions, {
+    subtitle: "Calendar",
+    aiSuggestedPrompts: [
+      "What showings are scheduled today?",
+      "Block time for a showing",
+      "Sync with my calendar",
+    ],
+    aiPlaceholder: "Ask about calendar...",
+  })
 
   return (
     <div className="p-6">

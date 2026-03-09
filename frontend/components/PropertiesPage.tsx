@@ -20,11 +20,289 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useRouter } from "next/navigation"
-import { MOCK_PROPERTIES } from "@/features/properties/data/mockProperties"
+import { useNav } from "./dashboard-app"
+
+type Property = {
+  id: string
+  name: string
+  address: string
+  type: "Multi-Family" | "Single-Family"
+  units: number
+  hasVacancy: boolean
+  ownerName: string
+  dateAdded: string
+  staffName: string
+}
+
+const MOCK_PROPERTIES: Property[] = [
+  {
+    id: "1",
+    name: "Sunset Apartments",
+    address: "1234 Sunset Blvd, Los Angeles, CA 90028",
+    type: "Multi-Family",
+    units: 24,
+    hasVacancy: true,
+    ownerName: "Emma Wilson",
+    dateAdded: "2024-01-15",
+    staffName: "John Smith",
+  },
+  {
+    id: "2",
+    name: "Oakwood Residence",
+    address: "567 Oak Street, San Francisco, CA 94102",
+    type: "Multi-Family",
+    units: 12,
+    hasVacancy: true,
+    ownerName: "Sarah Lee",
+    dateAdded: "2024-02-20",
+    staffName: "Jane Doe",
+  },
+  {
+    id: "3",
+    name: "Pine Street Homes",
+    address: "890 Pine Ave, Seattle, WA 98101",
+    type: "Single-Family",
+    units: 1,
+    hasVacancy: false,
+    ownerName: "Linda Martinez",
+    dateAdded: "2024-03-10",
+    staffName: "Mike Johnson",
+  },
+  {
+    id: "4",
+    name: "Harbor View Complex",
+    address: "321 Harbor Dr, San Diego, CA 92101",
+    type: "Multi-Family",
+    units: 36,
+    hasVacancy: false,
+    ownerName: "Emma Wilson",
+    dateAdded: "2023-11-05",
+    staffName: "John Smith",
+  },
+  {
+    id: "5",
+    name: "Metro Plaza",
+    address: "456 Metro Blvd, Portland, OR 97201",
+    type: "Multi-Family",
+    units: 18,
+    hasVacancy: true,
+    ownerName: "Sarah Lee",
+    dateAdded: "2024-04-01",
+    staffName: "Jane Doe",
+  },
+  {
+    id: "6",
+    name: "Riverside Apartments",
+    address: "789 River Rd, Austin, TX 78701",
+    type: "Multi-Family",
+    units: 28,
+    hasVacancy: true,
+    ownerName: "Linda Martinez",
+    dateAdded: "2024-05-12",
+    staffName: "Mike Johnson",
+  },
+  {
+    id: "7",
+    name: "Lakeside Villas",
+    address: "234 Lake Dr, Chicago, IL 60601",
+    type: "Multi-Family",
+    units: 45,
+    hasVacancy: true,
+    ownerName: "Robert Taylor",
+    dateAdded: "2023-09-18",
+    staffName: "Sarah Mitchell",
+  },
+  {
+    id: "8",
+    name: "Mountain View Estates",
+    address: "567 Summit Rd, Denver, CO 80202",
+    type: "Multi-Family",
+    units: 32,
+    hasVacancy: false,
+    ownerName: "Emma Wilson",
+    dateAdded: "2024-01-28",
+    staffName: "John Smith",
+  },
+  {
+    id: "9",
+    name: "Downtown Lofts",
+    address: "890 Main St, Boston, MA 02108",
+    type: "Multi-Family",
+    units: 16,
+    hasVacancy: true,
+    ownerName: "Michael Chen",
+    dateAdded: "2024-06-05",
+    staffName: "Jane Doe",
+  },
+  {
+    id: "10",
+    name: "Coastal Residences",
+    address: "123 Beach Blvd, Miami, FL 33139",
+    type: "Multi-Family",
+    units: 52,
+    hasVacancy: false,
+    ownerName: "Sarah Lee",
+    dateAdded: "2023-12-20",
+    staffName: "Mike Johnson",
+  },
+  {
+    id: "11",
+    name: "Garden Terrace",
+    address: "456 Garden Way, Phoenix, AZ 85001",
+    type: "Multi-Family",
+    units: 20,
+    hasVacancy: true,
+    ownerName: "Linda Martinez",
+    dateAdded: "2024-02-14",
+    staffName: "Sarah Mitchell",
+  },
+  {
+    id: "12",
+    name: "Heritage Manor",
+    address: "789 Heritage Ave, Philadelphia, PA 19102",
+    type: "Single-Family",
+    units: 1,
+    hasVacancy: false,
+    ownerName: "Robert Taylor",
+    dateAdded: "2024-03-22",
+    staffName: "John Smith",
+  },
+  {
+    id: "13",
+    name: "Skyline Towers",
+    address: "321 Sky Blvd, Dallas, TX 75201",
+    type: "Multi-Family",
+    units: 64,
+    hasVacancy: true,
+    ownerName: "Emma Wilson",
+    dateAdded: "2023-10-10",
+    staffName: "Jane Doe",
+  },
+  {
+    id: "14",
+    name: "Willow Creek",
+    address: "654 Willow Ln, Nashville, TN 37201",
+    type: "Multi-Family",
+    units: 14,
+    hasVacancy: false,
+    ownerName: "Michael Chen",
+    dateAdded: "2024-04-18",
+    staffName: "Mike Johnson",
+  },
+  {
+    id: "15",
+    name: "Spring Gardens",
+    address: "987 Spring St, Atlanta, GA 30301",
+    type: "Multi-Family",
+    units: 22,
+    hasVacancy: true,
+    ownerName: "Sarah Lee",
+    dateAdded: "2024-01-05",
+    staffName: "Sarah Mitchell",
+  },
+  {
+    id: "16",
+    name: "Parkside Commons",
+    address: "147 Park Ave, Minneapolis, MN 55401",
+    type: "Multi-Family",
+    units: 38,
+    hasVacancy: false,
+    ownerName: "Linda Martinez",
+    dateAdded: "2023-11-28",
+    staffName: "John Smith",
+  },
+  {
+    id: "17",
+    name: "Maple Ridge",
+    address: "258 Maple Dr, Detroit, MI 48201",
+    type: "Single-Family",
+    units: 1,
+    hasVacancy: true,
+    ownerName: "Robert Taylor",
+    dateAdded: "2024-05-30",
+    staffName: "Jane Doe",
+  },
+  {
+    id: "18",
+    name: "Valley View Apartments",
+    address: "369 Valley Rd, Las Vegas, NV 89101",
+    type: "Multi-Family",
+    units: 42,
+    hasVacancy: true,
+    ownerName: "Emma Wilson",
+    dateAdded: "2024-02-08",
+    staffName: "Mike Johnson",
+  },
+  {
+    id: "19",
+    name: "Riverside Heights",
+    address: "741 River View, Portland, OR 97204",
+    type: "Multi-Family",
+    units: 26,
+    hasVacancy: false,
+    ownerName: "Michael Chen",
+    dateAdded: "2024-12-12",
+    staffName: "Sarah Mitchell",
+  },
+  {
+    id: "20",
+    name: "Broadway Plaza",
+    address: "852 Broadway, New York, NY 10003",
+    type: "Multi-Family",
+    units: 58,
+    hasVacancy: true,
+    ownerName: "Sarah Lee",
+    dateAdded: "2024-03-15",
+    staffName: "John Smith",
+  },
+  {
+    id: "21",
+    name: "Cedar Point",
+    address: "963 Cedar Ave, Charlotte, NC 28201",
+    type: "Multi-Family",
+    units: 30,
+    hasVacancy: false,
+    ownerName: "Linda Martinez",
+    dateAdded: "2024-06-20",
+    staffName: "Jane Doe",
+  },
+  {
+    id: "22",
+    name: "Hillside Residence",
+    address: "159 Hill St, Salt Lake City, UT 84101",
+    type: "Single-Family",
+    units: 1,
+    hasVacancy: true,
+    ownerName: "Robert Taylor",
+    dateAdded: "2024-04-25",
+    staffName: "Mike Johnson",
+  },
+  {
+    id: "23",
+    name: "Bay Shore Complex",
+    address: "357 Bay Shore Dr, Tampa, FL 33602",
+    type: "Multi-Family",
+    units: 48,
+    hasVacancy: true,
+    ownerName: "Emma Wilson",
+    dateAdded: "2023-10-30",
+    staffName: "Sarah Mitchell",
+  },
+  {
+    id: "24",
+    name: "Summit Place",
+    address: "486 Summit Ave, Columbus, OH 43201",
+    type: "Multi-Family",
+    units: 34,
+    hasVacancy: false,
+    ownerName: "Michael Chen",
+    dateAdded: "2024-05-08",
+    staffName: "John Smith",
+  },
+]
 
 export default function PropertiesPage() {
-  const router = useRouter()
+  const nav = useNav()
   const [searchQuery, setSearchQuery] = useState("")
   const [unitsFilter, setUnitsFilter] = useState<string>("all")
   const [vacancyFilter, setVacancyFilter] = useState<string>("all")
@@ -81,7 +359,7 @@ export default function PropertiesPage() {
   }
 
   const handlePropertyClick = (propertyId: string) => {
-    router.push(`/properties/${propertyId}`)
+    nav.go("propertyDetail", { id: propertyId })
   }
 
   return (

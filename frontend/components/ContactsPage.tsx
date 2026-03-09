@@ -1,28 +1,6 @@
-// "use client"
-
-// import type { ContactPageType } from "@/features/contacts/types"
-// import OwnersTenantsPage from "./OwnersTenantsPage"
-// import StaffVendorsPage from "./StaffVendorsPage"
-
-// interface ContactsPageProps {
-//   type: ContactPageType
-// }
-
-// export default function ContactsPage({ type }: ContactsPageProps) {
-//   if (type === "owner" || type === "tenant") {
-//     return <OwnersTenantsPage type={type} />
-//   }
-
-//   if (type === "vendor" || type === "property-technician" || type === "leasing-agent") {
-//     return <StaffVendorsPage type={type} />
-//   }
-
-//   return null
-// }
-
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   Search,
   Plus,
@@ -66,6 +44,7 @@ import {
   ListChecks,
   CheckSquare,
   Layers,
+  X,
 } from "lucide-react"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
@@ -81,7 +60,6 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { BulkActionBar } from "@/components/bulk-action-bar"
-import { ContactTabsStats } from "@/components/shared/contact-tabs"
 // --- Mock Data ---
 
 type ContactType = "Owner" | "Tenant" | "Vendor" | "Property Technician" | "Leasing Agent"
@@ -1694,6 +1672,26 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
   const [ownersViewMode, setOwnersViewMode] = useState<"list" | "grid">("list")
   const [tenantsViewMode, setTenantsViewMode] = useState<"list" | "grid">("list")
   const [vendorsViewMode, setVendorsViewMode] = useState<"list" | "grid">("list")
+
+  // AI Chat state for Owners
+  const [ownersAiChatInput, setOwnersAiChatInput] = useState("")
+
+  const handleOwnersAiChatSubmit = (query: string) => {
+    // Handle AI chat submission - this would integrate with an AI service
+    console.log("Owners AI Chat query:", query)
+    setOwnersAiChatInput("")
+    // In a real implementation, this would call an AI API and display the response
+  }
+
+  // AI Chat state for Tenants
+  const [tenantsAiChatInput, setTenantsAiChatInput] = useState("")
+
+  const handleTenantsAiChatSubmit = (query: string) => {
+    // Handle AI chat submission - this would integrate with an AI service
+    console.log("Tenants AI Chat query:", query)
+    setTenantsAiChatInput("")
+    // In a real implementation, this would call an AI API and display the response
+  }
   const [techniciansViewMode, setTechniciansViewMode] = useState<"list" | "grid">("list")
   const [leasingAgentsViewMode, setLeasingAgentsViewMode] = useState<"list" | "grid">("list")
 
@@ -1729,12 +1727,162 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
   const [terminationSubFilter, setTerminationSubFilter] = useState<"all" | "under" | "hidden">("all")
   const [selectedTag, setSelectedTag] = useState<string>("all")
 
+  // Owner advanced filter modal states
+  const [showOwnerFilterModal, setShowOwnerFilterModal] = useState(false)
+  const [ownerModalFilterField, setOwnerModalFilterField] = useState("")
+  const [ownerModalFilterValues, setOwnerModalFilterValues] = useState<string[]>([])
+  const [ownerModalOptionSearch, setOwnerModalOptionSearch] = useState("")
+  const [ownerModalFieldSearch, setOwnerModalFieldSearch] = useState("")
+  const [showOwnerFieldDropdown, setShowOwnerFieldDropdown] = useState(false)
+  const [ownerAppliedFilters, setOwnerAppliedFilters] = useState<{ field: string; values: string[] }[]>([])
+
+  // Filter fields for owner filter modal (same as All Properties page)
+  const OWNER_FILTER_FIELDS = [
+    "Integration", "Status", "Property Group(s)", "In Relationship(s)", "In Relationship Status",
+    "Tagged With Any", "Tagged With All", "Created At", "Updated At", "Owner Move Out Date",
+    "Have we received the signed management agreement yet?", "HOA?", "HOA Name", "Utility Region",
+    "Do we have the HOA documents/contact info?", "Pet's Allowed?", "Power Company", "Gas Company",
+    "Available By Date", "Section 8?", "Trash Company", "Water/Sewer Company", "Oil (Heat or Hot Water)",
+    "Available", "Water Company", "Sewer Company", "Start Marketing", "Does the owner allow for pets?",
+    "Microwave Included?", "Dishwasher Included?", "Stove/Oven Included?", "Refrigerator Included?",
+    "Listing Price", "Sold Price", "Washer Included?", "Date Ratified", "Dryer Included?", "Listing Date",
+    "Pool?", "Send Seller Brokerage Fee Form", "Community Center?", "House keys", "PICRA RECEIVED",
+    "Lockbox Code", "Mailbox keys", "PICRA RATIFIED", "Closing Date", "Community keys", "Walkthrough Date",
+    "Garage door remotes", "Ceiling fan remotes", "Listing Agreement Signed", "Power Company Contact",
+    "Key Fobs (for HOA)", "Termite & Moisture Inspection Date", "Air conditioning", "Inspection Date",
+    "Security Code", "Decision on applying to Guarantors", "Guarantors results on renewal",
+    "Satisfaction follow-up email response", "Funds Received?",
+  ]
+
+  const OWNER_FIELDS_WITH_SELECT_ALL = ["Property Group(s)", "In Relationship(s)", "Tagged With Any", "Tagged With All"]
+
+  const getOwnerFilterOptions = (field: string): string[] => {
+    if (field === "Status") return ["Active", "Inactive"]
+    if (field === "Property Group(s)") return [
+      "CSR - Abby Portfolio", "CSR - Aiden Portfolio", "CSR - Alyssa Portfolio", "CSR - Amanda Portfolio",
+      "CSR - Ashton Portfolio", "CSR - Ayesha Portfolio", "CSR - Brett Portfolio", "CSR - Colin Portfolio",
+      "CSR - Devin Portfolio", "CSR - Elena Portfolio", "CSR - Fiona Portfolio", "CSR - Grant Portfolio",
+      "CSR - Hannah Portfolio", "CSR - Isaac Portfolio", "CSR - Julia Portfolio", "CSR - Kevin Portfolio",
+      "CSR - Liam Portfolio", "CSR - Maya Portfolio", "CSR - Noah Portfolio", "CSR - Olivia Portfolio",
+    ]
+    if (field === "In Relationship(s)") return [
+      "New Tenant Leads", "NEW TENANTS LEADS", "New Vendor Leads", "PMC Leads",
+      "Realty Buyer Leads", "Realty Seller Leads", "Recruiting", "Referral Partners",
+      "Scott PMC Acquisitions", "Strategic Property Owner Leads",
+    ]
+    if (field === "Tagged With Any" || field === "Tagged With All") return ["Commercial", "Corporate", "Residential", "VIP", "New", "Priority"]
+    if (field === "Integration") return ["AppFolio", "Buildium", "RentManager", "Yardi", "None"]
+    if (field === "In Relationship Status") return ["Active", "Inactive", "Pending"]
+    if (field.includes("Included?") || field.includes("Allowed?") || field === "HOA?" || field === "Pool?" || field === "Community Center?" || field === "Section 8?" || field === "Available" || field === "Funds Received?" || field === "Does the owner allow for pets?") return ["Yes", "No"]
+    if (field === "Utility Region") return ["Northeast", "Southeast", "Midwest", "Southwest", "West Coast", "Pacific Northwest"]
+    return ["Option A", "Option B", "Option C"]
+  }
+
+  const applyOwnerModalFilter = () => {
+    if (!ownerModalFilterField || ownerModalFilterValues.length === 0) return
+    setOwnerAppliedFilters([...ownerAppliedFilters, { field: ownerModalFilterField, values: ownerModalFilterValues }])
+    setOwnerModalFilterField("")
+    setOwnerModalFilterValues([])
+    setOwnerModalOptionSearch("")
+    setShowOwnerFilterModal(false)
+    setCurrentPage(1)
+  }
+
+  const closeOwnerFilterModal = useCallback(() => {
+    setShowOwnerFilterModal(false)
+    setOwnerModalFilterField("")
+    setOwnerModalFilterValues([])
+    setOwnerModalOptionSearch("")
+    setOwnerModalFieldSearch("")
+    setShowOwnerFieldDropdown(false)
+  }, [])
+
+  const removeOwnerFilter = (index: number) => {
+    setOwnerAppliedFilters(ownerAppliedFilters.filter((_, i) => i !== index))
+    setCurrentPage(1)
+  }
+
   // Tenant tile filter states
   const [tenantTileFilter, setTenantTileFilter] = useState<"all" | "active" | "pending" | "moveout" | "evictions" | "type">("all")
   const [tenantPendingSubFilter, setTenantPendingSubFilter] = useState<"all" | "tasks" | "processes">("all")
   const [tenantMoveoutSubFilter, setTenantMoveoutSubFilter] = useState<"all" | "pending" | "completed">("all")
   const [tenantEvictionSubFilter, setTenantEvictionSubFilter] = useState<"all" | "pending" | "completed">("all")
   const [selectedTenantType, setSelectedTenantType] = useState<"all" | "Self Paying" | "Section 8">("all")
+
+  // Tenant advanced filter modal states
+  const [showTenantFilterModal, setShowTenantFilterModal] = useState(false)
+  const [tenantModalFilterField, setTenantModalFilterField] = useState("")
+  const [tenantModalFilterValues, setTenantModalFilterValues] = useState<string[]>([])
+  const [tenantModalOptionSearch, setTenantModalOptionSearch] = useState("")
+  const [tenantModalFieldSearch, setTenantModalFieldSearch] = useState("")
+  const [showTenantFieldDropdown, setShowTenantFieldDropdown] = useState(false)
+  const [tenantAppliedFilters, setTenantAppliedFilters] = useState<{ field: string; values: string[] }[]>([])
+
+  // Filter fields for tenant filter modal (same as All Properties page)
+  const TENANT_FILTER_FIELDS = [
+    "Integration", "Status", "Property Group(s)", "In Relationship(s)", "In Relationship Status",
+    "Tagged With Any", "Tagged With All", "Created At", "Updated At", "Owner Move Out Date",
+    "Have we received the signed management agreement yet?", "HOA?", "HOA Name", "Utility Region",
+    "Do we have the HOA documents/contact info?", "Pet's Allowed?", "Power Company", "Gas Company",
+    "Available By Date", "Section 8?", "Trash Company", "Water/Sewer Company", "Oil (Heat or Hot Water)",
+    "Available", "Water Company", "Sewer Company", "Start Marketing", "Does the owner allow for pets?",
+    "Microwave Included?", "Dishwasher Included?", "Stove/Oven Included?", "Refrigerator Included?",
+    "Listing Price", "Sold Price", "Washer Included?", "Date Ratified", "Dryer Included?", "Listing Date",
+    "Pool?", "Send Seller Brokerage Fee Form", "Community Center?", "House keys", "PICRA RECEIVED",
+    "Lockbox Code", "Mailbox keys", "PICRA RATIFIED", "Closing Date", "Community keys", "Walkthrough Date",
+    "Garage door remotes", "Ceiling fan remotes", "Listing Agreement Signed", "Power Company Contact",
+    "Key Fobs (for HOA)", "Termite & Moisture Inspection Date", "Air conditioning", "Inspection Date",
+    "Security Code", "Decision on applying to Guarantors", "Guarantors results on renewal",
+    "Satisfaction follow-up email response", "Funds Received?",
+  ]
+
+  const TENANT_FIELDS_WITH_SELECT_ALL = ["Property Group(s)", "In Relationship(s)", "Tagged With Any", "Tagged With All"]
+
+  const getTenantFilterOptions = (field: string): string[] => {
+    if (field === "Status") return ["Active", "Inactive"]
+    if (field === "Property Group(s)") return [
+      "CSR - Abby Portfolio", "CSR - Aiden Portfolio", "CSR - Alyssa Portfolio", "CSR - Amanda Portfolio",
+      "CSR - Ashton Portfolio", "CSR - Ayesha Portfolio", "CSR - Brett Portfolio", "CSR - Colin Portfolio",
+      "CSR - Devin Portfolio", "CSR - Elena Portfolio", "CSR - Fiona Portfolio", "CSR - Grant Portfolio",
+      "CSR - Hannah Portfolio", "CSR - Isaac Portfolio", "CSR - Julia Portfolio", "CSR - Kevin Portfolio",
+      "CSR - Liam Portfolio", "CSR - Maya Portfolio", "CSR - Noah Portfolio", "CSR - Olivia Portfolio",
+    ]
+    if (field === "In Relationship(s)") return [
+      "New Tenant Leads", "NEW TENANTS LEADS", "New Vendor Leads", "PMC Leads",
+      "Realty Buyer Leads", "Realty Seller Leads", "Recruiting", "Referral Partners",
+      "Scott PMC Acquisitions", "Strategic Property Owner Leads",
+    ]
+    if (field === "Tagged With Any" || field === "Tagged With All") return ["Commercial", "Corporate", "Residential", "VIP", "New", "Priority"]
+    if (field === "Integration") return ["AppFolio", "Buildium", "RentManager", "Yardi", "None"]
+    if (field === "In Relationship Status") return ["Active", "Inactive", "Pending"]
+    if (field.includes("Included?") || field.includes("Allowed?") || field === "HOA?" || field === "Pool?" || field === "Community Center?" || field === "Section 8?" || field === "Available" || field === "Funds Received?" || field === "Does the owner allow for pets?") return ["Yes", "No"]
+    if (field === "Utility Region") return ["Northeast", "Southeast", "Midwest", "Southwest", "West Coast", "Pacific Northwest"]
+    return ["Option A", "Option B", "Option C"]
+  }
+
+  const applyTenantModalFilter = () => {
+    if (!tenantModalFilterField || tenantModalFilterValues.length === 0) return
+    setTenantAppliedFilters([...tenantAppliedFilters, { field: tenantModalFilterField, values: tenantModalFilterValues }])
+    setTenantModalFilterField("")
+    setTenantModalFilterValues([])
+    setTenantModalOptionSearch("")
+    setShowTenantFilterModal(false)
+    setCurrentPage(1)
+  }
+
+  const closeTenantFilterModal = useCallback(() => {
+    setShowTenantFilterModal(false)
+    setTenantModalFilterField("")
+    setTenantModalFilterValues([])
+    setTenantModalOptionSearch("")
+    setTenantModalFieldSearch("")
+    setShowTenantFieldDropdown(false)
+  }, [])
+
+  const removeTenantFilter = (index: number) => {
+    setTenantAppliedFilters(tenantAppliedFilters.filter((_, i) => i !== index))
+    setCurrentPage(1)
+  }
 
   // Get unique values for filter options
   const uniqueStatuses = Array.from(new Set(MOCK_CONTACTS.map(c => c.status)))
@@ -1746,7 +1894,7 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
   const uniqueCsm = Array.from(new Set(MOCK_CONTACTS.filter(c => c.type === "Owner" && c.csm).map(c => c.csm!))).sort()
 
   // Check if any column filter is active
-  const hasActiveColumnFilters =
+  const hasActiveColumnFilters = 
     selectedStatuses.length > 0 ||
     selectedAssignees.length > 0 ||
     selectedLocations.length > 0 ||
@@ -1891,25 +2039,25 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
     if (activeTab === "owners" || activeTab === "tenants") {
       // Status column filter (multi-select)
       if (selectedStatuses.length > 0 && !selectedStatuses.includes(contact.status)) return false
-
+      
       // Assignee/CSR column filter (multi-select)
       if (selectedAssignees.length > 0 && !selectedAssignees.includes(contact.assignedStaff)) return false
-
+      
       // Company/LLC column filter (multi-select, owners only)
       if (selectedCompanyLlc.length > 0 && !selectedCompanyLlc.includes(contact.companyLlc || "")) return false
-
+      
       // CSM column filter (multi-select, owners only)
       if (selectedCsm.length > 0 && !selectedCsm.includes(contact.csm || "")) return false
-
+      
       // Location column filter (multi-select)
       if (selectedLocations.length > 0 && !selectedLocations.includes(contact.location)) return false
-
+      
       // Last Active column filter (multi-select by category)
       if (selectedLastActive.length > 0) {
         const category = getLastActiveCategory(contact.lastActive)
         if (!selectedLastActive.includes(category)) return false
       }
-
+      
       // Units column filter (multi-select)
       if (selectedUnits.length > 0 && (contact.units === undefined || !selectedUnits.includes(contact.units))) return false
     }
@@ -2048,24 +2196,140 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
   // Get stats cards based on active tab
   const getStatsCards = () => {
     if (activeTab === "vendors") {
-      return <ContactTabsStats variant="vendors" vendors={MOCK_VENDORS} />
+      const totalVendors = MOCK_VENDORS.length
+      const uniqueTrades = [...new Set(MOCK_VENDORS.filter((v) => v.trades).flatMap((v) => v.trades.split(",")))].length
+      const vendorsWithEmail = MOCK_VENDORS.filter((v) => v.email).length
+      const vendorsWithPhone = MOCK_VENDORS.filter((v) => v.phone).length
+
+      return (
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-primary/10">
+              <Briefcase className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm text-muted-foreground">Total Vendors</span>
+            <span className="text-xl font-bold">{totalVendors}</span>
+            <span className="text-xs text-muted-foreground">Service providers</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-success/10">
+              <Wrench className="h-4 w-4 text-success" />
+            </div>
+            <span className="text-sm text-muted-foreground">Trades</span>
+            <span className="text-xl font-bold">{uniqueTrades}</span>
+            <span className="text-xs text-muted-foreground">Categories</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-info/10">
+              <Mail className="h-4 w-4 text-info" />
+            </div>
+            <span className="text-sm text-muted-foreground">With Email</span>
+            <span className="text-xl font-bold">{vendorsWithEmail}</span>
+            <span className="text-xs text-muted-foreground">Contactable</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-accent">
+              <Phone className="h-4 w-4 text-accent-foreground" />
+            </div>
+            <span className="text-sm text-muted-foreground">With Phone</span>
+            <span className="text-xl font-bold">{vendorsWithPhone}</span>
+            <span className="text-xs text-muted-foreground">Reachable</span>
+          </div>
+        </div>
+      )
     }
 
     if (activeTab === "property-technician") {
+      const activeTechs = MOCK_CONTACTS.filter((c) => c.type === "Property Technician" && c.status === "Active").length
+      const pendingTechs = MOCK_CONTACTS.filter(
+        (c) => c.type === "Property Technician" && c.status === "Pending",
+      ).length
+      const specialties = new Set(
+        MOCK_CONTACTS.filter((c) => c.type === "Property Technician" && c.specialty).map((c) => c.specialty),
+      ).size
+
       return (
-        <ContactTabsStats
-          variant="property-technician"
-          technicians={MOCK_CONTACTS.filter((c) => c.type === "Property Technician")}
-        />
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-info/10">
+              <Wrench className="h-4 w-4 text-info" />
+            </div>
+            <span className="text-sm text-muted-foreground">Total Technicians</span>
+            <span className="text-xl font-bold">{totalTechnicians}</span>
+            <span className="text-xs text-muted-foreground">Maintenance staff</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-success/10">
+              <UserCheck className="h-4 w-4 text-success" />
+            </div>
+            <span className="text-sm text-muted-foreground">Active</span>
+            <span className="text-xl font-bold">{activeTechs}</span>
+            <span className="text-xs text-success">Available</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-accent">
+              <Wrench className="h-4 w-4 text-accent-foreground" />
+            </div>
+            <span className="text-sm text-muted-foreground">Specialties</span>
+            <span className="text-xl font-bold">{specialties}</span>
+            <span className="text-xs text-muted-foreground">Skill sets</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-warning/10">
+              <Clock className="h-4 w-4 text-warning" />
+            </div>
+            <span className="text-sm text-muted-foreground">Pending</span>
+            <span className="text-xl font-bold">{pendingTechs}</span>
+            <span className="text-xs text-warning">Awaiting</span>
+          </div>
+        </div>
       )
     }
 
     if (activeTab === "leasing-agent") {
+      const activeAgents = MOCK_CONTACTS.filter((c) => c.type === "Leasing Agent" && c.status === "Active").length
+      const totalProperties = MOCK_CONTACTS.filter((c) => c.type === "Leasing Agent").reduce(
+        (acc, c) => acc + c.properties.length,
+        0,
+      )
+
       return (
-        <ContactTabsStats
-          variant="leasing-agent"
-          agents={MOCK_CONTACTS.filter((c) => c.type === "Leasing Agent")}
-        />
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-destructive/10">
+              <Home className="h-4 w-4 text-destructive" />
+            </div>
+            <span className="text-sm text-muted-foreground">Total Agents</span>
+            <span className="text-xl font-bold">{totalLeasingAgents}</span>
+            <span className="text-xs text-muted-foreground">Professionals</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-success/10">
+              <UserCheck className="h-4 w-4 text-success" />
+            </div>
+            <span className="text-sm text-muted-foreground">Active</span>
+            <span className="text-xl font-bold">{activeAgents}</span>
+            <span className="text-xs text-success">Currently active</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-info/10">
+              <Building2 className="h-4 w-4 text-info" />
+            </div>
+            <span className="text-sm text-muted-foreground">Properties</span>
+            <span className="text-xl font-bold">{totalProperties}</span>
+            <span className="text-xs text-muted-foreground">Assigned</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-background border rounded-lg shadow-sm">
+            <div className="p-1 rounded bg-warning/10">
+              <Home className="h-4 w-4 text-warning" />
+            </div>
+            <span className="text-sm text-muted-foreground">Avg Properties</span>
+            <span className="text-xl font-bold">
+              {totalLeasingAgents > 0 ? (totalProperties / totalLeasingAgents).toFixed(1) : 0}
+            </span>
+            <span className="text-xs text-muted-foreground">Per agent</span>
+          </div>
+        </div>
       )
     }
 
@@ -2096,161 +2360,176 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
         return allOwners.filter(c => c.tags?.includes(selectedTag)).length
       }
 
-      const tileBase = "flex items-center gap-2 px-3 py-1.5 border rounded-lg shadow-sm cursor-pointer transition-colors"
-      const tileActive = "ring-2 ring-primary bg-primary/5"
-      const tileInactive = "bg-background hover:bg-muted/50"
-
       return (
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-5 gap-3">
           {/* Total Owners */}
           <div
-            className={`${tileBase} ${ownerTileFilter === "all" ? tileActive : tileInactive}`}
+            className={`flex flex-col border rounded-lg shadow-sm cursor-pointer transition-colors ${ownerTileFilter === "all" ? "ring-2 ring-primary bg-primary/5" : "bg-background hover:bg-muted/50"}`}
             onClick={() => { setOwnerTileFilter("all"); setCurrentPage(1) }}
           >
-            <div className="p-1 rounded bg-success/10">
-              <Building2 className="h-4 w-4 text-success" />
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-success/5">
+              <div className="p-1 rounded bg-success/10">
+                <Building2 className="h-4 w-4 text-success" />
+              </div>
+              <span className="text-xs font-medium text-foreground">Total Owners</span>
+              
             </div>
-            <span className="text-sm text-muted-foreground">Total Owners</span>
-            <span className="text-xl font-bold">{totalOwners}</span>
+            <div className="flex-1 flex items-center justify-center px-3 py-3">
+              <span className="text-muted-foreground text-2xl font-extrabold">41</span>
+            </div>
           </div>
 
           {/* Active Owners */}
           <div
-            className={`${tileBase} ${ownerTileFilter === "active" ? tileActive : tileInactive}`}
+            className={`flex flex-col border rounded-lg shadow-sm cursor-pointer transition-colors ${ownerTileFilter === "active" ? "ring-2 ring-primary bg-primary/5" : "bg-background hover:bg-muted/50"}`}
             onClick={() => { setOwnerTileFilter("active"); setCurrentPage(1) }}
           >
-            <div className="p-1 rounded bg-info/10">
-              <UserCheck className="h-4 w-4 text-info" />
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-info/5">
+              <div className="p-1 rounded bg-info/10">
+                <UserCheck className="h-4 w-4 text-info" />
+              </div>
+              <span className="text-xs font-medium text-foreground">Active Owners</span>
+              
             </div>
-            <span className="text-sm text-muted-foreground">Active Owners</span>
-            <span className="text-xl font-bold">{activeOwnerCount}</span>
+            <div className="flex-1 flex items-center justify-center px-3 py-3">
+              <span className="text-muted-foreground font-extrabold text-2xl">29</span>
+            </div>
           </div>
 
-          {/* Pending (Dropdown) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className={`${tileBase} ${ownerTileFilter === "pending" ? tileActive : tileInactive}`}>
-                <div className="p-1 rounded bg-warning/10">
-                  <Clock className="h-4 w-4 text-warning" />
-                </div>
-                <span className="text-sm text-muted-foreground">Pending</span>
-                <span className="text-xl font-bold">{getPendingCount()}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+          {/* Pending (Expanded) */}
+          <div className={`flex flex-col border rounded-lg shadow-sm ${ownerTileFilter === "pending" ? "ring-2 ring-primary bg-primary/5" : "bg-background"}`}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
+              <div className="p-1 rounded bg-warning/10">
+                <Clock className="h-4 w-4 text-warning" />
               </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-1" align="start">
-              {[
-                { label: "All", value: "all" as const, count: ownerPendingTasks + ownerPendingProcesses },
-                { label: "Pending Tasks", value: "tasks" as const, count: ownerPendingTasks },
-                { label: "Pending Processes", value: "processes" as const, count: ownerPendingProcesses },
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${ownerTileFilter === "pending" && pendingSubFilter === item.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted/80 text-foreground"
-                    }`}
-                  onClick={() => {
-                    setOwnerTileFilter("pending")
-                    setPendingSubFilter(item.value)
-                    setCurrentPage(1)
-                  }}
-                >
-                  <span>{item.label}</span>
-                  <Badge variant="secondary" className="text-xs">{item.count}</Badge>
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
+              <span className="text-xs font-medium text-foreground">Pending</span>
+              <span className="text-lg font-bold ml-auto">{getPendingCount()}</span>
+            </div>
+            <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+              <button
+                className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                  ownerTileFilter === "pending" && pendingSubFilter === "tasks"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted/80 text-muted-foreground"
+                }`}
+                onClick={() => {
+                  setOwnerTileFilter("pending")
+                  setPendingSubFilter("tasks")
+                  setCurrentPage(1)
+                }}
+              >
+                <span className="text-left">Pending Tasks</span>
+                <span className="font-semibold">{ownerPendingTasks}</span>
+              </button>
+              <button
+                className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                  ownerTileFilter === "pending" && pendingSubFilter === "processes"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted/80 text-muted-foreground"
+                }`}
+                onClick={() => {
+                  setOwnerTileFilter("pending")
+                  setPendingSubFilter("processes")
+                  setCurrentPage(1)
+                }}
+              >
+                <span className="text-left">Pending Processes</span>
+                <span className="font-semibold">{ownerPendingProcesses}</span>
+              </button>
+            </div>
+          </div>
 
-          {/* Terminations (Dropdown) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className={`${tileBase} ${ownerTileFilter === "terminations" ? tileActive : tileInactive}`}>
-                <div className="p-1 rounded bg-destructive/10">
-                  <AlertTriangle className="h-4 w-4 text-destructive" />
-                </div>
-                <span className="text-sm text-muted-foreground">Terminations</span>
-                <span className="text-xl font-bold">{getTerminationCount()}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+          {/* Terminations (Expanded) */}
+          <div className={`flex flex-col border rounded-lg shadow-sm ${ownerTileFilter === "terminations" ? "ring-2 ring-primary bg-primary/5" : "bg-background"}`}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-destructive/5">
+              <div className="p-1 rounded bg-destructive/10">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
               </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-1" align="start">
-              {[
-                { label: "All", value: "all" as const, count: underTermination + terminatedHidden },
-                { label: "Under Termination", value: "under" as const, count: underTermination },
-                { label: "Terminated Hidden", value: "hidden" as const, count: terminatedHidden },
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${ownerTileFilter === "terminations" && terminationSubFilter === item.value
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted/80 text-foreground"
-                    }`}
-                  onClick={() => {
-                    setOwnerTileFilter("terminations")
-                    setTerminationSubFilter(item.value)
-                    setCurrentPage(1)
-                  }}
-                >
-                  <span>{item.label}</span>
-                  <Badge variant="secondary" className="text-xs">{item.count}</Badge>
-                </button>
-              ))}
-            </PopoverContent>
-          </Popover>
+              <span className="text-xs font-medium text-foreground">Terminations</span>
+              <span className="text-lg font-bold ml-auto">{getTerminationCount()}</span>
+            </div>
+            <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+              <button
+                className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                  ownerTileFilter === "terminations" && terminationSubFilter === "under"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted/80 text-muted-foreground"
+                }`}
+                onClick={() => {
+                  setOwnerTileFilter("terminations")
+                  setTerminationSubFilter("under")
+                  setCurrentPage(1)
+                }}
+              >
+                <span className="text-left">Under Termination</span>
+                <span className="font-semibold">{underTermination}</span>
+              </button>
+              <button
+                className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                  ownerTileFilter === "terminations" && terminationSubFilter === "hidden"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted/80 text-muted-foreground"
+                }`}
+                onClick={() => {
+                  setOwnerTileFilter("terminations")
+                  setTerminationSubFilter("hidden")
+                  setCurrentPage(1)
+                }}
+              >
+                <span className="text-left">Termination Hidden</span>
+                <span className="font-semibold">{terminatedHidden}</span>
+              </button>
+            </div>
+          </div>
 
-          {/* Tag / Group (Dropdown) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className={`${tileBase} ${ownerTileFilter === "tag" ? tileActive : tileInactive}`}>
-                <div className="p-1 rounded bg-accent">
-                  <Tag className="h-4 w-4 text-accent-foreground" />
-                </div>
-                <span className="text-sm text-muted-foreground">Tag </span>
-                <span className="text-xl font-bold">{getTagCount()}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+          {/* Tags (Expanded with scroll) */}
+          <div className={`flex flex-col border rounded-lg shadow-sm ${ownerTileFilter === "tag" ? "ring-2 ring-primary bg-primary/5" : "bg-background"}`}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
+              <div className="p-1 rounded bg-accent">
+                <Tag className="h-4 w-4 text-accent-foreground" />
               </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-1" align="start">
-              <div className="max-h-[250px] overflow-y-auto">
-                <button
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${ownerTileFilter === "tag" && selectedTag === "all"
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted/80 text-foreground"
+              <span className="text-xs font-medium text-foreground">Tags</span>
+              <span className="text-lg font-bold ml-auto">{getTagCount()}</span>
+            </div>
+            <div className="flex-1 flex flex-col px-2 py-2 gap-1 max-h-[90px] overflow-y-auto">
+              <button
+                className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors shrink-0 ${
+                  ownerTileFilter === "tag" && selectedTag === "all"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted/80 text-muted-foreground"
+                }`}
+                onClick={() => {
+                  setOwnerTileFilter("tag")
+                  setSelectedTag("all")
+                  setCurrentPage(1)
+                }}
+              >
+                <span>All Owners</span>
+                <span className="font-semibold">{allOwners.length}</span>
+              </button>
+              {allTags.map((tag) => {
+                const tagOwnerCount = allOwners.filter(c => c.tags?.includes(tag)).length
+                return (
+                  <button
+                    key={tag}
+                    className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors shrink-0 ${
+                      ownerTileFilter === "tag" && selectedTag === tag
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "hover:bg-muted/80 text-muted-foreground"
                     }`}
-                  onClick={() => {
-                    setOwnerTileFilter("tag")
-                    setSelectedTag("all")
-                    setCurrentPage(1)
-                  }}
-                >
-                  <span>All Owners</span>
-                  <Badge variant="secondary" className="text-xs">{allOwners.length}</Badge>
-                </button>
-                {allTags.map((tag) => {
-                  const tagOwnerCount = allOwners.filter(c => c.tags?.includes(tag)).length
-                  return (
-                    <button
-                      key={tag}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${ownerTileFilter === "tag" && selectedTag === tag
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "hover:bg-muted/80 text-foreground"
-                        }`}
-                      onClick={() => {
-                        setOwnerTileFilter("tag")
-                        setSelectedTag(tag)
-                        setCurrentPage(1)
-                      }}
-                    >
-                      <span>{tag}</span>
-                      <Badge variant="secondary" className="text-xs">{tagOwnerCount}</Badge>
-                    </button>
-                  )
-                })}
-              </div>
-            </PopoverContent>
-          </Popover>
+                    onClick={() => {
+                      setOwnerTileFilter("tag")
+                      setSelectedTag(tag)
+                      setCurrentPage(1)
+                    }}
+                  >
+                    <span>{tag}</span>
+                    <span className="font-semibold">{tagOwnerCount}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )
     }
@@ -2290,51 +2569,63 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
         return allTenants.filter(c => c.tenantType === selectedTenantType).length
       }
 
-      const tileBase = "flex items-center gap-2 px-3 py-1.5 border rounded-lg shadow-sm cursor-pointer transition-colors"
-      const tileActive = "ring-2 ring-primary bg-primary/5"
-      const tileInactive = "bg-background hover:bg-muted/50"
-
       return (
-        <div className="flex flex-wrap gap-3">
+        <div className="grid grid-cols-6 gap-3">
           {/* Total Tenants */}
           <div
-            className={`${tileBase} ${tenantTileFilter === "all" ? tileActive : tileInactive}`}
+            className={`flex flex-col border rounded-lg shadow-sm cursor-pointer transition-colors ${tenantTileFilter === "all" ? "ring-2 ring-primary bg-primary/5" : "bg-background hover:bg-muted/50"}`}
             onClick={() => { setTenantTileFilter("all"); setCurrentPage(1) }}
           >
-            <div className="p-1 rounded bg-success/10">
-              <Users className="h-4 w-4 text-success" />
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-success/5">
+              <div className="p-1 rounded bg-success/10">
+                <Users className="h-4 w-4 text-success" />
+              </div>
+              <span className="text-xs font-medium text-foreground">Total Tenants</span>
+              
             </div>
-            <span className="text-sm text-muted-foreground">Total Tenants</span>
-            <span className="text-xl font-bold">{totalTenants}</span>
+            <div className="flex-1 flex items-center justify-center px-3 py-3">
+              <span className="text-muted-foreground font-extrabold text-2xl">46</span>
+            </div>
           </div>
 
           {/* Active Tenants */}
           <div
-            className={`${tileBase} ${tenantTileFilter === "active" ? tileActive : tileInactive}`}
+            className={`flex flex-col border rounded-lg shadow-sm cursor-pointer transition-colors ${tenantTileFilter === "active" ? "ring-2 ring-primary bg-primary/5" : "bg-background hover:bg-muted/50"}`}
             onClick={() => { setTenantTileFilter("active"); setCurrentPage(1) }}
           >
-            <div className="p-1 rounded bg-info/10">
-              <UserCheck className="h-4 w-4 text-info" />
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-info/5">
+              <div className="p-1 rounded bg-info/10">
+                <UserCheck className="h-4 w-4 text-info" />
+              </div>
+              <span className="text-xs font-medium text-foreground">Active Tenants</span>
+              
             </div>
-            <span className="text-sm text-muted-foreground">Active Tenants</span>
-            <span className="text-xl font-bold">{activeTenantCount}</span>
+            <div className="flex-1 flex items-center justify-center px-3 py-3">
+              <span className="text-muted-foreground font-extrabold text-2xl">{activeTenantCount}</span>
+            </div>
           </div>
 
-          {/* Pending (Dropdown) */}
-          <Popover>
-
-            <PopoverContent className="w-[200px] p-1" align="start">
+          {/* Pending (Expanded) */}
+          <div className={`flex flex-col border rounded-lg shadow-sm ${tenantTileFilter === "pending" ? "ring-2 ring-primary bg-primary/5" : "bg-background"}`}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
+              <div className="p-1 rounded bg-warning/10">
+                <Clock className="h-4 w-4 text-warning" />
+              </div>
+              <span className="text-xs font-medium text-foreground">Pending</span>
+              <span className="text-lg font-bold ml-auto">{getTenantPendingCount()}</span>
+            </div>
+            <div className="flex-1 flex flex-col px-2 py-2 gap-1">
               {[
-                { label: "All", value: "all" as const, count: tenantPendingTasksTotal + tenantPendingProcessesTotal },
                 { label: "Pending Tasks", value: "tasks" as const, count: tenantPendingTasksTotal },
                 { label: "Pending Processes", value: "processes" as const, count: tenantPendingProcessesTotal },
               ].map((item) => (
                 <button
                   key={item.value}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${tenantTileFilter === "pending" && tenantPendingSubFilter === item.value
+                  className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                    tenantTileFilter === "pending" && tenantPendingSubFilter === item.value
                       ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted/80 text-foreground"
-                    }`}
+                      : "hover:bg-muted/80 text-muted-foreground"
+                  }`}
                   onClick={() => {
                     setTenantTileFilter("pending")
                     setTenantPendingSubFilter(item.value)
@@ -2342,36 +2633,33 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                   }}
                 >
                   <span>{item.label}</span>
-                  <Badge variant="secondary" className="text-xs">{item.count}</Badge>
+                  <span className="font-semibold">{item.count}</span>
                 </button>
               ))}
-            </PopoverContent>
-          </Popover>
+            </div>
+          </div>
 
-          {/* Move-out (Dropdown) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className={`${tileBase} ${tenantTileFilter === "moveout" ? tileActive : tileInactive}`}>
-                <div className="p-1 rounded bg-warning/10">
-                  <LogOut className="h-4 w-4 text-warning" />
-                </div>
-                <span className="text-sm text-muted-foreground">Move-out</span>
-                <span className="text-xl font-bold">{getMoveoutCount()}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+          {/* Move-out (Expanded) */}
+          <div className={`flex flex-col border rounded-lg shadow-sm ${tenantTileFilter === "moveout" ? "ring-2 ring-primary bg-primary/5" : "bg-background"}`}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
+              <div className="p-1 rounded bg-warning/10">
+                <LogOut className="h-4 w-4 text-warning" />
               </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-1" align="start">
+              <span className="text-xs font-medium text-foreground">Move-out</span>
+              <span className="text-lg font-bold ml-auto">{pendingMoveouts + completedMoveouts}</span>
+            </div>
+            <div className="flex-1 flex flex-col px-2 py-2 gap-1">
               {[
-                { label: "All", value: "all" as const, count: pendingMoveouts + completedMoveouts },
                 { label: "Pending Move-outs", value: "pending" as const, count: pendingMoveouts },
                 { label: "Completed Move-outs", value: "completed" as const, count: completedMoveouts },
               ].map((item) => (
                 <button
                   key={item.value}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${tenantTileFilter === "moveout" && tenantMoveoutSubFilter === item.value
+                  className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                    tenantTileFilter === "moveout" && tenantMoveoutSubFilter === item.value
                       ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted/80 text-foreground"
-                    }`}
+                      : "hover:bg-muted/80 text-muted-foreground"
+                  }`}
                   onClick={() => {
                     setTenantTileFilter("moveout")
                     setTenantMoveoutSubFilter(item.value)
@@ -2379,36 +2667,33 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                   }}
                 >
                   <span>{item.label}</span>
-                  <Badge variant="secondary" className="text-xs">{item.count}</Badge>
+                  <span className="font-semibold">{item.count}</span>
                 </button>
               ))}
-            </PopoverContent>
-          </Popover>
+            </div>
+          </div>
 
-          {/* Evictions (Dropdown) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className={`${tileBase} ${tenantTileFilter === "evictions" ? tileActive : tileInactive}`}>
-                <div className="p-1 rounded bg-destructive/10">
-                  <Gavel className="h-4 w-4 text-destructive" />
-                </div>
-                <span className="text-sm text-muted-foreground">Evictions</span>
-                <span className="text-xl font-bold">{getEvictionCount()}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+          {/* Evictions (Expanded) */}
+          <div className={`flex flex-col border rounded-lg shadow-sm ${tenantTileFilter === "evictions" ? "ring-2 ring-primary bg-primary/5" : "bg-background"}`}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-destructive/5">
+              <div className="p-1 rounded bg-destructive/10">
+                <Gavel className="h-4 w-4 text-destructive" />
               </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-1" align="start">
+              <span className="text-xs font-medium text-foreground">Evictions</span>
+              <span className="text-lg font-bold ml-auto">{pendingEvictions + completedEvictions}</span>
+            </div>
+            <div className="flex-1 flex flex-col px-2 py-2 gap-1">
               {[
-                { label: "All", value: "all" as const, count: pendingEvictions + completedEvictions },
                 { label: "Pending Evictions", value: "pending" as const, count: pendingEvictions },
                 { label: "Completed Evictions", value: "completed" as const, count: completedEvictions },
               ].map((item) => (
                 <button
                   key={item.value}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${tenantTileFilter === "evictions" && tenantEvictionSubFilter === item.value
+                  className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                    tenantTileFilter === "evictions" && tenantEvictionSubFilter === item.value
                       ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted/80 text-foreground"
-                    }`}
+                      : "hover:bg-muted/80 text-muted-foreground"
+                  }`}
                   onClick={() => {
                     setTenantTileFilter("evictions")
                     setTenantEvictionSubFilter(item.value)
@@ -2416,69 +2701,45 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                   }}
                 >
                   <span>{item.label}</span>
-                  <Badge variant="secondary" className="text-xs">{item.count}</Badge>
+                  <span className="font-semibold">{item.count}</span>
                 </button>
               ))}
-            </PopoverContent>
-          </Popover>
+            </div>
+          </div>
 
-          {/* Type (Dropdown) */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <div className={`${tileBase} ${tenantTileFilter === "type" ? tileActive : tileInactive}`}>
-                <div className="p-1 rounded bg-accent">
-                  <Layers className="h-4 w-4 text-accent-foreground" />
-                </div>
-                <span className="text-sm text-muted-foreground">Type</span>
-                <span className="text-xl font-bold">{getTenantTypeCount()}</span>
-                <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+          {/* Type (Expanded) */}
+          <div className={`flex flex-col border rounded-lg shadow-sm ${tenantTileFilter === "type" ? "ring-2 ring-primary bg-primary/5" : "bg-background"}`}>
+            <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
+              <div className="p-1 rounded bg-accent">
+                <Layers className="h-4 w-4 text-accent-foreground" />
               </div>
-            </PopoverTrigger>
-            <PopoverContent className="w-[220px] p-1" align="start">
-              <button
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${tenantTileFilter === "type" && selectedTenantType === "all"
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "hover:bg-muted/80 text-foreground"
+              <span className="text-xs font-medium text-foreground">Type</span>
+              <span className="text-lg font-bold ml-auto">{allTenants.length}</span>
+            </div>
+            <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+              {[
+                { label: "Self Paying", value: "Self Paying" as const, count: allTenants.filter(c => c.tenantType === "Self Paying").length },
+                { label: "Section 8", value: "Section 8" as const, count: allTenants.filter(c => c.tenantType === "Section 8").length },
+              ].map((item) => (
+                <button
+                  key={item.value}
+                  className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                    tenantTileFilter === "type" && selectedTenantType === item.value
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "hover:bg-muted/80 text-muted-foreground"
                   }`}
-                onClick={() => {
-                  setTenantTileFilter("type")
-                  setSelectedTenantType("all")
-                  setCurrentPage(1)
-                }}
-              >
-                <span>All</span>
-                <Badge variant="secondary" className="text-xs">{allTenants.length}</Badge>
-              </button>
-              <button
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${tenantTileFilter === "type" && selectedTenantType === "Self Paying"
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "hover:bg-muted/80 text-foreground"
-                  }`}
-                onClick={() => {
-                  setTenantTileFilter("type")
-                  setSelectedTenantType("Self Paying")
-                  setCurrentPage(1)
-                }}
-              >
-                <span>Self Paying</span>
-                <Badge variant="secondary" className="text-xs">{allTenants.filter(c => c.tenantType === "Self Paying").length}</Badge>
-              </button>
-              <button
-                className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${tenantTileFilter === "type" && selectedTenantType === "Section 8"
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "hover:bg-muted/80 text-foreground"
-                  }`}
-                onClick={() => {
-                  setTenantTileFilter("type")
-                  setSelectedTenantType("Section 8")
-                  setCurrentPage(1)
-                }}
-              >
-                <span>Section 8</span>
-                <Badge variant="secondary" className="text-xs">{allTenants.filter(c => c.tenantType === "Section 8").length}</Badge>
-              </button>
-            </PopoverContent>
-          </Popover>
+                  onClick={() => {
+                    setTenantTileFilter("type")
+                    setSelectedTenantType(item.value)
+                    setCurrentPage(1)
+                  }}
+                >
+                  <span>{item.label}</span>
+                  <span className="font-semibold">{item.count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )
     }
@@ -2600,10 +2861,10 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
             vendorCityFilter ||
             vendorStateFilter !== "Select..." ||
             vendorZipFilter) && (
-              <Button variant="ghost" onClick={clearVendorFilters}>
-                Clear Filters
-              </Button>
-            )}
+            <Button variant="ghost" onClick={clearVendorFilters}>
+              Clear Filters
+            </Button>
+          )}
           <span className="text-sm text-muted-foreground ml-auto">
             Showing {filteredVendors.length} of {MOCK_VENDORS.length} vendors
           </span>
@@ -2941,14 +3202,14 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                   )}
                   {/* Name Column - Plain Header */}
                   <TableHead className="font-semibold text-foreground">Name</TableHead>
-
+                  
                   {activeTab !== "owners" && activeTab !== "tenants" && (
                     <TableHead className="font-semibold text-foreground">Type</TableHead>
                   )}
                   {(activeTab === "property-technician" || activeTab === "leasing-agent") && (
                     <TableHead className="font-semibold text-foreground">Specialty</TableHead>
                   )}
-
+                  
                   {/* Properties / Company LLC Column */}
                   {activeTab === "owners" ? (
                     <TableHead className="p-2">
@@ -3009,10 +3270,10 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                   ) : (
                     <TableHead className="font-semibold text-foreground">Properties</TableHead>
                   )}
-
+                  
                   {/* Contact Info Column - Plain Header */}
                   <TableHead className="font-semibold text-foreground">Contact Info</TableHead>
-
+                  
                   {/* Units Column Filter - Only for Owners/Tenants */}
                   {(activeTab === "owners" || activeTab === "tenants") && (
                     <TableHead className="p-2">
@@ -3071,7 +3332,7 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                       </Popover>
                     </TableHead>
                   )}
-
+                  
                   {/* CSR Column Filter (was Assignee) - Only for Owners/Tenants */}
                   {(activeTab === "owners" || activeTab === "tenants") && (
                     <TableHead className="p-2">
@@ -3189,7 +3450,7 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                       </Popover>
                     </TableHead>
                   )}
-
+                  
                   {/* Status Column Filter - Only for Owners/Tenants */}
                   {(activeTab === "owners" || activeTab === "tenants") ? (
                     <TableHead className="p-2">
@@ -3250,7 +3511,7 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                   ) : (
                     <TableHead className="font-semibold text-foreground">Status</TableHead>
                   )}
-
+                  
                   {/* Last Active Column Filter - Only for Tenants (removed from Owners) */}
                   {activeTab === "tenants" && (
                     <TableHead className="p-2">
@@ -3312,7 +3573,7 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                   {activeTab !== "owners" && activeTab !== "tenants" && (
                     <TableHead className="font-semibold text-foreground">Last Active</TableHead>
                   )}
-
+                  
                   {/* Actions Column with Reset Button */}
                   <TableHead className="text-right p-2">
                     <div className="flex items-center justify-end gap-2">
@@ -3659,13 +3920,18 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
           <p className="text-muted-foreground">{getPageDescription()}</p>
         </div>
         <div className="flex items-center gap-2">
-
+          
         </div>
       </div>
 
-      {getStatsCards()}
+      {/* Main Layout with Quick Actions on the right */}
+      <div className="flex gap-4">
+        {/* Main Content Area */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
+          {/* Stats Cards */}
+          {getStatsCards()}
 
-      {/* Filters & Controls */}
+          {/* Filters & Controls */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex gap-2">
           <div className="relative flex-1 md:w-80">
@@ -3684,7 +3950,7 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
               setCurrentPage(1)
             }}
           >
-
+            
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="Active">Active</SelectItem>
@@ -3692,44 +3958,66 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
             </SelectContent>
           </Select>
           {activeTab === "owners" && (
-            <div className="flex items-center border rounded-md">
+            <>
               <Button
-                variant={ownersViewMode === "grid" ? "default" : "ghost"}
-                size="icon"
-                className={`rounded-r-none ${ownersViewMode === "grid" ? "bg-primary hover:bg-primary-hover" : ""}`}
-                onClick={() => setOwnersViewMode("grid")}
+                variant="outline"
+                size="sm"
+                onClick={() => setShowOwnerFilterModal(true)}
+                className="h-9 px-3"
               >
-                <LayoutGrid className="h-4 w-4" />
+                <Filter className="h-4 w-4 mr-1.5" />
+                Filter
               </Button>
-              <Button
-                variant={ownersViewMode === "list" ? "default" : "ghost"}
-                size="icon"
-                className={`rounded-l-none ${ownersViewMode === "list" ? "bg-primary hover:bg-primary-hover" : ""}`}
-                onClick={() => setOwnersViewMode("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
+              <div className="flex items-center border rounded-md">
+                <Button
+                  variant={ownersViewMode === "grid" ? "default" : "ghost"}
+                  size="icon"
+                  className={`rounded-r-none ${ownersViewMode === "grid" ? "bg-primary hover:bg-primary-hover" : ""}`}
+                  onClick={() => setOwnersViewMode("grid")}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={ownersViewMode === "list" ? "default" : "ghost"}
+                  size="icon"
+                  className={`rounded-l-none ${ownersViewMode === "list" ? "bg-primary hover:bg-primary-hover" : ""}`}
+                  onClick={() => setOwnersViewMode("list")}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
           )}
           {activeTab === "tenants" && (
-            <div className="flex items-center border rounded-md">
+            <>
               <Button
-                variant={tenantsViewMode === "grid" ? "default" : "ghost"}
-                size="icon"
-                className={`rounded-r-none ${tenantsViewMode === "grid" ? "bg-primary hover:bg-primary-hover" : ""}`}
-                onClick={() => setTenantsViewMode("grid")}
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTenantFilterModal(true)}
+                className="h-9 px-3"
               >
-                <LayoutGrid className="h-4 w-4" />
+                <Filter className="h-4 w-4 mr-1.5" />
+                Filter
               </Button>
-              <Button
-                variant={tenantsViewMode === "list" ? "default" : "ghost"}
-                size="icon"
-                className={`rounded-l-none ${tenantsViewMode === "list" ? "bg-primary hover:bg-primary-hover" : ""}`}
-                onClick={() => setTenantsViewMode("list")}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
+              <div className="flex items-center border rounded-md">
+                <Button
+                  variant={tenantsViewMode === "grid" ? "default" : "ghost"}
+                  size="icon"
+                  className={`rounded-r-none ${tenantsViewMode === "grid" ? "bg-primary hover:bg-primary-hover" : ""}`}
+                  onClick={() => setTenantsViewMode("grid")}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={tenantsViewMode === "list" ? "default" : "ghost"}
+                  size="icon"
+                  className={`rounded-l-none ${tenantsViewMode === "list" ? "bg-primary hover:bg-primary-hover" : ""}`}
+                  onClick={() => setTenantsViewMode("list")}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
           )}
           {activeTab === "property-technician" && (
             <div className="flex items-center border rounded-md">
@@ -3772,15 +4060,63 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
             </div>
           )}
         </div>
-        <div className="text-sm text-muted-foreground">
-          Showing {startIndex + 1}-{Math.min(endIndex, filteredContacts.length)} of {filteredContacts.length}{" "}
-          {getPageTitle().toLowerCase()}
-        </div>
-      </div>
 
-      <div className={`flex gap-6 ${activeTab === "owners" || activeTab === "tenants" ? "" : "flex-col"}`}>
-        {/* Main content area */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
+          {/* Applied Filters Display - Owners */}
+          {activeTab === "owners" && ownerAppliedFilters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <span className="text-xs text-muted-foreground">Active filters:</span>
+              {ownerAppliedFilters.map((filter, index) => (
+                <div key={`${filter.field}-${index}`} className="flex items-center gap-1 h-7 px-2.5 rounded-md border border-primary/30 bg-primary/5 text-primary text-xs font-medium">
+                  <span>{filter.field}:</span>
+                  <span className="max-w-[150px] truncate">{filter.values.join(", ")}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeOwnerFilter(index)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setOwnerAppliedFilters([])}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
+          {/* Applied Filters Display - Tenants */}
+          {activeTab === "tenants" && tenantAppliedFilters.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <span className="text-xs text-muted-foreground">Active filters:</span>
+              {tenantAppliedFilters.map((filter, index) => (
+                <div key={`${filter.field}-${index}`} className="flex items-center gap-1 h-7 px-2.5 rounded-md border border-primary/30 bg-primary/5 text-primary text-xs font-medium">
+                  <span>{filter.field}:</span>
+                  <span className="max-w-[150px] truncate">{filter.values.join(", ")}</span>
+                  <button
+                    type="button"
+                    onClick={() => removeTenantFilter(index)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setTenantAppliedFilters([])}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+          </div>
+
+          {/* Bulk Actions */}
           {(activeTab === "owners" || activeTab === "tenants") && (
             <BulkActionBar
               selectedCount={selectedContactIds.length}
@@ -3791,6 +4127,8 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
               selectedEmails={filteredContacts.filter(c => selectedContactIds.includes(c.id)).map(c => c.email)}
             />
           )}
+
+          {/* Table/Grid Content */}
           {renderContent()}
 
           {/* Pagination */}
@@ -3813,11 +4151,12 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
 
         {/* Quick Actions Panel - Owners */}
         {activeTab === "owners" && (
-          <div className="hidden lg:flex w-[180px] shrink-0 flex-col">
-            <Card className="sticky top-6">
-              <CardContent className="p-5">
-                <h3 className="text-base font-semibold text-foreground mb-5">Quick Actions</h3>
-                <div className="flex flex-col gap-3">
+          <div className="hidden lg:flex w-[200px] shrink-0 flex-col">
+            <Card className="sticky top-4 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 8rem)' }}>
+              {/* Upper Section - 55% - Quick Actions */}
+              <div className="flex flex-col" style={{ height: '55%' }}>
+                <h3 className="text-sm font-semibold text-foreground px-4 py-3 border-b border-gray-100 flex-shrink-0">Quick Actions</h3>
+                <div className="flex flex-col overflow-y-auto flex-1">
                   {[
                     { icon: UserPlus, label: "New Owner" },
                     { icon: Building2, label: "Owner ACH Setup" },
@@ -3825,41 +4164,72 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
                     { icon: Mail, label: "Send Owner Packets" },
                     { icon: FileText, label: "New Management Agreement" },
                     { icon: FileText, label: "Management Agreements" },
-                    { icon: Send, label: "Send Form to Owner" },
-                    { icon: Settings, label: "Owner Portal Bulk Settings" },
                   ].map(({ icon: Icon, label }) => (
                     <button
                       key={label}
-                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-foreground hover:bg-muted/50 hover:border-primary/30 transition-colors text-left"
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs text-gray-700 hover:bg-muted/50 transition-colors text-left border-b border-gray-100 last:border-b-0"
                     >
-                      <Icon className="h-4 w-4 text-primary shrink-0" />
+                      <Icon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
                       {label}
                     </button>
                   ))}
                 </div>
+              </div>
 
-                {/* Letters subsection */}
-                <div className="mt-5 pt-4 border-t border-border">
-                  <div className="flex items-center gap-2 mb-3">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold text-foreground">Letters</span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {[
-                      { icon: FileText, label: "Owner Statement (Enhanced)" },
-                      { icon: FileText, label: "Owner Statement" },
-                    ].map(({ icon: Icon, label }) => (
-                      <button
-                        key={label}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm text-foreground hover:bg-muted/50 hover:border-primary/30 transition-colors text-left"
-                      >
-                        <Icon className="h-4 w-4 text-primary shrink-0" />
-                        {label}
-                      </button>
-                    ))}
+              {/* Lower Section - 45% - AI Chat */}
+              <div className="flex flex-col border-t border-gray-200" style={{ height: '45%' }}>
+                <div className="px-3 py-3 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Ask..."
+                      value={ownersAiChatInput}
+                      onChange={(e) => setOwnersAiChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && ownersAiChatInput.trim()) {
+                          handleOwnersAiChatSubmit(ownersAiChatInput)
+                        }
+                      }}
+                      className="flex-1 h-9 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-9 w-9 p-0 flex-shrink-0 transition-colors ${
+                        ownersAiChatInput.trim() 
+                          ? "bg-blue-600 hover:bg-blue-700" 
+                          : "bg-blue-100 hover:bg-blue-200"
+                      }`}
+                      onClick={() => {
+                        if (ownersAiChatInput.trim()) {
+                          handleOwnersAiChatSubmit(ownersAiChatInput)
+                        }
+                      }}
+                    >
+                      <Send className={`h-4 w-4 ${ownersAiChatInput.trim() ? "text-white" : "text-blue-400"}`} />
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
+                <div className="px-3 pb-3 flex flex-col gap-1.5 overflow-y-auto flex-1">
+                  <button
+                    className="text-left text-sm text-primary hover:underline"
+                    onClick={() => handleOwnersAiChatSubmit("What's the owner's property portfolio?")}
+                  >
+                    {"What's the owner's property portfolio?"}
+                  </button>
+                  <button
+                    className="text-left text-sm text-primary hover:underline"
+                    onClick={() => handleOwnersAiChatSubmit("Show recent owner communications")}
+                  >
+                    Show recent owner communications
+                  </button>
+                  <button
+                    className="text-left text-sm text-primary hover:underline"
+                    onClick={() => handleOwnersAiChatSubmit("What are the pending action items?")}
+                  >
+                    What are the pending action items?
+                  </button>
+                </div>
+              </div>
             </Card>
           </div>
         )}
@@ -3867,61 +4237,351 @@ export default function ContactsPage({ filter, onFilterChange, onContactClick, o
         {/* Quick Actions Panel - Tenants */}
         {activeTab === "tenants" && (
           <div className="hidden lg:flex w-[200px] shrink-0 flex-col">
-            <Card className="sticky top-6">
-              <CardContent className="p-5">
-                <h3 className="text-base font-semibold text-foreground mb-5">Quick Actions</h3>
+            <Card className="sticky top-4 overflow-hidden flex flex-col" style={{ height: 'calc(100vh - 8rem)' }}>
+              {/* Upper Section - 55% - Quick Actions */}
+              <div className="flex flex-col" style={{ height: '55%' }}>
+                <h3 className="text-sm font-semibold text-foreground px-4 py-3 border-b border-gray-100 flex-shrink-0">Quick Actions</h3>
+                <div className="flex flex-col overflow-y-auto flex-1">
+                  {[
+                    { icon: Home, label: "Move In Tenant" },
+                    { icon: UserPlus, label: "New Tenant" },
+                    { icon: Mail, label: "Email All Tenants" },
+                    { icon: BarChart3, label: "Rent Roll" },
+                    { icon: FileText, label: "Tenant Ledger" },
+                  ].map(({ icon: Icon, label }) => (
+                    <button
+                      key={label}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-xs text-gray-700 hover:bg-muted/50 transition-colors text-left border-b border-gray-100 last:border-b-0"
+                    >
+                      <Icon className="h-3.5 w-3.5 text-gray-500 shrink-0" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                {/* Tasks subsection */}
-                <div className="mb-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Star className="h-4 w-4 text-primary fill-primary" />
-                    <span className="text-sm font-semibold text-foreground">Tasks</span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {[
-                      { icon: Home, label: "Move In Tenant" },
-                      { icon: UserPlus, label: "New Owner" },
-                      { icon: UserPlus, label: "New Vendor" },
-                      { icon: Mail, label: "Email All Tenants" },
-                    ].map(({ icon: Icon, label }) => (
-                      <button
-                        key={label}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-muted/50 hover:border-primary/30 transition-colors text-left"
-                      >
-                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                        {label}
-                      </button>
-                    ))}
+              {/* Lower Section - 45% - AI Chat */}
+              <div className="flex flex-col border-t border-gray-200" style={{ height: '45%' }}>
+                <div className="px-3 py-3 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Ask..."
+                      value={tenantsAiChatInput}
+                      onChange={(e) => setTenantsAiChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && tenantsAiChatInput.trim()) {
+                          handleTenantsAiChatSubmit(tenantsAiChatInput)
+                        }
+                      }}
+                      className="flex-1 h-9 text-sm"
+                    />
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className={`h-9 w-9 p-0 flex-shrink-0 transition-colors ${
+                        tenantsAiChatInput.trim() 
+                          ? "bg-blue-600 hover:bg-blue-700" 
+                          : "bg-blue-100 hover:bg-blue-200"
+                      }`}
+                      onClick={() => {
+                        if (tenantsAiChatInput.trim()) {
+                          handleTenantsAiChatSubmit(tenantsAiChatInput)
+                        }
+                      }}
+                    >
+                      <Send className={`h-4 w-4 ${tenantsAiChatInput.trim() ? "text-white" : "text-blue-400"}`} />
+                    </Button>
                   </div>
                 </div>
-
-                {/* Reports subsection */}
-                <div className="pt-4 border-t border-border">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-semibold text-foreground">Reports</span>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    {[
-                      { icon: BarChart3, label: "Rent Roll" },
-                      { icon: FileText, label: "Tenant Ledger" },
-                      { icon: FileText, label: "Tenant Insurance Coverage" },
-                    ].map(({ icon: Icon, label }) => (
-                      <button
-                        key={label}
-                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-muted/50 hover:border-primary/30 transition-colors text-left"
-                      >
-                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                <div className="px-3 pb-3 flex flex-col gap-1.5 overflow-y-auto flex-1">
+                  <button
+                    className="text-left text-sm text-primary hover:underline"
+                    onClick={() => handleTenantsAiChatSubmit("What's the tenant's lease status?")}
+                  >
+                    {"What's the tenant's lease status?"}
+                  </button>
+                  <button
+                    className="text-left text-sm text-primary hover:underline"
+                    onClick={() => handleTenantsAiChatSubmit("Show tenants with overdue rent")}
+                  >
+                    Show tenants with overdue rent
+                  </button>
+                  <button
+                    className="text-left text-sm text-primary hover:underline"
+                    onClick={() => handleTenantsAiChatSubmit("What are the upcoming lease renewals?")}
+                  >
+                    What are the upcoming lease renewals?
+                  </button>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           </div>
         )}
       </div>
+
+      {/* Owner Filter Modal */}
+      {showOwnerFilterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-background rounded-lg shadow-xl w-[480px] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <h2 className="text-lg font-bold text-foreground">Add Filter</h2>
+              <button type="button" onClick={closeOwnerFilterModal} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="px-6 pb-2 flex flex-col gap-4">
+              {/* Filter Field Dropdown - Searchable */}
+              <div className="relative">
+                <label className="text-xs font-medium text-primary mb-1 block">What do you want to filter by?</label>
+                <div className="border rounded-md w-full">
+                  <div
+                    className="flex items-center gap-2 h-10 px-3 cursor-pointer"
+                    onClick={() => setShowOwnerFieldDropdown(!showOwnerFieldDropdown)}
+                  >
+                    <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className={`text-sm flex-1 truncate ${ownerModalFilterField ? "text-foreground" : "text-muted-foreground"}`}>
+                      {ownerModalFilterField || "Select a filter field"}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${showOwnerFieldDropdown ? "rotate-180" : ""}`} />
+                  </div>
+                  {showOwnerFieldDropdown && (
+                    <>
+                      <div className="border-t px-2 py-1.5">
+                        <Input
+                          placeholder="Search fields..."
+                          value={ownerModalFieldSearch}
+                          onChange={(e) => setOwnerModalFieldSearch(e.target.value)}
+                          className="h-8 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto border-t">
+                        {OWNER_FILTER_FIELDS
+                          .filter((f) => f.toLowerCase().includes(ownerModalFieldSearch.toLowerCase()))
+                          .map((field) => (
+                          <div
+                            key={field}
+                            className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 border-b border-border last:border-b-0"
+                            onClick={() => {
+                              setOwnerModalFilterField(field)
+                              setOwnerModalFilterValues([])
+                              setOwnerModalOptionSearch("")
+                              setOwnerModalFieldSearch("")
+                              setShowOwnerFieldDropdown(false)
+                            }}
+                          >
+                            <span className="truncate">{field}</span>
+                          </div>
+                        ))}
+                        {OWNER_FILTER_FIELDS.filter((f) => f.toLowerCase().includes(ownerModalFieldSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Filter Options Dropdown - Searchable */}
+              <div>
+                <div className="border rounded-md w-full">
+                  <Input
+                    placeholder="Select filter option(s)"
+                    value={ownerModalOptionSearch}
+                    onChange={(e) => setOwnerModalOptionSearch(e.target.value)}
+                    className="border-0 border-b rounded-b-none h-10 focus-visible:ring-0 w-full"
+                  />
+                  {ownerModalFilterField && (() => {
+                    const allOptions = getOwnerFilterOptions(ownerModalFilterField)
+                    const filtered = allOptions.filter((opt) => opt.toLowerCase().includes(ownerModalOptionSearch.toLowerCase()))
+                    const allSelected = filtered.length > 0 && filtered.every((opt) => ownerModalFilterValues.includes(opt))
+                    const showSelectAll = OWNER_FIELDS_WITH_SELECT_ALL.includes(ownerModalFilterField) && !ownerModalOptionSearch
+                    return (
+                      <div className="max-h-[180px] overflow-y-auto">
+                        {showSelectAll && (
+                          <div className="flex items-center space-x-2 py-2 px-3 border-b border-border hover:bg-muted/50">
+                            <Checkbox
+                              id="owner-modal-opt-select-all"
+                              checked={allSelected}
+                              onCheckedChange={(checked) => {
+                                if (checked) setOwnerModalFilterValues([...new Set([...ownerModalFilterValues, ...allOptions])])
+                                else setOwnerModalFilterValues(ownerModalFilterValues.filter((v) => !allOptions.includes(v)))
+                              }}
+                            />
+                            <label htmlFor="owner-modal-opt-select-all" className="text-sm leading-none cursor-pointer flex-1 font-medium">Select All</label>
+                          </div>
+                        )}
+                        {filtered.map((option) => (
+                          <div key={option} className="flex items-center space-x-2 py-2 px-3 border-b border-border last:border-b-0 hover:bg-muted/50">
+                            <Checkbox
+                              id={`owner-modal-opt-${option}`}
+                              checked={ownerModalFilterValues.includes(option)}
+                              onCheckedChange={(checked) => {
+                                if (checked) setOwnerModalFilterValues([...ownerModalFilterValues, option])
+                                else setOwnerModalFilterValues(ownerModalFilterValues.filter((v) => v !== option))
+                              }}
+                            />
+                            <label htmlFor={`owner-modal-opt-${option}`} className="text-sm leading-none cursor-pointer flex-1 truncate">{option}</label>
+                          </div>
+                        ))}
+                        {filtered.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">No matching options</div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 mt-2">
+              <Button variant="outline" onClick={closeOwnerFilterModal} className="h-9 px-4">
+                Cancel <span className="text-xs text-muted-foreground ml-1.5">(esc)</span>
+              </Button>
+              <Button
+                onClick={applyOwnerModalFilter}
+                disabled={!ownerModalFilterField || ownerModalFilterValues.length === 0}
+                className="h-9 px-4"
+              >
+                Apply
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tenant Filter Modal */}
+      {showTenantFilterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-background rounded-lg shadow-xl w-[480px] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 pt-5 pb-4">
+              <h2 className="text-lg font-bold text-foreground">Add Filter</h2>
+              <button type="button" onClick={closeTenantFilterModal} className="text-muted-foreground hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="px-6 pb-2 flex flex-col gap-4">
+              {/* Filter Field Dropdown - Searchable */}
+              <div className="relative">
+                <label className="text-xs font-medium text-primary mb-1 block">What do you want to filter by?</label>
+                <div className="border rounded-md w-full">
+                  <div
+                    className="flex items-center gap-2 h-10 px-3 cursor-pointer"
+                    onClick={() => setShowTenantFieldDropdown(!showTenantFieldDropdown)}
+                  >
+                    <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className={`text-sm flex-1 truncate ${tenantModalFilterField ? "text-foreground" : "text-muted-foreground"}`}>
+                      {tenantModalFilterField || "Select a filter field"}
+                    </span>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${showTenantFieldDropdown ? "rotate-180" : ""}`} />
+                  </div>
+                  {showTenantFieldDropdown && (
+                    <>
+                      <div className="border-t px-2 py-1.5">
+                        <Input
+                          placeholder="Search fields..."
+                          value={tenantModalFieldSearch}
+                          onChange={(e) => setTenantModalFieldSearch(e.target.value)}
+                          className="h-8 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-[200px] overflow-y-auto border-t">
+                        {TENANT_FILTER_FIELDS
+                          .filter((f) => f.toLowerCase().includes(tenantModalFieldSearch.toLowerCase()))
+                          .map((field) => (
+                          <div
+                            key={field}
+                            className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 border-b border-border last:border-b-0"
+                            onClick={() => {
+                              setTenantModalFilterField(field)
+                              setTenantModalFilterValues([])
+                              setTenantModalOptionSearch("")
+                              setTenantModalFieldSearch("")
+                              setShowTenantFieldDropdown(false)
+                            }}
+                          >
+                            <span className="truncate">{field}</span>
+                          </div>
+                        ))}
+                        {TENANT_FILTER_FIELDS.filter((f) => f.toLowerCase().includes(tenantModalFieldSearch.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Filter Options Dropdown - Searchable */}
+              <div>
+                <div className="border rounded-md w-full">
+                  <Input
+                    placeholder="Select filter option(s)"
+                    value={tenantModalOptionSearch}
+                    onChange={(e) => setTenantModalOptionSearch(e.target.value)}
+                    className="border-0 border-b rounded-b-none h-10 focus-visible:ring-0 w-full"
+                  />
+                  {tenantModalFilterField && (() => {
+                    const allOptions = getTenantFilterOptions(tenantModalFilterField)
+                    const filtered = allOptions.filter((opt) => opt.toLowerCase().includes(tenantModalOptionSearch.toLowerCase()))
+                    const allSelected = filtered.length > 0 && filtered.every((opt) => tenantModalFilterValues.includes(opt))
+                    const showSelectAll = TENANT_FIELDS_WITH_SELECT_ALL.includes(tenantModalFilterField) && !tenantModalOptionSearch
+                    return (
+                      <div className="max-h-[180px] overflow-y-auto">
+                        {showSelectAll && (
+                          <div className="flex items-center space-x-2 py-2 px-3 border-b border-border hover:bg-muted/50">
+                            <Checkbox
+                              id="tenant-modal-opt-select-all"
+                              checked={allSelected}
+                              onCheckedChange={(checked) => {
+                                if (checked) setTenantModalFilterValues([...new Set([...tenantModalFilterValues, ...allOptions])])
+                                else setTenantModalFilterValues(tenantModalFilterValues.filter((v) => !allOptions.includes(v)))
+                              }}
+                            />
+                            <label htmlFor="tenant-modal-opt-select-all" className="text-sm leading-none cursor-pointer flex-1 font-medium">Select All</label>
+                          </div>
+                        )}
+                        {filtered.map((option) => (
+                          <div key={option} className="flex items-center space-x-2 py-2 px-3 border-b border-border last:border-b-0 hover:bg-muted/50">
+                            <Checkbox
+                              id={`tenant-modal-opt-${option}`}
+                              checked={tenantModalFilterValues.includes(option)}
+                              onCheckedChange={(checked) => {
+                                if (checked) setTenantModalFilterValues([...tenantModalFilterValues, option])
+                                else setTenantModalFilterValues(tenantModalFilterValues.filter((v) => v !== option))
+                              }}
+                            />
+                            <label htmlFor={`tenant-modal-opt-${option}`} className="text-sm leading-none cursor-pointer flex-1 truncate">{option}</label>
+                          </div>
+                        ))}
+                        {filtered.length === 0 && (
+                          <div className="px-3 py-2 text-sm text-muted-foreground">No matching options</div>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 mt-2">
+              <Button variant="outline" onClick={closeTenantFilterModal} className="h-9 px-4">
+                Cancel <span className="text-xs text-muted-foreground ml-1.5">(esc)</span>
+              </Button>
+              <Button
+                onClick={applyTenantModalFilter}
+                disabled={!tenantModalFilterField || tenantModalFilterValues.length === 0}
+                className="h-9 px-4"
+              >
+                Apply
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Contact Detail Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

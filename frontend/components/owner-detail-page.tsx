@@ -4,7 +4,7 @@ import { DialogDescription } from "@/components/ui/dialog"
 
 import { Checkbox } from "@/components/ui/checkbox"
 
-import { useState } from "react"
+import { useState, type ReactNode } from "react"
 import {
   ArrowLeft,
   Mail,
@@ -81,25 +81,67 @@ import type { Lead } from "@/components/leads-page/leads-data"
 import { SMSPopupModal } from "./sms-popup-modal"
 import { EmailPopupModal } from "./email-popup-modal"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar as CalendarWidget } from "@/components/ui/calendar"
+import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns"
+import type { DateRange } from "react-day-picker"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
-import { useNav } from "@/app/dashboard/page"
+import { useNav } from "./dashboard-app"
 
 // Pipeline stages with colors
-const STAGES = ["New lead", "Attempting to contact", "Scheduled Intro call", "Working", "Under review", "Closing", "New client", "Lost", "Disqualified"]
+const STAGES = ["New Lead", "Attempting to Contact", "Schedule Intro Call", "Working", "Under Review", "New Client", "Lost", "Terminated", "Disqualified"]
 
 // Stage progress bar colors
 const STAGE_PROGRESS_COLORS = [
-  "#E8A830", // Block 1 - Orange-Gold
-  "#A8E6CF", // Block 2 - Lightest green
-  "#6FCF97", // Block 3 - Light green
-  "#3BB273", // Block 4 - Medium green
-  "#27AE60", // Block 5 - Dark green
-  "#1E8449", // Block 6 - Darkest green
-  "#F5918A", // Block 7 - Light red
-  "#E74C3C", // Block 8 - Medium red
-  "#B71C1C", // Block 9 - Dark red
+  "#E8A830", // Block 1 - Mustard Gold (New Lead)
+  "#A8E6CF", // Block 2 - Soft Mint (Attempting to Contact)
+  "#6FCF97", // Block 3 - Fresh Green (Schedule Intro Call)
+  "#3BB273", // Block 4 - Emerald Green (Working)
+  "#27AE60", // Block 5 - Primary Green (Under Review)
+  "#1E8449", // Block 6 - Deep Forest Green (New Client)
+  "#E74C3C", // Block 7 - Strong Red (Lost)
+  "#EE6A5C", // Block 8 - Lighter Strong Red (Terminated)
+  "#F5918A", // Block 9 - Soft Coral (Disqualified)
 ]
+
+// Tasks associated with each stage
+const STAGE_TASKS: Record<string, { icon: string; label: string }[]> = {
+  "New Lead": [
+    { icon: "call", label: "Make introductory call" },
+    { icon: "email", label: "Send welcome email" },
+  ],
+  "Attempting to Contact": [
+    { icon: "call", label: "Follow-up call" },
+    { icon: "sms", label: "Send follow-up SMS" },
+    { icon: "email", label: "Send introduction email" },
+  ],
+  "Schedule Intro Call": [
+    { icon: "call", label: "Schedule discovery call" },
+    { icon: "email", label: "Send meeting invite" },
+    { icon: "video", label: "Set up video meeting" },
+  ],
+  "Working": [
+    { icon: "todo", label: "Prepare property proposal" },
+    { icon: "email", label: "Send proposal document" },
+    { icon: "call", label: "Review call with owner" },
+  ],
+  "Under Review": [
+    { icon: "todo", label: "Review submitted documents" },
+    { icon: "email", label: "Request additional info" },
+    { icon: "video", label: "Schedule review meeting" },
+  ],
+  "New Client": [
+    { icon: "email", label: "Send onboarding package" },
+    { icon: "call", label: "Welcome call" },
+    { icon: "todo", label: "Complete onboarding checklist" },
+  ],
+}
+
+const STAGE_REASONS: Record<string, string> = {
+  "Lost": "Owner chose another provider",
+  "Terminated": "Contract terminated by mutual agreement",
+  "Disqualified": "Did not meet qualification criteria",
+}
 
 const STAFF_MEMBERS = [
   { id: "1", name: "Richard Surovi", initials: "RS", color: "bg-primary/10 text-primary", department: "Sales" },
@@ -204,89 +246,119 @@ const taskStaffMembers = [
 ]
 
 const ownerTasks = [
+  // Process tasks - only from the single in-progress process "Initial Outreach & Qualification"
   {
     id: "1",
-    title: "Follow up with prospect - Initial outreach",
-    processName: "Owner Prospect Outreach",
+    title: "Complete needs assessment",
+    source: "process" as const,
+    processName: "Initial Outreach & Qualification",
     relatedEntityType: "Owner Prospect" as const,
     relatedEntityName: "James Wilson",
     assignee: "Nina Patel",
-    dueDate: "2025-12-20",
+    createdBy: "",
+    dueDate: "2026-01-15",
     priority: "High" as const,
-    status: "Pending" as const,
-    isOverdue: true,
+    status: "In Progress" as const,
+    isOverdue: false,
   },
   {
     id: "2",
-    title: "Send property management proposal",
-    processName: "Owner Onboarding Process",
-    relatedEntityType: "Property" as const,
-    relatedEntityName: "Sunset Villa",
+    title: "Verify property ownership",
+    source: "process" as const,
+    processName: "Initial Outreach & Qualification",
+    relatedEntityType: "Owner Prospect" as const,
+    relatedEntityName: "James Wilson",
     assignee: "Richard Surovi",
-    dueDate: "2025-12-21",
-    priority: "High" as const,
-    status: "In Progress" as const,
-    isOverdue: true,
-  },
-  {
-    id: "3",
-    title: "Schedule property walkthrough",
-    processName: "2 Property Onboarding Process",
-    relatedEntityType: "Property" as const,
-    relatedEntityName: "Harbor View Apartments",
-    assignee: "Nina Patel",
-    dueDate: "2025-12-23",
+    createdBy: "",
+    dueDate: "2026-01-18",
     priority: "High" as const,
     status: "Pending" as const,
     isOverdue: false,
   },
+  // Communication tasks - auto-created from unread/unresponded communications
+  {
+    id: "3",
+    title: "Respond to unread email from James Wilson",
+    source: "communication" as const,
+    processName: "",
+    relatedEntityType: "Owner Prospect" as const,
+    relatedEntityName: "James Wilson",
+    assignee: "Sarah Johnson",
+    createdBy: "",
+    dueDate: "2026-01-12",
+    priority: "High" as const,
+    status: "Pending" as const,
+    isOverdue: true,
+  },
   {
     id: "4",
-    title: "Review management agreement",
+    title: "Return missed call from James Wilson",
+    source: "communication" as const,
+    processName: "",
+    relatedEntityType: "Owner Prospect" as const,
+    relatedEntityName: "James Wilson",
+    assignee: "Nina Patel",
+    createdBy: "",
+    dueDate: "2026-01-13",
+    priority: "Medium" as const,
+    status: "Pending" as const,
+    isOverdue: true,
+  },
+  {
+    id: "5",
+    title: "Follow up on unresponded SMS",
+    source: "communication" as const,
+    processName: "",
+    relatedEntityType: "Owner Prospect" as const,
+    relatedEntityName: "James Wilson",
+    assignee: "Sarah Johnson",
+    createdBy: "",
+    dueDate: "2026-01-14",
+    priority: "Medium" as const,
+    status: "Pending" as const,
+    isOverdue: false,
+  },
+  // General tasks - created by one staff member for another
+  {
+    id: "6",
+    title: "Review management agreement draft",
+    source: "general" as const,
     processName: "",
     relatedEntityType: "Owner Prospect" as const,
     relatedEntityName: "James Wilson",
     assignee: "Mike Johnson",
-    dueDate: "2025-12-23",
+    createdBy: "Sarah Johnson",
+    dueDate: "2026-01-20",
     priority: "Medium" as const,
     status: "Pending" as const,
     isOverdue: false,
-  },
-  {
-    id: "5",
-    title: "Call owner about property updates",
-    processName: "Owner Quarterly Review",
-    relatedEntityType: "Owner" as const,
-    relatedEntityName: "Mike Davis",
-    assignee: "Richard Surovi",
-    dueDate: "2025-12-25",
-    priority: "Low" as const,
-    status: "Skipped" as const,
-    isOverdue: false,
-  },
-  {
-    id: "6",
-    title: "Follow up on unread email",
-    processName: "Owner Prospect Outreach",
-    relatedEntityType: "Owner Prospect" as const,
-    relatedEntityName: "Sarah Chen",
-    assignee: "Sarah Chen",
-    dueDate: "2025-12-23",
-    priority: "Medium" as const,
-    status: "Pending" as const,
-    isOverdue: false,
-    autoCreated: true,
   },
   {
     id: "7",
-    title: "Update insurance documents",
+    title: "Prepare comparable market analysis",
+    source: "general" as const,
     processName: "",
-    relatedEntityType: "Property" as const,
-    relatedEntityName: "Downtown Loft",
+    relatedEntityType: "Owner Prospect" as const,
+    relatedEntityName: "James Wilson",
     assignee: "Nina Patel",
-    dueDate: "2025-12-27",
+    createdBy: "Richard Surovi",
+    dueDate: "2026-01-22",
     priority: "Low" as const,
     status: "Pending" as const,
+    isOverdue: false,
+  },
+  {
+    id: "8",
+    title: "Update insurance documents",
+    source: "general" as const,
+    processName: "",
+    relatedEntityType: "Owner Prospect" as const,
+    relatedEntityName: "James Wilson",
+    assignee: "Richard Surovi",
+    createdBy: "Nina Patel",
+    dueDate: "2026-01-25",
+    priority: "Low" as const,
+    status: "Skipped" as const,
     isOverdue: false,
   },
 ]
@@ -305,77 +377,6 @@ const prospectProcesses = {
         { id: "t2", name: "Schedule discovery call", startDate: "01/11/2026", completedDate: "01/12/2026", staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
         { id: "t3", name: "Complete needs assessment", startDate: "01/13/2026", completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
         { id: "t4", name: "Verify property ownership", startDate: null, completedDate: null, staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-      ],
-    },
-    {
-      id: "proc-2",
-      name: "Property Evaluation Process",
-      prospectingStage: "Collecting Information",
-      startedOn: "01/15/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t5", name: "Request property details", startDate: "01/15/2026", completedDate: "01/15/2026", staffName: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-        { id: "t6", name: "Schedule property walkthrough", startDate: "01/16/2026", completedDate: null, staffName: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-        { id: "t7", name: "Prepare management proposal", startDate: null, completedDate: null, staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-      ],
-    },
-    {
-      id: "proc-7",
-      name: "Owner Onboarding Process",
-      prospectingStage: "Info Collection & Onboarding",
-      startedOn: "01/18/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t20", name: "Send onboarding welcome email", startDate: "01/18/2026", completedDate: "01/18/2026", staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-        { id: "t21", name: "Collect bank and CC info", startDate: "01/19/2026", completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-        { id: "t22", name: "Correct/complete owner page in AppFolio", startDate: null, completedDate: null, staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-        { id: "t23", name: "Process initiated for all properties", startDate: null, completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-      ],
-    },
-    {
-      id: "proc-8",
-      name: "Financial Setup Process",
-      prospectingStage: "Collecting Information",
-      startedOn: "01/20/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t24", name: "Set up owner ledger", startDate: "01/20/2026", completedDate: "01/20/2026", staffName: "Laura Taylor", staffEmail: "laura.taylor@heropm.com" },
-        { id: "t25", name: "Configure payment schedules", startDate: "01/21/2026", completedDate: null, staffName: "Laura Taylor", staffEmail: "laura.taylor@heropm.com" },
-        { id: "t26", name: "Verify banking information", startDate: null, completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-      ],
-    },
-    {
-      id: "proc-9",
-      name: "Insurance Verification",
-      prospectingStage: "Under Review",
-      startedOn: "01/22/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t27", name: "Request insurance certificates", startDate: "01/22/2026", completedDate: "01/22/2026", staffName: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-        { id: "t28", name: "Verify policy coverage", startDate: "01/23/2026", completedDate: null, staffName: "Mike Davis", staffEmail: "mike.davis@heropm.com" },
-        { id: "t29", name: "Update insurance records", startDate: null, completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-      ],
-    },
-    {
-      id: "proc-10",
-      name: "Compliance Documentation",
-      prospectingStage: "New Lead",
-      startedOn: "01/25/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t30", name: "Collect W-9 form", startDate: "01/25/2026", completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-        { id: "t31", name: "Verify tax ID", startDate: null, completedDate: null, staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-      ],
-    },
-    {
-      id: "proc-11",
-      name: "Vendor Coordination Setup",
-      prospectingStage: "Working",
-      startedOn: "01/26/2026",
-      status: "In Progress",
-      tasks: [
-        { id: "t32", name: "Assign preferred vendors", startDate: "01/26/2026", completedDate: null, staffName: "James Wilson", staffEmail: "james.wilson@heropm.com" },
-        { id: "t33", name: "Set up maintenance protocols", startDate: null, completedDate: null, staffName: "James Wilson", staffEmail: "james.wilson@heropm.com" },
       ],
     },
   ],
@@ -988,7 +989,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
   const [assignedStaff, setAssignedStaff] = useState(STAFF_MEMBERS[0])
 
   const [showNewTaskModal, setShowNewTaskModal] = useState(false)
-
+  
   // Communication Thread Modal State
   const [showThreadModal, setShowThreadModal] = useState(false)
   const [selectedCommunication, setSelectedCommunication] = useState<typeof ACTIVITIES_DATA[0] | null>(null)
@@ -1009,6 +1010,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
 
   // Properties tab expand/collapse
   const [expandedOwnershipTypes, setExpandedOwnershipTypes] = useState<Set<string>>(new Set())
+  // Entity level: tracks collapsed entities (empty = all expanded by default)
   const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set())
 
   const toggleOwnershipType = (type: string) => {
@@ -1047,11 +1049,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
     notes: ""
   })
   const [newTask, setNewTask] = useState({ title: "", property: "", unit: "", dueDate: "", priority: "Medium", assignTo: "", description: "" })
-  const [newDocUpload, setNewDocUpload] = useState({
-    file: null as File | null,
-    type: "",
-    comments: "",
-    assignTo: ""
+  const [newDocUpload, setNewDocUpload] = useState({ 
+    file: null as File | null, 
+    type: "", 
+    comments: "", 
+    assignTo: "" 
   })
   const [newDocRequest, setNewDocRequest] = useState({ name: "", type: "", property: "" })
   const [dragActive, setDragActive] = useState(false)
@@ -1066,7 +1068,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
   // SMS Modal state
   const [showSMSModal, setShowSMSModal] = useState(false)
   const [selectedSMSActivity, setSelectedSMSActivity] = useState<(typeof ACTIVITIES_DATA)[0] | null>(null)
-
+  
   // Email Modal state
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [selectedEmailActivity, setSelectedEmailActivity] = useState<(typeof ACTIVITIES_DATA)[0] | null>(null)
@@ -1082,14 +1084,33 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
   const [emailComposeSubject, setEmailComposeSubject] = useState("")
   const [emailComposeBody, setEmailComposeBody] = useState("")
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
+  // Communication filters
+  const [commTypeFilter, setCommTypeFilter] = useState<"all" | "email" | "sms" | "call">("all")
+  const [commDateRange, setCommDateRange] = useState<DateRange | undefined>(undefined)
+  const [commDatePopoverOpen, setCommDatePopoverOpen] = useState(false)
+  const [commSearchQuery, setCommSearchQuery] = useState("")
 
   // State for tabs
   const [activeTab, setActiveTab] = useState("overview")
-
+  
   // State for processes in Processes tab
   const [processStatusFilter, setProcessStatusFilter] = useState<"in-progress" | "completed" | "upcoming">("in-progress")
   const [expandedProcesses, setExpandedProcesses] = useState<string[]>([])
   const nav = useNav()
+
+  const handleNavigateToProcess = (processName: string) => {
+    setActiveTab("processes")
+    const allProcesses = [
+      ...prospectProcesses.inProgress,
+      ...prospectProcesses.upcoming,
+      ...prospectProcesses.completed,
+      ...newlyStartedProcesses,
+    ]
+    const match = allProcesses.find((p) => p.name === processName)
+    if (match) {
+      setExpandedProcesses((prev) => (prev.includes(match.id) ? prev : [...prev, match.id]))
+    }
+  }
 
   // Start new process modal
   const [showStartProcessModal, setShowStartProcessModal] = useState(false)
@@ -1123,6 +1144,25 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
     leadSource: lead?.source || "Website Inquiry",
   }
 
+  // Highlight search matches in text
+  const highlightText = (text: string | undefined | null): ReactNode => {
+    if (!text) return text
+    const q = commSearchQuery.trim()
+    if (!q) return text
+    try {
+      const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi")
+      const parts = text.split(regex)
+      if (parts.length <= 1) return text
+      return parts.map((part, i) =>
+        regex.test(part)
+          ? <mark key={i} className="bg-yellow-200 text-slate-900 rounded-sm px-0.5">{part}</mark>
+          : part
+      )
+    } catch {
+      return text
+    }
+  }
+
   const togglePin = (activityId: number) => {
     setPinnedActivities((prev) =>
       prev.includes(activityId) ? prev.filter((id) => id !== activityId) : [...prev, activityId],
@@ -1139,7 +1179,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
       }
       return
     }
-
+    
     // For Email, open the email modal
     if (activityType === "email") {
       const activity = ACTIVITIES_DATA.find((a) => a.id === activityId)
@@ -1192,7 +1232,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
     const threadItems = ACTIVITIES_DATA.filter(
       (a) => !a.isGroupChat && !a.isNote && (a.type === "sms" || a.type === "email" || a.type === "call")
     )
-
+    
     // Sort by timestamp (oldest first for thread view)
     return threadItems.sort((a, b) => {
       const dateA = new Date(a.timestamp)
@@ -1209,7 +1249,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
       return activity.isGroupChat === true // Group: multi-party communications
     }
   })
-
+  
   // Calculate activity summary counts (filtered by chat tab)
   const activitySummary = {
     emails: chatTabFilteredActivities.filter(a => a.type === "email" || a.type === "email_open").length,
@@ -1218,20 +1258,20 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
     calls: chatTabFilteredActivities.filter(a => a.type === "call").length,
     get all() { return chatTabFilteredActivities.length },
   }
-
+  
   const filteredActivities = chatTabFilteredActivities.filter((activity) => {
     // Filter by tile selection
     if (activityTileFilter === "emails" && activity.type !== "email" && activity.type !== "email_open") return false
     if (activityTileFilter === "sms" && activity.type !== "sms") return false
     if (activityTileFilter === "notes" && activity.type !== "note" && !activity.isNote) return false
-
+    
     // Filter by radio selection
     if (activityRadioFilter === "unread" && activity.isRead) return false
     if (activityRadioFilter === "unresponded" && (activity.isRead || !activity.isRead)) {
       // For unresponded, we'd need an isResponded field - for now just show unread incoming
       if (activity.isRead) return false
     }
-
+    
     // Legacy filters (keep for backward compatibility)
     if (readStatusFilter === "read" && !activity.isRead) return false
     if (readStatusFilter === "unread" && activity.isRead) return false
@@ -1249,17 +1289,30 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "sms":
-        return { icon: MessageSquare, color: "bg-teal-500" }
+        return { icon: MessageSquare, color: "bg-green-50 border border-green-200", iconColor: "text-green-400" }
       case "email":
-        return { icon: Mail, color: "bg-blue-500" }
+        return { icon: Mail, color: "bg-blue-50 border border-blue-200", iconColor: "text-blue-400" }
       case "email_open":
-        return { icon: User, color: "bg-muted-foreground" }
+        return { icon: User, color: "bg-gray-50 border border-gray-200", iconColor: "text-muted-foreground" }
       case "call":
-        return { icon: Phone, color: "bg-green-500" }
+        return { icon: Phone, color: "bg-amber-50 border border-amber-200", iconColor: "text-amber-400" }
       case "note":
-        return { icon: StickyNote, color: "bg-amber-500" }
+        return { icon: StickyNote, color: "bg-orange-50 border border-orange-200", iconColor: "text-orange-400" }
       default:
-        return { icon: MessageSquare, color: "bg-gray-500" }
+        return { icon: MessageSquare, color: "bg-gray-50 border border-gray-200", iconColor: "text-gray-400" }
+    }
+  }
+
+  const getActionVerbColor = (type: string) => {
+    switch (type) {
+      case "sms":
+        return "text-green-400"
+      case "email":
+        return "text-blue-400"
+      case "call":
+        return "text-amber-400"
+      default:
+        return "text-blue-400"
     }
   }
 
@@ -1320,10 +1373,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               {emailThread.map((email, index) => (
                 <div
                   key={email.id}
-                  className={`rounded-lg border transition-all cursor-pointer ${expandedThreadMessage === email.id
+                  className={`rounded-lg border transition-all cursor-pointer ${
+                    expandedThreadMessage === email.id
                       ? "border-blue-300 bg-blue-50"
                       : "border-border hover:border-blue-200 hover:bg-muted/30"
-                    }`}
+                  }`}
                   onClick={() => setExpandedThreadMessage(expandedThreadMessage === email.id ? null : email.id)}
                 >
                   {/* Email Header */}
@@ -1363,24 +1417,24 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                         <p className="text-xs text-muted-foreground mb-3">
                           <span className="font-medium">Subject:</span> {email.subject}
                         </p>
-                        <div className="border-t pt-3">
-                          <p className="text-sm whitespace-pre-wrap">{email.content}</p>
-                        </div>
-                        {/* Email Opens */}
-                        {email.isFromMe && email.emailOpens && email.emailOpens.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-dashed">
-                            <p className="text-xs font-medium text-muted-foreground mb-2">Email Opened</p>
-                            <div className="space-y-1">
-                              {email.emailOpens.map((open: { openedAt: string }, idx: number) => (
-                                <div key={idx} className="flex items-center gap-2 text-xs text-amber-600">
-                                  <Eye className="h-3 w-3" />
-                                  <span>Recipient opened this email on {open.openedAt}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+<div className="border-t pt-3">
+                                          <p className="text-sm whitespace-pre-wrap">{email.content}</p>
+                                        </div>
+                                        {/* Email Opens */}
+                                        {email.isFromMe && email.emailOpens && email.emailOpens.length > 0 && (
+                                          <div className="mt-3 pt-3 border-t border-dashed">
+                                            <p className="text-xs font-medium text-muted-foreground mb-2">Email Opened</p>
+                                            <div className="space-y-1">
+                                              {email.emailOpens.map((open: { openedAt: string }, idx: number) => (
+                                                <div key={idx} className="flex items-center gap-2 text-xs text-amber-600">
+                                                  <Eye className="h-3 w-3" />
+                                                  <span>Recipient opened this email on {open.openedAt}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
                       {/* Reply to this email */}
                       <div className="mt-3 space-y-3">
                         <div className="border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
@@ -1462,8 +1516,8 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
   }
 
   const toggleProcessExpanded = (processId: string) => {
-    setExpandedProcesses(prev =>
-      prev.includes(processId)
+    setExpandedProcesses(prev => 
+      prev.includes(processId) 
         ? prev.filter(id => id !== processId)
         : [...prev, processId]
     )
@@ -1575,7 +1629,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                     <Button variant="outline" size="sm" className="gap-2 bg-transparent h-8">
                       <Users className="h-4 w-4 text-muted-foreground" />
                       <span className="font-medium">Richard Surovi</span>
-
+                      
                       <ChevronDown className="h-4 w-4 text-muted-foreground" />
                     </Button>
                   </PopoverTrigger>
@@ -1594,7 +1648,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                           </Button>
                         )}
                       </div>
-
+                      
                       {/* Currently Assigned */}
                       {assignedTeam.length > 0 ? (
                         <div className="space-y-2">
@@ -1624,7 +1678,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                         <p className="text-sm text-muted-foreground py-2">No team members assigned</p>
                       )}
                     </div>
-
+                    
                     {/* Add Team Member */}
                     <div className="p-3">
                       <div className="flex items-center justify-between mb-2">
@@ -1682,26 +1736,46 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
           {/* Stage Progress Rectangles */}
           <div className="flex items-center gap-3 mt-4">
             <div className="flex items-center gap-1 flex-1">
-              {STAGES.map((stage, index) => (
-                <TooltipProvider key={stage}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        className="h-7 flex-1 rounded-sm flex items-center justify-center cursor-pointer transition-all hover:opacity-80 hover:scale-y-110"
-                        style={{ backgroundColor: STAGE_PROGRESS_COLORS[index] }}
-                        onClick={() => setCurrentStage(index)}
-                      >
-                        {index === currentStage && (
-                          <Check className="h-4 w-4 text-white drop-shadow-sm" />
+              {STAGES.map((stage, index) => {
+                const tasks = STAGE_TASKS[stage] || []
+                return (
+                  <TooltipProvider key={stage} delayDuration={200}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div
+                          className="h-7 flex-1 rounded-sm flex items-center justify-center transition-all hover:opacity-80 hover:scale-y-110"
+                          style={{ backgroundColor: STAGE_PROGRESS_COLORS[index] }}
+                        >
+                          {index === currentStage && (
+                            <Check className="h-4 w-4 text-white drop-shadow-sm" />
+                          )}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="bg-white text-foreground border border-border shadow-lg rounded-md px-3 py-2.5 max-w-[220px]">
+                        <p className="font-semibold text-[13px] text-foreground">{stage}</p>
+                        {STAGE_REASONS[stage] ? (
+                          <p className="text-[12px] text-foreground/70 mt-1.5 italic">{STAGE_REASONS[stage]}</p>
+                        ) : tasks.length > 0 ? (
+                          <div className="flex flex-col gap-1.5 mt-1.5">
+                            {tasks.map((task, taskIdx) => (
+                              <div key={taskIdx} className="flex items-center gap-2 text-[12px] text-foreground/70">
+                                {task.icon === "call" && <Phone className="h-3.5 w-3.5 shrink-0" />}
+                                {task.icon === "email" && <Mail className="h-3.5 w-3.5 shrink-0" />}
+                                {task.icon === "sms" && <MessageSquare className="h-3.5 w-3.5 shrink-0" />}
+                                {task.icon === "todo" && <ListTodo className="h-3.5 w-3.5 shrink-0" />}
+                                {task.icon === "video" && <PlayCircle className="h-3.5 w-3.5 shrink-0" />}
+                                <span>{task.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[12px] text-foreground/60 mt-1.5">No tasks assigned</p>
                         )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{stage}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )
+              })}
             </div>
 
             {/* Stage Dropdown */}
@@ -1727,130 +1801,127 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
-          {/* Bar 1: Pending Communications */}
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("overview")
-              setTimeout(() => {
-                const activitySection = document.getElementById("activity-section")
-                if (activitySection) activitySection.scrollIntoView({ behavior: "smooth" })
-              }, 100)
-            }}
-            className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
-          >
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-semibold text-amber-800">Pending Communications 1</span>
+        {/* Bar 1: Pending Communications */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("overview")
+            setTimeout(() => {
+              const activitySection = document.getElementById("activity-section")
+              if (activitySection) activitySection.scrollIntoView({ behavior: "smooth" })
+            }, 100)
+          }}
+          className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
+        >
+          <div className="flex items-center gap-2">
+            <Mail className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-semibold text-green-800">Pending Communications</span>
+          </div>
+          <div className="flex items-center">
+            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+              <Mail className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-sm text-green-800">
+                {"Unread Emails: "}
+                <span className="font-semibold">1</span>
+              </span>
             </div>
-            <div className="flex items-center">
-              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-                <Mail className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {"Unread Emails: "}
-                  <span className="font-semibold">1</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-                <MessageSquare className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {"Unread SMS: "}
-                  <span className="font-semibold">3</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3">
-                <Phone className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {"Pending Calls: "}
-                  <span className="font-semibold">2</span>
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+              <MessageSquare className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-sm text-green-800">
+                {"Unread SMS: "}
+                <span className="font-semibold">3</span>
+              </span>
             </div>
-          </button>
-
-          {/* Bar 2: Pending Actions */}
-          <div className="flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-semibold text-amber-800">Pending Actions</span>
-            </div>
-            <div className="flex items-center">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMissingInfoModal?.(true)
-                }}
-                className="flex items-center gap-1.5 px-3 border-r border-amber-300 hover:underline"
-              >
-                <FileText className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {"Missing Fields: "}
-                  <span className="font-semibold">4</span>
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowMissingInfoModal?.(true)
-                }}
-                className="flex items-center gap-1.5 px-3 hover:underline"
-              >
-                <Upload className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {"Missing Documents: "}
-                  <span className="font-semibold">3</span>
-                </span>
-              </button>
+            <div className="flex items-center gap-1.5 px-3">
+              <Phone className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-sm text-green-800">
+                {"Pending Calls: "}
+                <span className="font-semibold">2</span>
+              </span>
             </div>
           </div>
+        </button>
 
-          {/* Bar 3: Task Overview */}
-          <button
-            type="button"
-            onClick={() => {
-              setActiveTab("overview")
-              setTimeout(() => {
-                const tasksSection = document.getElementById("tasks-section")
-                if (tasksSection) tasksSection.scrollIntoView({ behavior: "smooth" })
-              }, 100)
-            }}
-            className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
-          >
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <span className="text-sm font-semibold text-amber-800">Task Overview</span>
+        {/* Bar 2: Pending Actions */}
+        <div className="flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-semibold text-green-800">Pending Actions</span>
+          </div>
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={() => {
+                setShowMissingInfoModal?.(true)
+              }}
+              className="flex items-center gap-1.5 px-3 border-r border-amber-300 hover:underline"
+            >
+              
+              
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowMissingInfoModal?.(true)
+              }}
+              className="flex items-center gap-1.5 px-3 hover:underline"
+            >
+              <Upload className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-sm text-green-800">
+                {"Missing Documents: "}
+                <span className="font-semibold">3</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {/* Bar 3: Task Overview */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("overview")
+            setTimeout(() => {
+              const tasksSection = document.getElementById("tasks-section")
+              if (tasksSection) tasksSection.scrollIntoView({ behavior: "smooth" })
+            }, 100)
+          }}
+          className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
+        >
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <span className="text-sm font-semibold text-green-800">Task Overview</span>
+          </div>
+          <div className="flex items-center">
+            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+              <Workflow className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-sm text-green-800">
+                {"Process: "}
+                <span className="font-semibold">{ownerTasks.filter(t => t.source === "process" && t.status !== "Completed").length}</span>
+              </span>
             </div>
-            <div className="flex items-center">
-              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-                <ListTodo className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {"Pending Tasks: "}
-                  <span className="font-semibold">{ownerTasks.filter(t => t.status === "Pending" && !t.processName).length}</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-                <RotateCcw className="h-3.5 w-3.5 text-amber-600" />
-                <span className="text-sm text-amber-800">
-                  {"Pending Processes: "}
-                  <span className="font-semibold">{ownerTasks.filter(t => t.status === "Pending" && !!t.processName).length}</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-                <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                <span className="text-sm text-red-700">
-                  {"Overdue Tasks: "}
-                  <span className="font-semibold">{ownerTasks.filter(t => t.isOverdue && !t.processName).length}</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 px-3">
-                <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                <span className="text-sm text-red-700">
-                  {"Overdue Processes: "}
-                  <span className="font-semibold">{ownerTasks.filter(t => t.isOverdue && !!t.processName).length}</span>
-                </span>
-              </div>
+            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+              <Mail className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-sm text-green-800">
+                {"Communication: "}
+                <span className="font-semibold">{ownerTasks.filter(t => t.source === "communication" && t.status !== "Completed").length}</span>
+              </span>
             </div>
-          </button>
+            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+              <ListTodo className="h-3.5 w-3.5 text-amber-600" />
+              <span className="text-sm text-green-800">
+                {"General: "}
+                <span className="font-semibold">{ownerTasks.filter(t => t.source === "general" && t.status !== "Completed").length}</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 px-3">
+              <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+              <span className="text-sm text-red-700">
+                {"Overdue: "}
+                <span className="font-semibold">{ownerTasks.filter(t => t.isOverdue).length}</span>
+              </span>
+            </div>
+          </div>
+        </button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
@@ -1894,13 +1965,13 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 {ownerDocuments.length}
               </Badge>
             </TabsTrigger>
-            <TabsTrigger
-              value="audit-log"
-              className="rounded-none border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2"
-            >
-              Audit Log
-            </TabsTrigger>
-          </TabsList>
+              <TabsTrigger
+                value="audit-log"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-teal-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none px-4 py-2"
+              >
+                Audit Log
+              </TabsTrigger>
+            </TabsList>
 
           {/* Overview Tab - existing content */}
           <TabsContent value="overview" className="mt-6">
@@ -1917,129 +1988,171 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 </Button>
               </div>
               <div className="border rounded-lg overflow-hidden">
-                <div className="max-h-[280px] overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-white">
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="font-medium">Task</TableHead>
-                        <TableHead className="font-medium">Related Entity</TableHead>
-                        <TableHead className="font-medium">Due Date</TableHead>
-                        <TableHead className="font-medium">Priority</TableHead>
-                        <TableHead className="font-medium">Status</TableHead>
-                        <TableHead className="font-medium">Assigned To</TableHead>
-                        <TableHead className="font-medium text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ownerTasks.map((task) => (
-                        <TableRow key={task.id} className="hover:bg-muted/20">
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <span className="font-medium text-foreground">{task.title}</span>
-                              {task.processName && (
-                                <div className="flex items-center gap-1">
-                                  <Workflow className="h-3 w-3 text-teal-600" />
-                                  <span className="text-xs text-teal-600">{task.processName}</span>
-                                </div>
-                              )}
-                              {task.autoCreated && (
-                                <span className="text-xs text-muted-foreground">Auto-created</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">
-                              {task.relatedEntityType}: {task.relatedEntityName}
+                <div className="max-h-[340px] overflow-y-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-white">
+                    <TableRow className="bg-muted/30">
+                      <TableHead className="font-medium w-[80px]">Source</TableHead>
+                      <TableHead className="font-medium">Task</TableHead>
+                      <TableHead className="font-medium">Due Date</TableHead>
+                      <TableHead className="font-medium">Priority</TableHead>
+                      <TableHead className="font-medium">Status</TableHead>
+                      <TableHead className="font-medium">Assigned To</TableHead>
+                      <TableHead className="font-medium text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {/* Process Tasks */}
+                    {ownerTasks.filter(t => t.source === "process").map((task) => (
+                      <TableRow key={task.id} className="hover:bg-muted/20">
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-teal-500" />
+                            <span className="text-xs text-teal-600">Process</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-foreground">{task.title}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleNavigateToProcess(task.processName) }}
+                              className="flex items-center gap-1 hover:underline cursor-pointer"
+                            >
+                              <Workflow className="h-3 w-3 text-teal-600" />
+                              <span className="text-xs text-teal-600">{task.processName}</span>
+                            </button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                              {task.dueDate}
                             </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                                {task.dueDate}
-                              </span>
-                              {task.isOverdue && (
-                                <span className="text-xs text-red-500">(Overdue)</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                task.priority === "High"
-                                  ? "bg-red-50 text-red-700 border-red-200"
-                                  : task.priority === "Medium"
-                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                    : "bg-gray-50 text-gray-600 border-gray-200"
-                              }
-                            >
-                              {task.priority}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                task.status === "In Progress"
-                                  ? "bg-teal-50 text-teal-700 border-teal-200"
-                                  : task.status === "Pending"
-                                    ? "bg-yellow-50 text-yellow-600 border-yellow-200"
-                                    : task.status === "Skipped"
-                                      ? "bg-orange-50 text-orange-600 border-orange-200"
-                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              }
-                            >
-                              {task.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">{task.assignee}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                                title="View Task"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-teal-600"
-                                onClick={() => setShowTaskModal(true)}
-                                title="Edit Task"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              {task.status !== "Completed" && task.status !== "Skipped" && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-green-600"
-                                  title="Mark Complete"
-                                  onClick={() => {
-                                    // Mark task as complete
-                                  }}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {ownerTasks.length === 0 && (
-                        <TableRow>
-                          <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                            No tasks yet. Click "New Task" to create one.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
+                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={task.priority === "High" ? "bg-red-50 text-red-700 border-red-200" : task.priority === "Medium" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
+                            {task.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={task.status === "In Progress" ? "bg-teal-50 text-teal-700 border-teal-200" : task.status === "Pending" ? "bg-yellow-50 text-yellow-600 border-yellow-200" : task.status === "Skipped" ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}>
+                            {task.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell><span className="text-sm text-muted-foreground">{task.assignee}</span></TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="View Task"><Eye className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-teal-600" onClick={() => setShowTaskModal(true)} title="Edit Task"><Edit className="h-4 w-4" /></Button>
+                            {task.status !== "Completed" && task.status !== "Skipped" && (
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-green-600" title="Mark Complete"><Check className="h-4 w-4" /></Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {/* Communication Tasks */}
+                    {ownerTasks.filter(t => t.source === "communication").map((task) => (
+                      <TableRow key={task.id} className="hover:bg-muted/20">
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-blue-500" />
+                            <span className="text-xs text-blue-600">Comms</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-foreground">{task.title}</span>
+                            <span className="text-xs text-blue-500">Auto-created</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                              {task.dueDate}
+                            </span>
+                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={task.priority === "High" ? "bg-red-50 text-red-700 border-red-200" : task.priority === "Medium" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
+                            {task.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={task.status === "In Progress" ? "bg-teal-50 text-teal-700 border-teal-200" : task.status === "Pending" ? "bg-yellow-50 text-yellow-600 border-yellow-200" : task.status === "Skipped" ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}>
+                            {task.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell><span className="text-sm text-muted-foreground">{task.assignee}</span></TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="View Task"><Eye className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-teal-600" onClick={() => setShowTaskModal(true)} title="Edit Task"><Edit className="h-4 w-4" /></Button>
+                            {task.status !== "Completed" && task.status !== "Skipped" && (
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-green-600" title="Mark Complete"><Check className="h-4 w-4" /></Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {/* General Tasks */}
+                    {ownerTasks.filter(t => t.source === "general").map((task) => (
+                      <TableRow key={task.id} className="hover:bg-muted/20">
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-2 w-2 rounded-full bg-slate-400" />
+                            <span className="text-xs text-slate-500">General</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <span className="font-medium text-foreground">{task.title}</span>
+                            {task.createdBy && <span className="text-xs text-muted-foreground">Created by {task.createdBy}</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                              {task.dueDate}
+                            </span>
+                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={task.priority === "High" ? "bg-red-50 text-red-700 border-red-200" : task.priority === "Medium" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
+                            {task.priority}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={task.status === "In Progress" ? "bg-teal-50 text-teal-700 border-teal-200" : task.status === "Pending" ? "bg-yellow-50 text-yellow-600 border-yellow-200" : task.status === "Skipped" ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}>
+                            {task.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell><span className="text-sm text-muted-foreground">{task.assignee}</span></TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="View Task"><Eye className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-teal-600" onClick={() => setShowTaskModal(true)} title="Edit Task"><Edit className="h-4 w-4" /></Button>
+                            {task.status !== "Completed" && task.status !== "Skipped" && (
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-green-600" title="Mark Complete"><Check className="h-4 w-4" /></Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {ownerTasks.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                          No tasks yet. Click "New Task" to create one.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
                 </div>
               </div>
 
@@ -2056,16 +2169,17 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
             {/* Activity Section */}
             <div id="activity-section" className="flex-1 rounded-lg border border-slate-200 bg-white p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3">Activity</h3>
-
+              
               {/* Private Chat / Group Chat Sub-tabs */}
               <div className="flex items-center gap-1 mb-4 border-b border-slate-200">
                 <button
                   type="button"
                   onClick={() => setActivityChatTab("private")}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activityChatTab === "private"
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activityChatTab === "private"
                       ? "border-teal-600 text-teal-600"
                       : "border-transparent text-slate-500 hover:text-slate-700"
-                    }`}
+                  }`}
                 >
                   Private Chat
                   {ACTIVITIES_DATA.some(a => !a.isGroupChat && !a.isRead) && (
@@ -2075,10 +2189,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <button
                   type="button"
                   onClick={() => setActivityChatTab("group")}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activityChatTab === "group"
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    activityChatTab === "group"
                       ? "border-teal-600 text-teal-600"
                       : "border-transparent text-slate-500 hover:text-slate-700"
-                    }`}
+                  }`}
                 >
                   Group Chat
                   {ACTIVITIES_DATA.some(a => a.isGroupChat && (a.unreadCount ?? 0) > 0) && (
@@ -2086,15 +2201,16 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   )}
                 </button>
               </div>
-
+              
               {/* Summary Tiles */}
               <div className="flex items-center gap-2 mb-4">
                 {/* All Tile */}
                 <div
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "all"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                    activityTileFilter === "all"
                       ? "bg-slate-800 text-white"
                       : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                  }`}
                   onClick={() => setActivityTileFilter("all")}
                 >
                   <Bell className={`h-4 w-4 ${activityTileFilter === "all" ? "text-white" : "text-slate-500"}`} />
@@ -2110,10 +2226,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
 
                 {/* Emails Tile */}
                 <div
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "emails"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                    activityTileFilter === "emails"
                       ? "bg-slate-800 text-white"
                       : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                  }`}
                   onClick={() => setActivityTileFilter("emails")}
                 >
                   <Mail className={`h-4 w-4 ${activityTileFilter === "emails" ? "text-white" : "text-slate-500"}`} />
@@ -2129,10 +2246,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
 
                 {/* SMS Tile */}
                 <div
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "sms"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                    activityTileFilter === "sms"
                       ? "bg-slate-800 text-white"
                       : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                  }`}
                   onClick={() => setActivityTileFilter("sms")}
                 >
                   <MessageSquare className={`h-4 w-4 ${activityTileFilter === "sms" ? "text-white" : "text-slate-500"}`} />
@@ -2148,10 +2266,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
 
                 {/* Notes Tile */}
                 <div
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "notes"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
+                    activityTileFilter === "notes"
                       ? "bg-slate-800 text-white"
                       : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                  }`}
                   onClick={() => setActivityTileFilter("notes")}
                 >
                   <FileText className={`h-4 w-4 ${activityTileFilter === "notes" ? "text-white" : "text-slate-500"}`} />
@@ -2165,7 +2284,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   </div>
                 </div>
               </div>
-
+              
               {/* Radio Filters */}
               <div className="flex items-center gap-4 mb-4">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -2200,32 +2319,79 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 </label>
               </div>
 
-              <div className="space-y-3 max-h-[320px] overflow-y-auto">
+              <div className="divide-y border rounded-lg max-h-[320px] overflow-y-auto">
                 {filteredActivities.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">No activities match your filters.</p>
                 ) : (
                   filteredActivities.map((activity) => {
-                    const { icon: ActivityIcon, color: iconColor } = getActivityIcon(activity.type)
+                    const { icon: ActivityIcon, color: activityBg, iconColor: activityIconColor } = getActivityIcon(activity.type)
                     const isExpanded = expandedActivity === activity.id
                     const isExpandable =
                       activity.type === "sms" || activity.type === "email" || activity.type === "call" || activity.type === "email_open"
 
+                    // Collapsed email header rendering
+                    if (activity.type === "email" && !activity.isSystem) {
+                      const emailSubject = activity.emailThread?.[0]?.subject || activity.emailSubject || "No Subject"
+                      return (
+                        <div key={activity.id} className="bg-white">
+                          <div
+                            className="px-4 py-3 cursor-pointer hover:bg-blue-50/60 transition-colors bg-blue-50/40"
+                            onClick={() => toggleExpand(activity.id, activity.type)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                <Mail className="h-4 w-4 text-blue-500 shrink-0" />
+                                <span className="text-sm font-medium text-foreground truncate">{emailSubject}</span>
+                                {!activity.isRead && <div className="h-2 w-2 rounded-full bg-blue-400 shrink-0" />}
+                              </div>
+                              <div className="flex items-center gap-2 ml-3 shrink-0">
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.timestamp}</span>
+                                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className={`p-1 ${pinnedActivities.includes(activity.id) ? "text-blue-600" : "text-muted-foreground"}`}
+                                  onClick={(e) => { e.stopPropagation(); togglePin(activity.id) }}
+                                >
+                                  <Pin className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                          {isExpanded && (
+                            <div className="px-4 pb-4 border-t border-blue-100 bg-blue-50/20">
+                              <div className="pt-4 space-y-4">
+                                <div className="flex items-start gap-3">
+                                  <Avatar className="h-8 w-8">
+                                    <AvatarFallback className="text-xs bg-gray-100 text-gray-600">{activity.userInitials}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <span className="font-medium text-foreground">{activity.user}</span>
+                                      <span className="text-xs text-muted-foreground">{activity.timestamp}</span>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">To: {activity.target} {activity.targetPhone}</p>
+                                  </div>
+                                </div>
+                                {activity.message && <div className="text-sm text-foreground whitespace-pre-line pl-11">{activity.message}</div>}
+                                {renderExpandedContent(activity)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    }
+
                     return (
                       <div
                         key={activity.id}
-                        className={`rounded-lg border transition-all ${activity.isNote
-                            ? "bg-amber-50 border-amber-200"
-                            : !activity.isRead
-                              ? "bg-blue-50 border-blue-200"
-                              : "bg-background"
-                          } ${isExpandable && !activity.isSystem ? "cursor-pointer hover:shadow-md" : ""} ${isExpanded ? "shadow-md" : ""}`}
+                        className={`transition-all bg-white ${isExpandable && !activity.isSystem ? "cursor-pointer hover:bg-slate-50" : ""}`}
                       >
                         <div
-                          className="p-4 bg-[rgba(255,255,255,1)] border-[rgba(18,18,18,1)] shadow-xl"
+                          className="p-4"
                           onClick={() => {
                             if (isExpandable && !activity.isSystem) {
-                              // Open thread modal for email and SMS, keep expand for calls
-                              if (activity.type === "sms" || activity.type === "email") {
+                              if (activity.type === "sms") {
                                 openThreadModal(activity)
                               } else {
                                 toggleExpand(activity.id, activity.type)
@@ -2241,35 +2407,26 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                             ) : (
                               <div className="relative">
                                 <Avatar className="h-10 w-10">
-                                  <AvatarFallback
-                                    className={`text-sm ${activity.isNote
-                                        ? "bg-amber-100 text-amber-700"
-                                        : activity.type === "call"
-                                          ? "bg-green-100 text-green-700"
-                                          : activity.type === "email"
-                                            ? "bg-blue-100 text-blue-700"
-                                            : "bg-teal-100 text-teal-700"
-                                      }`}
-                                  >
+                                  <AvatarFallback className="text-sm bg-gray-100 text-gray-600">
                                     {activity.userInitials}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div
-                                  className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center ${iconColor}`}
+                                  className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full flex items-center justify-center ${activityBg}`}
                                 >
-                                  <ActivityIcon className="h-3 w-3 text-white" />
+                                  <ActivityIcon className={`h-3 w-3 ${activityIconColor}`} />
                                 </div>
                               </div>
                             )}
 
                             <div className="flex-1 min-w-0">
                               {activity.type === "email_open" ? (
-                                <p className="text-sm text-amber-600">
+                                <p className="text-sm text-amber-500">
                                   A recipient opened the email "{activity.emailSubject}" {activity.timestamp}
                                 </p>
                               ) : activity.isNote ? (
                                 <>
-                                  <p className="text-sm font-medium">{activity.user} left a Note</p>
+                                  <p className="text-sm font-medium">{activity.user} <span className="text-orange-400">left a Note</span></p>
                                   <p className="text-sm text-muted-foreground mt-1">{activity.message}</p>
                                 </>
                               ) : (
@@ -2277,7 +2434,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                                   <p className="text-sm">
                                     <span className="font-medium">{activity.user}</span>{" "}
                                     {activity.phone && <span className="text-muted-foreground">{activity.phone}</span>}{" "}
-                                    <span className="text-blue-600">{activity.action}</span>{" "}
+                                    <span className={getActionVerbColor(activity.type)}>{activity.action}</span>{" "}
                                     <span className="font-medium">{activity.target}</span>{" "}
                                     {activity.targetPhone && (
                                       <span className="text-muted-foreground">{activity.targetPhone}</span>
@@ -2300,18 +2457,15 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                             </div>
 
                             <div className="flex items-center gap-2 flex-shrink-0">
-                              {/* Unread count badge for group chats */}
                               {activity.isGroupChat && activity.unreadCount > 0 && (
-                                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-500 text-white text-xs font-medium">
+                                <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-100 text-green-600 text-xs font-medium">
                                   {activity.unreadCount}
                                 </span>
                               )}
-                              {/* Unread indicator */}
-                              {!activity.isRead && !activity.isGroupChat && <div className="h-2 w-2 rounded-full bg-blue-500" />}
+                              {!activity.isRead && !activity.isGroupChat && <div className="h-2 w-2 rounded-full bg-blue-400" />}
                               <span className="text-xs text-muted-foreground whitespace-nowrap">
                                 {activity.timestamp}
                               </span>
-                              {/* Expand/Collapse indicator */}
                               {isExpandable && !activity.isSystem && (
                                 <div className="text-muted-foreground">
                                   {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -2400,7 +2554,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 switch (type) {
                   case "LLC": return { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800", badge: "bg-blue-100 text-blue-700 border-blue-200" }
                   case "Partnership": return { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-800", badge: "bg-violet-100 text-violet-700 border-violet-200" }
-                  default: return { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800", badge: "bg-amber-100 text-amber-700 border-amber-200" }
+                  default: return { bg: "bg-amber-50", border: "border-amber-200", text: "text-green-800", badge: "bg-amber-100 text-amber-700 border-amber-200" }
                 }
               }
 
@@ -2433,7 +2587,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <div className="space-y-3">
                   {entities.map((entity, entityIndex) => {
                     const colors = getOwnershipColor(entity.ownershipType)
-                    const isExpanded = expandedEntities.has(entity.entityId)
+                    const isExpanded = !expandedEntities.has(entity.entityId)
 
                     return (
                       <div key={entity.entityId} className={`rounded-lg border ${colors.border} overflow-hidden`}>
@@ -2497,13 +2651,13 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                                             <Building2 className="h-12 w-12 text-slate-400" />
                                           </div>
                                           <div className="p-3 space-y-1.5">
-
-
+                                            
+                                            
                                             <button type="button" className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 hover:underline w-full">
                                               <ExternalLink className="h-3.5 w-3.5" />
                                               Matterport Scan
                                             </button>
-
+                                            
                                             <button type="button" className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 hover:underline w-full">
                                               <ExternalLink className="h-3.5 w-3.5" />
                                               Rental Comps
@@ -2548,11 +2702,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                                           {/* Rent Info Bar */}
                                           <div className="flex items-center gap-6 mt-3 px-4 py-2.5 rounded-lg border border-amber-200 bg-amber-50/60">
                                             <div className="flex items-center gap-1.5">
-                                              <span className="text-sm text-amber-800">Monthly Rent:</span>
+                                              <span className="text-sm text-green-800">Monthly Rent:</span>
                                               <span className="text-sm font-bold text-amber-900">${property.monthlyRent.toLocaleString()}</span>
                                             </div>
                                             <div className="flex items-center gap-1.5">
-                                              <span className="text-sm text-amber-800">Security Deposit:</span>
+                                              <span className="text-sm text-green-800">Security Deposit:</span>
                                               <span className="text-sm font-bold text-amber-900">${property.monthlyRent.toLocaleString()}</span>
                                             </div>
                                           </div>
@@ -2603,10 +2757,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <div className="flex items-center gap-1 mb-4 border-b">
                   <button
                     onClick={() => { setCommSubTab("private"); setSelectedGroupId(null) }}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${commSubTab === "private"
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      commSubTab === "private"
                         ? "border-teal-600 text-teal-700"
                         : "border-transparent text-slate-500 hover:text-slate-700"
-                      }`}
+                    }`}
                   >
                     Private
                     {(() => {
@@ -2620,10 +2775,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   </button>
                   <button
                     onClick={() => { setCommSubTab("group"); setSelectedGroupId(null) }}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${commSubTab === "group"
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                      commSubTab === "group"
                         ? "border-teal-600 text-teal-700"
                         : "border-transparent text-slate-500 hover:text-slate-700"
-                      }`}
+                    }`}
                   >
                     Group
                     {(() => {
@@ -2639,15 +2795,135 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
 
                 {/* PRIVATE SUB-TAB */}
                 {commSubTab === "private" && (() => {
-                  const privateComms = ACTIVITIES_DATA
+                  const allPrivateComms = ACTIVITIES_DATA
                     .filter(a => !a.isGroupChat && !a.isNote && a.type !== "note")
                     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                  const privateComms = allPrivateComms.filter(a => {
+                    if (commTypeFilter !== "all" && a.type !== commTypeFilter) return false
+                    if (commDateRange?.from) {
+                      const msgDate = new Date(a.timestamp)
+                      const from = startOfDay(commDateRange.from)
+                      const to = commDateRange.to ? endOfDay(commDateRange.to) : endOfDay(commDateRange.from)
+                      if (!isWithinInterval(msgDate, { start: from, end: to })) return false
+                    }
+                    return true
+                  })
 
                   return (
                     <>
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-slate-800">Private Conversation</h3>
                         <span className="text-xs text-muted-foreground">{privateComms.length} messages</span>
+                      </div>
+
+                      {/* Filters */}
+                      <div className="flex flex-wrap items-center gap-3 mb-3 p-2.5 rounded-lg border border-slate-200 bg-white">
+                        {/* Type radio buttons */}
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Type</span>
+                          <div className="flex items-center gap-1">
+                            {(["all", "email", "sms", "call"] as const).map(t => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => setCommTypeFilter(t)}
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                                  commTypeFilter === t
+                                    ? t === "email"
+                                      ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
+                                      : t === "sms"
+                                        ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
+                                        : t === "call"
+                                          ? "bg-[#E8EAF6] text-indigo-800 border border-[#c5cae9]"
+                                          : "bg-teal-50 text-teal-700 border border-teal-200"
+                                    : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                                }`}
+                              >
+                                {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Calls"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="h-5 w-px bg-slate-200" />
+
+                        {/* Date range picker */}
+                        <Popover open={commDatePopoverOpen} onOpenChange={setCommDatePopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                                commDateRange?.from
+                                  ? "bg-teal-50 text-teal-700 border-teal-200"
+                                  : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                              }`}
+                            >
+                              <Calendar className="h-3 w-3" />
+                              {commDateRange?.from ? (
+                                commDateRange.to
+                                  ? `${format(commDateRange.from, "MMM d")} - ${format(commDateRange.to, "MMM d, yyyy")}`
+                                  : format(commDateRange.from, "MMM d, yyyy")
+                              ) : (
+                                "Date"
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarWidget
+                              mode="range"
+                              selected={commDateRange}
+                              onSelect={(range) => {
+                                setCommDateRange(range)
+                                if (range?.to) setCommDatePopoverOpen(false)
+                              }}
+                              numberOfMonths={1}
+                            />
+                            {commDateRange?.from && (
+                              <div className="border-t p-2 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => { setCommDateRange(undefined); setCommDatePopoverOpen(false) }}
+                                  className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+
+                        <div className="h-5 w-px bg-slate-200" />
+
+                        {/* Search bar */}
+                        <div className="relative flex-1 min-w-[140px]">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                          <input
+                            type="text"
+                            value={commSearchQuery}
+                            onChange={(e) => setCommSearchQuery(e.target.value)}
+                            placeholder="Search conversations..."
+                            className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
+                          />
+                          {commSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setCommSearchQuery("")}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {(commTypeFilter !== "all" || commDateRange?.from || commSearchQuery) && (
+                          <button
+                            type="button"
+                            onClick={() => { setCommTypeFilter("all"); setCommDateRange(undefined); setCommSearchQuery("") }}
+                            className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                          >
+                            Clear all
+                          </button>
+                        )}
                       </div>
 
                       {/* Chat Messages */}
@@ -2662,28 +2938,49 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
 
                               return (
                                 <div key={item.id} className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                                  <div className={`max-w-[75%] ${isOutgoing
-                                      ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                                      : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
-                                    } p-3 shadow-sm`}>
+                                  <div className={`max-w-[75%] ${
+                                    isOutgoing
+                                      ? item.type === "email"
+                                        ? "text-slate-900 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                        : item.type === "sms"
+                                          ? "text-slate-900 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                          : "text-slate-900 rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                      : item.type === "email"
+                                        ? "text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                                        : item.type === "sms"
+                                          ? "text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                                          : "text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                                  } ${
+                                    item.type === "email"
+                                      ? "bg-[#E6F4EA] border border-[#c8e6cf]"
+                                      : item.type === "sms"
+                                        ? isOutgoing
+                                          ? "bg-[#90CAF9] border border-[#64B5F6]"
+                                          : "bg-[#E3F2FD] border border-[#BBDEFB]"
+                                        : "bg-[#E0F7F6] border border-[#b8e8e6]"
+                                  } p-3 shadow-sm`}>
                                     {/* Sender & Channel Badge */}
                                     <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                                      <span className={`text-xs font-medium ${isOutgoing ? "text-teal-100" : "text-slate-500"}`}>
+                                      <span className="text-xs font-medium text-slate-500">
                                         {item.user}
                                       </span>
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.type === "email"
-                                          ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                        item.type === "email"
+                                          ? "bg-[#c8e6cf] text-green-800"
                                           : item.type === "sms"
-                                            ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-green-100 text-green-600"
-                                            : isOutgoing ? "bg-teal-500 text-teal-100" : "bg-orange-100 text-orange-600"
-                                        }`}>
+                                          ? isOutgoing
+                                            ? "bg-[#64B5F6] text-blue-900"
+                                            : "bg-[#BBDEFB] text-blue-800"
+                                          : "bg-[#b8e8e6] text-teal-800"
+                                      }`}>
                                         {item.type === "email" ? "Email" : item.type === "sms" ? "SMS" : "Call"}
                                       </span>
                                     </div>
 
-                                    {/* Email with thread */}
+                                    {/* Email - collapsed by default with subject header */}
                                     {item.type === "email" && item.emailThread ? (
                                       <div>
+                                        {/* Collapsed header: subject + expand button */}
                                         <button
                                           onClick={() => setExpandedCommEmails(prev => {
                                             const next = new Set(prev)
@@ -2691,63 +2988,131 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                                             next.has(key) ? next.delete(key) : next.add(key)
                                             return next
                                           })}
-                                          className={`text-sm font-medium mb-1 flex items-center gap-1 w-full text-left ${isOutgoing ? "text-white hover:text-teal-100" : "text-slate-800 hover:text-teal-600"}`}
+                                          className="w-full text-left flex items-center justify-between gap-2 group"
                                         >
-                                          <ChevronDown className={`h-3 w-3 shrink-0 transition-transform ${isEmailExp ? "rotate-0" : "-rotate-90"}`} />
-                                          {item.emailThread[0]?.subject || "Email"}
-                                        </button>
-                                        {isEmailExp ? (
-                                          <div className="space-y-2 mt-1">
-                                            {item.emailThread.map((threadItem: any, idx: number) => (
-                                              <div key={threadItem.id} className={idx > 0 ? "pt-2 border-t border-dashed border-opacity-30 " + (isOutgoing ? "border-teal-300" : "border-slate-300") : ""}>
-                                                {idx > 0 && (
-                                                  <div className={`text-xs mb-1 ${isOutgoing ? "text-teal-200" : "text-slate-500"}`}>
-                                                    {threadItem.from} - {threadItem.timestamp}
-                                                  </div>
-                                                )}
-                                                <p className={`text-sm whitespace-pre-line ${isOutgoing ? "text-white" : "text-slate-700"}`}>
-                                                  {threadItem.content}
-                                                </p>
-                                                {threadItem.emailOpens && threadItem.emailOpens.length > 0 && (
-                                                  <div className={`flex items-center gap-1 text-[10px] mt-1 ${isOutgoing ? "text-teal-200" : "text-green-600"}`}>
-                                                    <Eye className="h-3 w-3" />
-                                                    Opened at {threadItem.emailOpens[0].openedAt}
-                                                  </div>
-                                                )}
-                                              </div>
-                                            ))}
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            <Mail className="h-3.5 w-3.5 shrink-0 text-green-700" />
+                                            <span className="text-sm font-semibold text-slate-800 truncate">
+                                              {highlightText(item.emailThread[0]?.subject || "Email")}
+                                            </span>
                                           </div>
-                                        ) : (
-                                          <p className={`text-xs mt-0.5 ${isOutgoing ? "text-teal-200" : "text-slate-400"}`}>
-                                            {item.message}
-                                          </p>
+                                          <ChevronDown className={`h-4 w-4 shrink-0 text-slate-400 group-hover:text-slate-600 transition-transform ${isEmailExp ? "rotate-180" : "rotate-0"}`} />
+                                        </button>
+
+                                        {!isEmailExp && (
+                                          <p className="text-xs text-slate-500 mt-1 line-clamp-1">{highlightText(item.message)}</p>
+                                        )}
+
+                                        {/* Expanded: email content + thread */}
+                                        {isEmailExp && (
+                                          <div className="mt-2">
+                                            {/* Main email content */}
+                                            <p className="text-sm whitespace-pre-line text-slate-700">
+                                              {highlightText(item.emailThread[0]?.content)}
+                                            </p>
+                                            {item.emailThread[0]?.emailOpens && item.emailThread[0].emailOpens.length > 0 && (
+                                              <div className="flex items-center gap-1 text-[10px] mt-1.5 text-green-600">
+                                                <Eye className="h-3 w-3" />
+                                                Opened at {item.emailThread[0].emailOpens[0].openedAt}
+                                              </div>
+                                            )}
+
+                                            {/* Attachments placeholder */}
+                                            {item.attachments && item.attachments.length > 0 && (
+                                              <div className="mt-2 flex flex-wrap gap-1.5">
+                                                {item.attachments.map((att: any, ai: number) => (
+                                                  <span key={ai} className="inline-flex items-center gap-1 text-xs bg-white/70 border border-[#c8e6cf] rounded px-2 py-1 text-slate-600">
+                                                    <Paperclip className="h-3 w-3" />{att.name}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            )}
+
+                                            {/* Email thread at bottom */}
+                                            {item.emailThread.length > 1 && (
+                                              <div className="mt-3 pt-2 border-t border-[#c8e6cf]">
+                                                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Thread ({item.emailThread.length - 1} earlier)</p>
+                                                <div className="space-y-1">
+                                                  {item.emailThread.slice(1).map((threadItem: any) => {
+                                                    const isThreadExpanded = expandedCommEmails.has(`thread-${threadItem.id}`)
+                                                    return (
+                                                      <div key={threadItem.id} className="rounded-md bg-white/60 border border-[#c8e6cf]">
+                                                        <button
+                                                          onClick={(e) => {
+                                                            e.stopPropagation()
+                                                            setExpandedCommEmails(prev => {
+                                                              const next = new Set(prev)
+                                                              const key = `thread-${threadItem.id}`
+                                                              next.has(key) ? next.delete(key) : next.add(key)
+                                                              return next
+                                                            })
+                                                          }}
+                                                          className="w-full text-left px-2.5 py-1.5 flex items-center justify-between gap-2"
+                                                        >
+                                                          <div className="min-w-0">
+                                                            <span className="text-xs font-medium text-slate-700">{threadItem.from}</span>
+                                                            <span className="text-[10px] text-slate-400 ml-2">{threadItem.timestamp}</span>
+                                                          </div>
+                                                          <ChevronDown className={`h-3 w-3 shrink-0 text-slate-400 transition-transform ${isThreadExpanded ? "rotate-180" : "rotate-0"}`} />
+                                                        </button>
+                                                        {isThreadExpanded && (
+                                                          <div className="px-2.5 pb-2">
+                                                            <p className="text-sm whitespace-pre-line text-slate-700">{highlightText(threadItem.content)}</p>
+                                                            {threadItem.emailOpens && threadItem.emailOpens.length > 0 && (
+                                                              <div className="flex items-center gap-1 text-[10px] mt-1 text-green-600">
+                                                                <Eye className="h-3 w-3" />
+                                                                Opened at {threadItem.emailOpens[0].openedAt}
+                                                              </div>
+                                                            )}
+                                                          </div>
+                                                        )}
+                                                      </div>
+                                                    )
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
                                     ) : item.type === "call" ? (
-                                      <div className="space-y-1">
-                                        <div className={`flex items-center gap-2 ${isOutgoing ? "text-teal-100" : "text-slate-600"}`}>
+                                      <details className="group/call">
+                                        <summary className="flex items-center gap-2 text-slate-600 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
                                           <Phone className="h-4 w-4" />
                                           <span className="text-sm">
                                             {isOutgoing ? "Outgoing call" : "Incoming call"}
                                           </span>
+                                          <span className="text-sm text-slate-400 ml-auto">
+                                            {item.callNotes ? "- " + (item.callNotes.length > 40 ? item.callNotes.slice(0, 40) + "..." : item.callNotes) : ""}
+                                          </span>
+                                          <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform group-open/call:rotate-180 shrink-0" />
+                                        </summary>
+                                        <div className="mt-2 pt-2 border-t border-slate-200 space-y-2">
+                                          {item.callNotes && (
+                                            <p className="text-sm whitespace-pre-line text-slate-700">
+                                              <span className="font-medium">Notes:</span> {highlightText(item.callNotes)}
+                                            </p>
+                                          )}
+                                          {!item.callNotes && item.message && (
+                                            <p className="text-sm text-slate-700">{highlightText(item.message)}</p>
+                                          )}
+                                          <button
+                                            type="button"
+                                            className="flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-700 transition-colors mt-1"
+                                          >
+                                            <PlayCircle className="h-4 w-4" />
+                                            Play Recording
+                                          </button>
                                         </div>
-                                        {item.callNotes && (
-                                          <p className={`text-sm whitespace-pre-line ${isOutgoing ? "text-teal-50" : "text-slate-700"}`}>
-                                            <span className="font-medium">Notes:</span> {item.callNotes}
-                                          </p>
-                                        )}
-                                        {!item.callNotes && item.message && (
-                                          <p className={`text-sm ${isOutgoing ? "text-teal-50" : "text-slate-700"}`}>{item.message}</p>
-                                        )}
-                                      </div>
+                                      </details>
                                     ) : (
-                                      <p className={`text-sm ${isOutgoing ? "text-white" : "text-slate-700"}`}>
-                                        {item.fullMessage || item.message}
+                                      <p className="text-sm text-slate-700">
+                                        {highlightText(item.fullMessage || item.message)}
                                       </p>
                                     )}
 
                                     {/* Timestamp */}
-                                    <div className={`text-[10px] mt-2 ${isOutgoing ? "text-teal-200 text-right" : "text-slate-400"}`}>
+                                    <div className={`text-[10px] mt-2 ${isOutgoing ? "text-right" : ""} text-slate-400`}>
                                       {item.timestamp}
                                     </div>
                                   </div>
@@ -2756,7 +3121,9 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                             })
                           ) : (
                             <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
-                              No private communications yet.
+                              {commTypeFilter !== "all" || commDateRange?.from || commSearchQuery
+                                ? "No messages match the selected filters."
+                                : "No private communications yet."}
                             </div>
                           )}
                         </div>
@@ -2768,15 +3135,15 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                           <span className="text-sm font-medium text-slate-700">Reply</span>
                           <div className="flex items-center gap-2">
                             <button type="button" onClick={() => setCommChannel("email")}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-blue-100 text-blue-700 border border-blue-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                               <Mail className="h-3.5 w-3.5" /> Email
                             </button>
                             <button type="button" onClick={() => setCommChannel("sms")}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-teal-100 text-teal-700 border border-teal-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                               <MessageSquare className="h-3.5 w-3.5" /> SMS
                             </button>
                             <button type="button" onClick={() => setCommChannel("call")}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "call" ? "bg-green-100 text-green-700 border border-green-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "call" ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                               <PhoneCall className="h-3.5 w-3.5" /> Call
                             </button>
                           </div>
@@ -2886,7 +3253,17 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   })
                   const groups = Array.from(groupMap.values()).sort((a, b) => new Date(b.lastMessage.timestamp).getTime() - new Date(a.lastMessage.timestamp).getTime())
                   const selectedGroup = selectedGroupId ? groups.find(g => g.name === selectedGroupId) : null
-                  const groupMessages = selectedGroup ? [...selectedGroup.messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()) : []
+                  const allGroupMessages = selectedGroup ? [...selectedGroup.messages].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()) : []
+                  const groupMessages = allGroupMessages.filter(a => {
+                    if (commTypeFilter !== "all" && a.type !== commTypeFilter) return false
+                    if (commDateRange?.from) {
+                      const msgDate = new Date(a.timestamp)
+                      const from = startOfDay(commDateRange.from)
+                      const to = commDateRange.to ? endOfDay(commDateRange.to) : endOfDay(commDateRange.from)
+                      if (!isWithinInterval(msgDate, { start: from, end: to })) return false
+                    }
+                    return true
+                  })
 
                   return selectedGroup ? (
                     <>
@@ -2900,32 +3277,149 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                         </div>
                       </div>
 
+                      {/* Filters */}
+                      <div className="flex flex-wrap items-center gap-3 mb-3 p-2.5 rounded-lg border border-slate-200 bg-white">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-medium text-slate-500 uppercase tracking-wide">Type</span>
+                          <div className="flex items-center gap-1">
+                            {(["all", "email", "sms", "call"] as const).map(t => (
+                              <button
+                                key={t}
+                                type="button"
+                                onClick={() => setCommTypeFilter(t)}
+                                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                                  commTypeFilter === t
+                                    ? t === "email"
+                                      ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
+                                      : t === "sms"
+                                        ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
+                                        : t === "call"
+                                          ? "bg-[#E8EAF6] text-indigo-800 border border-[#c5cae9]"
+                                          : "bg-teal-50 text-teal-700 border border-teal-200"
+                                    : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                                }`}
+                              >
+                                {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Calls"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="h-5 w-px bg-slate-200" />
+                        <Popover open={commDatePopoverOpen} onOpenChange={setCommDatePopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
+                                commDateRange?.from
+                                  ? "bg-teal-50 text-teal-700 border-teal-200"
+                                  : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                              }`}
+                            >
+                              <Calendar className="h-3 w-3" />
+                              {commDateRange?.from ? (
+                                commDateRange.to
+                                  ? `${format(commDateRange.from, "MMM d")} - ${format(commDateRange.to, "MMM d, yyyy")}`
+                                  : format(commDateRange.from, "MMM d, yyyy")
+                              ) : (
+                                "Date"
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <CalendarWidget
+                              mode="range"
+                              selected={commDateRange}
+                              onSelect={(range) => {
+                                setCommDateRange(range)
+                                if (range?.to) setCommDatePopoverOpen(false)
+                              }}
+                              numberOfMonths={1}
+                            />
+                            {commDateRange?.from && (
+                              <div className="border-t p-2 flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => { setCommDateRange(undefined); setCommDatePopoverOpen(false) }}
+                                  className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                                >
+                                  Clear
+                                </button>
+                              </div>
+                            )}
+                          </PopoverContent>
+                        </Popover>
+                        <div className="h-5 w-px bg-slate-200" />
+
+                        {/* Search bar */}
+                        <div className="relative flex-1 min-w-[140px]">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                          <input
+                            type="text"
+                            value={commSearchQuery}
+                            onChange={(e) => setCommSearchQuery(e.target.value)}
+                            placeholder="Search conversations..."
+                            className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
+                          />
+                          {commSearchQuery && (
+                            <button
+                              type="button"
+                              onClick={() => setCommSearchQuery("")}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+
+                        {(commTypeFilter !== "all" || commDateRange?.from || commSearchQuery) && (
+                          <button
+                            type="button"
+                            onClick={() => { setCommTypeFilter("all"); setCommDateRange(undefined); setCommSearchQuery("") }}
+                            className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                          >
+                            Clear all
+                          </button>
+                        )}
+                      </div>
+
                       <div className="min-h-[250px] flex-1 overflow-y-auto space-y-3 mb-4 pr-2 border rounded-lg p-4 bg-slate-50 flex flex-col-reverse">
                         <div className="flex flex-col gap-3">
-                          {groupMessages.map((item) => {
+                          {groupMessages.length > 0 ? groupMessages.map((item) => {
                             const isOutgoing = item.user === "Richard Surovi"
                             const isEmailExp2 = expandedCommEmails.has(String(item.id))
                             return (
                               <div key={item.id} className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                                <div className={`max-w-[75%] ${isOutgoing
-                                    ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                                    : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
-                                  } p-3 shadow-sm`}>
+                                <div className={`max-w-[75%] ${
+                                  isOutgoing
+                                    ? "rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                    : "rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                                } ${
+                                  item.type === "email"
+                                    ? "bg-[#E6F4EA] border border-[#c8e6cf]"
+                                    : "bg-[#E3F2FD] border border-[#bbdefb]"
+                                } text-slate-900 p-3 shadow-sm`}>
                                   <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                                    <span className={`text-xs font-medium ${isOutgoing ? "text-teal-100" : "text-slate-500"}`}>{item.user}</span>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.type === "email"
-                                        ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
-                                        : isOutgoing ? "bg-teal-500 text-teal-100" : "bg-green-100 text-green-600"
-                                      }`}>
+                                    <span className="text-xs font-medium text-slate-500">{item.user}</span>
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                      item.type === "email"
+                                        ? "bg-[#c8e6cf] text-green-800"
+                                        : "bg-[#bbdefb] text-blue-800"
+                                    }`}>
                                       {item.type === "email" ? "Email" : "SMS"}
                                     </span>
                                   </div>
-                                  <p className={`text-sm ${isOutgoing ? "text-white" : "text-slate-700"}`}>{item.fullMessage || item.message}</p>
-                                  <div className={`text-[10px] mt-2 ${isOutgoing ? "text-teal-200 text-right" : "text-slate-400"}`}>{item.timestamp}</div>
+                                  <p className="text-sm text-slate-700">{highlightText(item.fullMessage || item.message)}</p>
+                                  <div className={`text-[10px] mt-2 text-slate-400 ${isOutgoing ? "text-right" : ""}`}>{item.timestamp}</div>
                                 </div>
                               </div>
                             )
-                          })}
+                          }) : (
+                            <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
+                              {commTypeFilter !== "all" || commDateRange?.from || commSearchQuery
+                                ? "No messages match the selected filters."
+                                : "No group messages yet."}
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -2935,11 +3429,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                           <span className="text-sm font-medium text-slate-700">Reply</span>
                           <div className="flex items-center gap-2">
                             <button type="button" onClick={() => setCommChannel("email")}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-blue-100 text-blue-700 border border-blue-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "email" ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                               <Mail className="h-3.5 w-3.5" /> Email
                             </button>
                             <button type="button" onClick={() => setCommChannel("sms")}
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-teal-100 text-teal-700 border border-teal-300" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${commChannel === "sms" ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]" : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"}`}>
                               <MessageSquare className="h-3.5 w-3.5" /> SMS
                             </button>
                           </div>
@@ -3018,30 +3512,33 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               <button
                 type="button"
                 onClick={() => setProcessStatusFilter("in-progress")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "in-progress"
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  processStatusFilter === "in-progress"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
-                  }`}
+                }`}
               >
                 In Progress ({prospectProcesses.inProgress.length + newlyStartedProcesses.length})
               </button>
               <button
                 type="button"
                 onClick={() => setProcessStatusFilter("completed")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "completed"
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  processStatusFilter === "completed"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
-                  }`}
+                }`}
               >
                 Completed ({prospectProcesses.completed.length})
               </button>
               <button
                 type="button"
                 onClick={() => setProcessStatusFilter("upcoming")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "upcoming"
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+                  processStatusFilter === "upcoming"
                     ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
-                  }`}
+                }`}
               >
                 Upcoming ({prospectProcesses.upcoming.length})
               </button>
@@ -3050,225 +3547,525 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
             <div className="space-y-6">
               {/* In Progress Processes */}
               {processStatusFilter === "in-progress" && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <PlayCircle className="h-4 w-4 text-amber-500" />
-                    <h4 className="font-semibold text-foreground">In Progress ({prospectProcesses.inProgress.length + newlyStartedProcesses.length})</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {/* Newly started processes */}
-                    {newlyStartedProcesses.map((process) => (
-                      <div key={process.id} className="border rounded-lg overflow-hidden border-teal-200 bg-teal-50/30">
-                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}>
-                          <div className="flex items-center gap-4 flex-1 text-left">
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-foreground">{process.name}</p>
-                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">New</Badge>
-                              </div>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                  {process.prospectingStage}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {process.status}
-                            </Badge>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Process
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={(e) => {
-                                  e.stopPropagation()
-                                  setNewlyStartedProcesses(prev => prev.filter(p => p.id !== process.id))
-                                }}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Remove Process
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {/* Existing in-progress processes */}
-                    {prospectProcesses.inProgress.map((process) => (
-                      <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}>
-                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-4 flex-1 text-left">
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium text-foreground">{process.name}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                  {process.prospectingStage}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {process.status}
-                            </Badge>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Process
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Process
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <PlayCircle className="h-4 w-4 text-amber-500" />
+                  <h4 className="font-semibold text-foreground">In Progress ({prospectProcesses.inProgress.length + newlyStartedProcesses.length})</h4>
                 </div>
+                <div className="space-y-2">
+                  {/* Newly started processes */}
+                  {newlyStartedProcesses.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden border-teal-200 bg-teal-50/30">
+                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4 flex-1 text-left">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                                className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                              >
+                                {process.name}
+                              </button>
+                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">New</Badge>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                {process.prospectingStage}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {process.status}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Process
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                e.stopPropagation()
+                                setNewlyStartedProcesses(prev => prev.filter(p => p.id !== process.id))
+                              }}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Remove Process
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task: { id: string; name: string; startDate: string | null; completedDate: string | null; staffName: string; staffEmail: string }) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                    )
+                  })}
+                  {/* Existing in-progress processes */}
+                  {prospectProcesses.inProgress.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4 flex-1 text-left">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                              className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                            >
+                              {process.name}
+                            </button>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                {process.prospectingStage}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {process.status}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Process
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Process
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                    )
+                  })}
+                </div>
+              </div>
               )}
 
               {/* Upcoming Processes */}
               {processStatusFilter === "upcoming" && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-4 w-4 text-blue-500" />
-                    <h4 className="font-semibold text-foreground">Upcoming ({prospectProcesses.upcoming.length})</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {prospectProcesses.upcoming.map((process) => (
-                      <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}>
-                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-4 flex-1 text-left">
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium text-foreground">{process.name}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                  {process.prospectingStage}
-                                </Badge>
-                              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="h-4 w-4 text-blue-500" />
+                  <h4 className="font-semibold text-foreground">Upcoming ({prospectProcesses.upcoming.length})</h4>
+                </div>
+                <div className="space-y-2">
+                  {prospectProcesses.upcoming.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4 flex-1 text-left">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                              className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                            >
+                              {process.name}
+                            </button>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                {process.prospectingStage}
+                              </Badge>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                              {process.status}
-                            </Badge>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess({ ...process, startedOn: undefined }) }}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Process
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Process
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                            {process.status}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess({ ...process, startedOn: undefined }) }}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Process
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Process
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                    )
+                  })}
                 </div>
+              </div>
               )}
 
               {/* Completed Processes */}
               {processStatusFilter === "completed" && (
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <CheckCircle2 className="h-4 w-4 text-success" />
-                    <h4 className="font-semibold text-foreground">Completed ({prospectProcesses.completed.length})</h4>
-                  </div>
-                  <div className="space-y-2">
-                    {prospectProcesses.completed.map((process) => (
-                      <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}>
-                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                          <div className="flex items-center gap-4 flex-1 text-left">
-                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <p className="font-medium text-foreground">{process.name}</p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                  {process.prospectingStage}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
-                                <span className="text-xs text-muted-foreground">Completed: {process.completedOn}</span>
-                              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="h-4 w-4 text-success" />
+                  <h4 className="font-semibold text-foreground">Completed ({prospectProcesses.completed.length})</h4>
+                </div>
+                <div className="space-y-2">
+                  {prospectProcesses.completed.map((process) => {
+                    const isExpanded = expandedProcesses.includes(process.id)
+                    return (
+                    <div key={process.id} className="border rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-4 flex-1 text-left">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedProcesses(prev => prev.includes(process.id) ? prev.filter(id => id !== process.id) : [...prev, process.id])}
+                            className="p-1 hover:bg-slate-100 rounded cursor-pointer"
+                          >
+                            {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          </button>
+                          <div>
+                            <button
+                              type="button"
+                              onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                              className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
+                            >
+                              {process.name}
+                            </button>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                {process.prospectingStage}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
+                              <span className="text-xs text-muted-foreground">Completed: {process.completedOn}</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-success/10 text-success border-success/30">
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
-                              {process.status}
-                            </Badge>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Process
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Process
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className="bg-success/10 text-success border-success/30">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            {process.status}
+                          </Badge>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Edit Process
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Process
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                      {/* Tasks Table */}
+                      {isExpanded && process.tasks && (
+                        <div className="border-t bg-muted/20 px-4 py-3">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-muted/40">
+                                <TableHead className="font-medium text-xs pl-12">Task Name</TableHead>
+                                <TableHead className="font-medium text-xs">Start Date</TableHead>
+                                <TableHead className="font-medium text-xs">Completed On</TableHead>
+                                <TableHead className="font-medium text-xs">Staff Member</TableHead>
+                                <TableHead className="font-medium text-xs w-[180px]">Actions</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {process.tasks.map((task) => (
+                                <TableRow key={task.id} className="hover:bg-muted/20">
+                                  <TableCell className="text-sm pl-12">{task.name}</TableCell>
+                                  <TableCell className="text-sm text-muted-foreground">{task.startDate || "\u2014"}</TableCell>
+                                  <TableCell className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"}`}>
+                                    {task.completedDate || "\u2014"}
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <p className="text-sm font-medium text-foreground">{task.staffName}</p>
+                                      <p className="text-xs text-muted-foreground">{task.staffEmail}</p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Eye className="h-3.5 w-3.5" />
+                                        View
+                                      </button>
+                                      <button className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
+                                        <Edit className="h-3.5 w-3.5" />
+                                        Edit
+                                      </button>
+                                      {!task.completedDate && (
+                                        <button 
+                                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-teal-500 text-teal-600 hover:bg-teal-50 hover:text-teal-700 cursor-pointer transition-colors"
+                                          title="Mark as Complete"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                          Complete
+                                        </button>
+                                      )}
+                                      {task.completedDate && (
+                                        <span className="flex items-center gap-1.5 text-xs px-2 py-1 rounded bg-teal-50 text-teal-600 border border-teal-200" title="Completed">
+                                          <Check className="h-4 w-4" />
+                                          Done
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      )}
+                    </div>
+                    )
+                  })}
                 </div>
+              </div>
               )}
             </div>
           </TabsContent>
@@ -3475,7 +4272,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
       </div>
 
       {/* Quick Actions Sidebar */}
-      <div className="w-64 flex-shrink-0 border-l pl-6">
+      <div className="w-64 flex-shrink-0 border-l pl-6 sticky top-0 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
         <OwnerDetailQuickActions />
       </div>
 
@@ -3516,10 +4313,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                       type="button"
                       disabled={alreadyStarted}
                       onClick={() => handleStartNewProcess(processType)}
-                      className={`flex items-center gap-4 w-full text-left py-3.5 px-4 transition-colors ${alreadyStarted
+                      className={`flex items-center gap-4 w-full text-left py-3.5 px-4 transition-colors ${
+                        alreadyStarted
                           ? "opacity-50 cursor-not-allowed bg-gray-50"
                           : "hover:bg-teal-50 cursor-pointer"
-                        }`}
+                      }`}
                     >
                       <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
                         <FolderOpen className="h-5 w-5 text-white" />
@@ -4239,13 +5037,13 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
           <div className="py-6 space-y-6">
             <div className="space-y-2">
               <Label htmlFor="process-name">Process Name <span className="text-destructive">*</span></Label>
-              <Input
-                id="process-name"
+              <Input 
+                id="process-name" 
                 placeholder="Enter process name..."
                 defaultValue={editingProcess?.name || ""}
               />
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="prospecting-stage">Prospecting Stage <span className="text-destructive">*</span></Label>
               <Select defaultValue={editingProcess?.prospectingStage || ""}>
@@ -4262,7 +5060,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="process-status">Process Status <span className="text-destructive">*</span></Label>
               <Select defaultValue={editingProcess?.status || "Upcoming"}>
@@ -4275,20 +5073,20 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="start-date">Start Date</Label>
-              <Input
-                id="start-date"
+              <Input 
+                id="start-date" 
                 type="date"
                 defaultValue={editingProcess?.startedOn ? new Date(editingProcess.startedOn).toISOString().split('T')[0] : ""}
               />
             </div>
-
+            
             <div className="space-y-2">
               <Label htmlFor="process-description">Description (Optional)</Label>
-              <Textarea
-                id="process-description"
+              <Textarea 
+                id="process-description" 
                 placeholder="Enter process description..."
                 className="min-h-[100px]"
                 defaultValue={editingProcess?.description || ""}
@@ -4318,7 +5116,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               View and update property information
             </DialogDescription>
           </DialogHeader>
-
+          
           {selectedProperty && (
             <div className="space-y-6 py-4">
               {/* Basic Info Section */}
@@ -4360,25 +5158,25 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs">Year Built</Label>
-                    <Input
-                      value={propertyFormData.yearBuilt}
-                      onChange={(e) => setPropertyFormData({ ...propertyFormData, yearBuilt: e.target.value })}
+                    <Input 
+                      value={propertyFormData.yearBuilt} 
+                      onChange={(e) => setPropertyFormData({...propertyFormData, yearBuilt: e.target.value})}
                       placeholder="Enter year"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Square Footage</Label>
-                    <Input
+                    <Input 
                       value={propertyFormData.sqft}
-                      onChange={(e) => setPropertyFormData({ ...propertyFormData, sqft: e.target.value })}
+                      onChange={(e) => setPropertyFormData({...propertyFormData, sqft: e.target.value})}
                       placeholder="Enter sq ft"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Lot Size</Label>
-                    <Input
+                    <Input 
                       value={propertyFormData.lotSize}
-                      onChange={(e) => setPropertyFormData({ ...propertyFormData, lotSize: e.target.value })}
+                      onChange={(e) => setPropertyFormData({...propertyFormData, lotSize: e.target.value})}
                       placeholder="Enter lot size"
                       className={!propertyFormData.lotSize ? "border-amber-300 bg-amber-50/50" : ""}
                     />
@@ -4386,9 +5184,9 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Bedrooms</Label>
-                    <Input
+                    <Input 
                       value={propertyFormData.bedrooms}
-                      onChange={(e) => setPropertyFormData({ ...propertyFormData, bedrooms: e.target.value })}
+                      onChange={(e) => setPropertyFormData({...propertyFormData, bedrooms: e.target.value})}
                       placeholder="Enter bedrooms"
                       className={!propertyFormData.bedrooms ? "border-amber-300 bg-amber-50/50" : ""}
                     />
@@ -4396,9 +5194,9 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Bathrooms</Label>
-                    <Input
+                    <Input 
                       value={propertyFormData.bathrooms}
-                      onChange={(e) => setPropertyFormData({ ...propertyFormData, bathrooms: e.target.value })}
+                      onChange={(e) => setPropertyFormData({...propertyFormData, bathrooms: e.target.value})}
                       placeholder="Enter bathrooms"
                       className={!propertyFormData.bathrooms ? "border-amber-300 bg-amber-50/50" : ""}
                     />
@@ -4406,9 +5204,9 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Parking Spaces</Label>
-                    <Input
+                    <Input 
                       value={propertyFormData.parkingSpaces}
-                      onChange={(e) => setPropertyFormData({ ...propertyFormData, parkingSpaces: e.target.value })}
+                      onChange={(e) => setPropertyFormData({...propertyFormData, parkingSpaces: e.target.value})}
                       placeholder="Enter parking"
                     />
                   </div>
@@ -4421,17 +5219,17 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs">HOA Fees</Label>
-                    <Input
+                    <Input 
                       value={propertyFormData.hoa}
-                      onChange={(e) => setPropertyFormData({ ...propertyFormData, hoa: e.target.value })}
+                      onChange={(e) => setPropertyFormData({...propertyFormData, hoa: e.target.value})}
                       placeholder="Enter HOA fees"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Pet Policy</Label>
-                    <Select
-                      value={propertyFormData.petPolicy}
-                      onValueChange={(value) => setPropertyFormData({ ...propertyFormData, petPolicy: value })}
+                    <Select 
+                      value={propertyFormData.petPolicy} 
+                      onValueChange={(value) => setPropertyFormData({...propertyFormData, petPolicy: value})}
                     >
                       <SelectTrigger className={!propertyFormData.petPolicy ? "border-amber-300 bg-amber-50/50" : ""}>
                         <SelectValue placeholder="Select policy" />
@@ -4447,9 +5245,9 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Laundry</Label>
-                    <Select
+                    <Select 
                       value={propertyFormData.laundry}
-                      onValueChange={(value) => setPropertyFormData({ ...propertyFormData, laundry: value })}
+                      onValueChange={(value) => setPropertyFormData({...propertyFormData, laundry: value})}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select option" />
@@ -4468,9 +5266,9 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               {/* Notes Section */}
               <div className="space-y-2">
                 <Label className="text-xs">Notes</Label>
-                <Textarea
+                <Textarea 
                   value={propertyFormData.notes}
-                  onChange={(e) => setPropertyFormData({ ...propertyFormData, notes: e.target.value })}
+                  onChange={(e) => setPropertyFormData({...propertyFormData, notes: e.target.value})}
                   placeholder="Add any additional notes about the property..."
                   className="min-h-[80px]"
                 />
@@ -4479,7 +5277,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
           )}
 
           <DialogFooter className="flex items-center justify-between sm:justify-between gap-2 pt-4 border-t">
-            <Button
+            <Button 
               variant="outline"
               onClick={() => setShowPropertyPopup(false)}
               className="bg-transparent"
@@ -4487,7 +5285,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               Close
             </Button>
             <div className="flex items-center gap-2">
-              <Button
+              <Button 
                 variant="outline"
                 onClick={() => {
                   // Generate PMA logic - would send to owner's email
@@ -4499,7 +5297,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <FileText className="h-4 w-4 mr-2" />
                 Generate PMA
               </Button>
-              <Button
+              <Button 
                 onClick={() => {
                   setShowPropertyPopup(false)
                   onNavigateToProperty?.(selectedProperty?.name || "")
@@ -4554,7 +5352,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 switch (type) {
                   case "LLC": return { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-800", entityBg: "bg-blue-50/50", entityBorder: "border-blue-100" }
                   case "Partnership": return { bg: "bg-violet-50", border: "border-violet-200", text: "text-violet-800", entityBg: "bg-violet-50/50", entityBorder: "border-violet-100" }
-                  default: return { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-800", entityBg: "bg-amber-50/50", entityBorder: "border-amber-100" }
+                  default: return { bg: "bg-amber-50", border: "border-amber-200", text: "text-green-800", entityBg: "bg-amber-50/50", entityBorder: "border-amber-100" }
                 }
               }
 
@@ -4701,12 +5499,13 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 Document Upload <span className="text-destructive">*</span>
               </Label>
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${dragActive
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
+                  dragActive
                     ? "border-teal-500 bg-teal-50"
                     : newDocUpload.file
                       ? "border-teal-500 bg-teal-50/50"
                       : "border-border hover:border-teal-400 hover:bg-muted/50"
-                  }`}
+                }`}
                 onDragOver={(e) => {
                   e.preventDefault()
                   setDragActive(true)
@@ -4833,8 +5632,8 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
             </div>
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
+            <Button 
+              variant="outline" 
               onClick={() => {
                 setShowUploadDocModal(false)
                 setNewDocUpload({ file: null, type: "", comments: "", assignTo: "" })
@@ -4842,8 +5641,8 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
             >
               Cancel
             </Button>
-            <Button
-              className="bg-teal-600 hover:bg-teal-700"
+            <Button 
+              className="bg-teal-600 hover:bg-teal-700" 
               onClick={() => {
                 setShowUploadDocModal(false)
                 setNewDocUpload({ file: null, type: "", comments: "", assignTo: "" })
@@ -4887,7 +5686,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
         currentMessage={selectedSMSActivity?.fullMessage || selectedSMSActivity?.message || ""}
         currentTimestamp={selectedSMSActivity?.timestamp || ""}
       />
-
+      
       {/* Email Popup Modal */}
       <EmailPopupModal
         isOpen={showEmailModal}
@@ -4914,7 +5713,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               Complete communication history including emails, SMS, and calls
             </DialogDescription>
           </DialogHeader>
-
+          
           {/* Thread Content */}
           <div ref={(el) => { if (el) { requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; }); } }} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             {getCommunicationThread().map((item) => {
@@ -4922,17 +5721,18 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               const isSMS = item.type === "sms"
               const isCall = item.type === "call"
               const isFromOwner = item.user === lead?.name
-
+              
               return (
                 <div key={item.id} className="space-y-2">
                   {/* SMS Item */}
                   {isSMS && (
                     <div className={`flex ${isFromOwner ? "justify-start" : "justify-end"}`}>
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 ${isFromOwner
+                        className={`max-w-[80%] rounded-lg p-3 ${
+                          isFromOwner
                             ? "bg-slate-100 border border-slate-200"
                             : "bg-teal-50 border border-teal-200"
-                          }`}
+                        }`}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <MessageSquare className="h-3.5 w-3.5 text-teal-600" />
@@ -4946,7 +5746,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Call Item */}
                   {isCall && (
                     <div className="flex justify-center">
@@ -4981,15 +5781,16 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                       </div>
                     </div>
                   )}
-
+                  
                   {/* Email Item - Collapsed by Default */}
                   {isEmail && (
                     <div className={`flex ${isFromOwner ? "justify-start" : "justify-end"}`}>
                       <div
-                        className={`max-w-[90%] rounded-lg border ${isFromOwner
+                        className={`max-w-[90%] rounded-lg border ${
+                          isFromOwner
                             ? "bg-blue-50 border-blue-200"
                             : "bg-indigo-50 border-indigo-200"
-                          }`}
+                        }`}
                       >
                         {/* Email Header - Always Visible */}
                         <div
@@ -5017,7 +5818,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                             From: {item.user} • {item.timestamp}
                           </p>
                         </div>
-
+                        
                         {/* Email Body - Expanded */}
                         {expandedEmails.includes(`thread-${item.id}`) && item.emailThread && (
                           <div className="border-t border-blue-200 p-3 space-y-3">
@@ -5028,7 +5829,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                                   <span>{email.timestamp}</span>
                                 </div>
                                 <p className="text-sm whitespace-pre-wrap">{email.content}</p>
-
+                                
                                 {/* Email Opens (only for sent emails) */}
                                 {email.emailOpens && email.emailOpens.length > 0 && (
                                   <div className="mt-2 pt-2 border-t border-blue-100">
@@ -5042,7 +5843,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                                     </p>
                                   </div>
                                 )}
-
+                                
                                 {/* Attachments placeholder */}
                                 {idx === 0 && (
                                   <div className="mt-2 pt-2 border-t border-blue-100">
@@ -5065,7 +5866,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
               )
             })}
           </div>
-
+          
           {/* Reply Area */}
           <div className="border-t px-6 py-4 space-y-3">
             {/* Channel Selector */}
@@ -5075,10 +5876,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <button
                   type="button"
                   onClick={() => setThreadReplyChannel("email")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${threadReplyChannel === "email"
-                      ? "bg-blue-100 text-blue-700 border border-blue-300"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    threadReplyChannel === "email"
+                      ? "bg-teal-100 text-teal-700 border border-teal-300"
                       : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                    }`}
+                  }`}
                 >
                   <Mail className="h-3.5 w-3.5" />
                   Email
@@ -5086,10 +5888,11 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 <button
                   type="button"
                   onClick={() => setThreadReplyChannel("sms")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${threadReplyChannel === "sms"
-                      ? "bg-teal-100 text-teal-700 border border-teal-300"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
+                    threadReplyChannel === "sms"
+                      ? "bg-green-100 text-green-700 border border-green-300"
                       : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                    }`}
+                  }`}
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                   SMS
@@ -5103,7 +5906,7 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
                 </button>
               </div>
             </div>
-
+            
             {/* Email Composer UI */}
             {threadReplyChannel === "email" && (
               <div className="border rounded-lg overflow-hidden bg-white">

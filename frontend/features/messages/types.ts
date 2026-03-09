@@ -13,6 +13,40 @@ export interface Contact {
   lastMessage?: string
   lastMessageTime?: string
   unreadCount?: number
+  groupUnreadCount?: number
+}
+
+export type CommChannel = "email" | "sms" | "call"
+
+export interface CommMessage {
+  id: string
+  type: MessageType
+  isIncoming: boolean
+  isGroupChat: boolean
+  groupName?: string
+  groupParticipants?: string[]
+  senderName: string
+  senderContact: string
+  recipientName: string
+  recipientContact: string
+  content: string
+  preview?: string
+  subject?: string
+  timestamp: string
+  date: string
+  isRead: boolean
+  attachments?: { name: string; size: string }[]
+  callDuration?: string
+  callNotes?: string
+  thread?: {
+    id: string
+    isIncoming: boolean
+    senderName: string
+    content: string
+    timestamp: string
+    attachments?: { name: string; size: string }[]
+    emailOpens?: { openedAt: string }[]
+  }[]
 }
 
 export interface Message {

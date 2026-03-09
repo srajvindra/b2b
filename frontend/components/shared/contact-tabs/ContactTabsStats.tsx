@@ -5,7 +5,6 @@ import {
   Users,
   UserCheck,
   Clock,
-  ChevronDown,
   Tag,
   AlertTriangle,
   LogOut,
@@ -17,14 +16,11 @@ import {
   Phone,
   Home,
 } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import type { Contact, Vendor } from "@/features/contacts/types"
 
-const TILE_BASE =
-  "flex items-center gap-2 px-3 py-1.5 border rounded-lg shadow-sm cursor-pointer transition-colors"
-const TILE_ACTIVE = "ring-2 ring-primary bg-primary/5"
-const TILE_INACTIVE = "bg-background hover:bg-muted/50"
+const CARD_BASE = "flex flex-col border rounded-lg shadow-sm cursor-pointer transition-colors"
+const CARD_ACTIVE = "ring-2 ring-primary bg-primary/5"
+const CARD_INACTIVE = "bg-background hover:bg-muted/50"
 
 export type OwnerTileFilter = "all" | "active" | "pending" | "terminations" | "tag"
 export type TenantTileFilter = "all" | "active" | "pending" | "moveout" | "evictions" | "type"
@@ -132,147 +128,155 @@ function OwnerStatsCards({
   }
 
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="grid grid-cols-5 gap-3">
+      {/* Total Owners */}
       <div
-        className={`${TILE_BASE} ${ownerTileFilter === "all" ? TILE_ACTIVE : TILE_INACTIVE}`}
+        className={`${CARD_BASE} ${ownerTileFilter === "all" ? CARD_ACTIVE : CARD_INACTIVE}`}
         onClick={() => apply(() => setOwnerTileFilter("all"))}
       >
-        <div className="p-1 rounded bg-success/10">
-          <Building2 className="h-4 w-4 text-success" />
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-success/5">
+          <div className="p-1 rounded bg-success/10">
+            <Building2 className="h-4 w-4 text-success" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Total Owners</span>
         </div>
-        <span className="text-sm text-muted-foreground">Total Owners</span>
-        <span className="text-xl font-bold">{allOwners.length}</span>
+        <div className="flex-1 flex items-center justify-center px-3 py-3">
+          <span className="text-muted-foreground text-2xl font-extrabold">{allOwners.length}</span>
+        </div>
       </div>
 
+      {/* Active Owners */}
       <div
-        className={`${TILE_BASE} ${ownerTileFilter === "active" ? TILE_ACTIVE : TILE_INACTIVE}`}
+        className={`${CARD_BASE} ${ownerTileFilter === "active" ? CARD_ACTIVE : CARD_INACTIVE}`}
         onClick={() => apply(() => setOwnerTileFilter("active"))}
       >
-        <div className="p-1 rounded bg-info/10">
-          <UserCheck className="h-4 w-4 text-info" />
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-info/5">
+          <div className="p-1 rounded bg-info/10">
+            <UserCheck className="h-4 w-4 text-info" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Active Owners</span>
         </div>
-        <span className="text-sm text-muted-foreground">Active Owners</span>
-        <span className="text-xl font-bold">{activeOwnerCount}</span>
+        <div className="flex-1 flex items-center justify-center px-3 py-3">
+          <span className="text-muted-foreground font-extrabold text-2xl">{activeOwnerCount}</span>
+        </div>
       </div>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className={`${TILE_BASE} ${ownerTileFilter === "pending" ? TILE_ACTIVE : TILE_INACTIVE}`}>
-            <div className="p-1 rounded bg-warning/10">
-              <Clock className="h-4 w-4 text-warning" />
-            </div>
-            <span className="text-sm text-muted-foreground">Pending</span>
-            <span className="text-xl font-bold">{getPendingCount()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+      {/* Pending (Expanded) */}
+      <div className={`${CARD_BASE} ${ownerTileFilter === "pending" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
+          <div className="p-1 rounded bg-warning/10">
+            <Clock className="h-4 w-4 text-warning" />
           </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-1" align="start">
-          {[
-            { label: "All", value: "all" as const, count: ownerPendingTasks + ownerPendingProcesses },
-            { label: "Pending Tasks", value: "tasks" as const, count: ownerPendingTasks },
-            { label: "Pending Processes", value: "processes" as const, count: ownerPendingProcesses },
-          ].map((item) => (
-            <button
-              key={item.value}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
-                ownerTileFilter === "pending" && pendingSubFilter === item.value
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-foreground"
-              }`}
-              onClick={() => apply(() => { setOwnerTileFilter("pending"); setPendingSubFilter(item.value) })}
-            >
-              <span>{item.label}</span>
-              <Badge variant="secondary" className="text-xs">
-                {item.count}
-              </Badge>
-            </button>
-          ))}
-        </PopoverContent>
-      </Popover>
+          <span className="text-xs font-medium text-foreground">Pending</span>
+          <span className="text-lg font-bold ml-auto">{getPendingCount()}</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+          <button
+            type="button"
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+              ownerTileFilter === "pending" && pendingSubFilter === "tasks"
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-muted/80 text-muted-foreground"
+            }`}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("pending"); setPendingSubFilter("tasks") }) }}
+          >
+            <span className="text-left">Pending Tasks</span>
+            <span className="font-semibold">{ownerPendingTasks}</span>
+          </button>
+          <button
+            type="button"
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+              ownerTileFilter === "pending" && pendingSubFilter === "processes"
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-muted/80 text-muted-foreground"
+            }`}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("pending"); setPendingSubFilter("processes") }) }}
+          >
+            <span className="text-left">Pending Processes</span>
+            <span className="font-semibold">{ownerPendingProcesses}</span>
+          </button>
+        </div>
+      </div>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className={`${TILE_BASE} ${ownerTileFilter === "terminations" ? TILE_ACTIVE : TILE_INACTIVE}`}>
-            <div className="p-1 rounded bg-destructive/10">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-            </div>
-            <span className="text-sm text-muted-foreground">Terminations</span>
-            <span className="text-xl font-bold">{getTerminationCount()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+      {/* Terminations (Expanded) */}
+      <div className={`${CARD_BASE} ${ownerTileFilter === "terminations" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-destructive/5">
+          <div className="p-1 rounded bg-destructive/10">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
           </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-1" align="start">
-          {[
-            { label: "All", value: "all" as const, count: underTermination + terminatedHidden },
-            { label: "Under Termination", value: "under" as const, count: underTermination },
-            { label: "Terminated Hidden", value: "hidden" as const, count: terminatedHidden },
-          ].map((item) => (
-            <button
-              key={item.value}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
-                ownerTileFilter === "terminations" && terminationSubFilter === item.value
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-foreground"
-              }`}
-              onClick={() => apply(() => { setOwnerTileFilter("terminations"); setTerminationSubFilter(item.value) })}
-            >
-              <span>{item.label}</span>
-              <Badge variant="secondary" className="text-xs">
-                {item.count}
-              </Badge>
-            </button>
-          ))}
-        </PopoverContent>
-      </Popover>
+          <span className="text-xs font-medium text-foreground">Terminations</span>
+          <span className="text-lg font-bold ml-auto">{getTerminationCount()}</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+          <button
+            type="button"
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+              ownerTileFilter === "terminations" && terminationSubFilter === "under"
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-muted/80 text-muted-foreground"
+            }`}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("terminations"); setTerminationSubFilter("under") }) }}
+          >
+            <span className="text-left">Under Termination</span>
+            <span className="font-semibold">{underTermination}</span>
+          </button>
+          <button
+            type="button"
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+              ownerTileFilter === "terminations" && terminationSubFilter === "hidden"
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-muted/80 text-muted-foreground"
+            }`}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("terminations"); setTerminationSubFilter("hidden") }) }}
+          >
+            <span className="text-left">Termination Hidden</span>
+            <span className="font-semibold">{terminatedHidden}</span>
+          </button>
+        </div>
+      </div>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className={`${TILE_BASE} ${ownerTileFilter === "tag" ? TILE_ACTIVE : TILE_INACTIVE}`}>
-            <div className="p-1 rounded bg-accent">
-              <Tag className="h-4 w-4 text-accent-foreground" />
-            </div>
-            <span className="text-sm text-muted-foreground">Tag </span>
-            <span className="text-xl font-bold">{getTagCount()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+      {/* Tags (Expanded with scroll) */}
+      <div className={`${CARD_BASE} ${ownerTileFilter === "tag" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
+          <div className="p-1 rounded bg-accent">
+            <Tag className="h-4 w-4 text-accent-foreground" />
           </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-1" align="start">
-          <div className="max-h-[250px] overflow-y-auto">
-            <button
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
-                ownerTileFilter === "tag" && selectedTag === "all"
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-foreground"
-              }`}
-              onClick={() => apply(() => { setOwnerTileFilter("tag"); setSelectedTag("all") })}
-            >
-              <span>All Owners</span>
-              <Badge variant="secondary" className="text-xs">
-                {allOwners.length}
-              </Badge>
-            </button>
-            {allTags.map((tag) => {
-              const tagOwnerCount = allOwners.filter((c) => c.tags?.includes(tag)).length
-              return (
-                <button
-                  key={tag}
-                  className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
-                    ownerTileFilter === "tag" && selectedTag === tag
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "hover:bg-muted/80 text-foreground"
-                  }`}
-                  onClick={() => apply(() => { setOwnerTileFilter("tag"); setSelectedTag(tag) })}
-                >
-                  <span>{tag}</span>
-                  <Badge variant="secondary" className="text-xs">
-                    {tagOwnerCount}
-                  </Badge>
-                </button>
-              )
-            })}
-          </div>
-        </PopoverContent>
-      </Popover>
+          <span className="text-xs font-medium text-foreground">Tags</span>
+          <span className="text-lg font-bold ml-auto">{getTagCount()}</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1 max-h-[90px] overflow-y-auto">
+          <button
+            type="button"
+            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors shrink-0 ${
+              ownerTileFilter === "tag" && selectedTag === "all"
+                ? "bg-primary/10 text-primary font-medium"
+                : "hover:bg-muted/80 text-muted-foreground"
+            }`}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("tag"); setSelectedTag("all") }) }}
+          >
+            <span>All Owners</span>
+            <span className="font-semibold">{allOwners.length}</span>
+          </button>
+          {allTags.map((tag) => {
+            const tagOwnerCount = allOwners.filter((c) => c.tags?.includes(tag)).length
+            return (
+              <button
+                key={tag}
+                type="button"
+                className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors shrink-0 ${
+                  ownerTileFilter === "tag" && selectedTag === tag
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "hover:bg-muted/80 text-muted-foreground"
+                }`}
+                onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("tag"); setSelectedTag(tag) }) }}
+              >
+                <span>{tag}</span>
+                <span className="font-semibold">{tagOwnerCount}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }
@@ -328,188 +332,166 @@ function TenantStatsCards({
     onPageReset()
   }
 
+  const selfPayingCount = allTenants.filter((c) => c.tenantType === "Self Paying").length
+  const section8Count = allTenants.filter((c) => c.tenantType === "Section 8").length
+
   return (
-    <div className="flex flex-wrap gap-3">
+    <div className="grid grid-cols-6 gap-3">
+      {/* Total Tenants */}
       <div
-        className={`${TILE_BASE} ${tenantTileFilter === "all" ? TILE_ACTIVE : TILE_INACTIVE}`}
+        className={`${CARD_BASE} ${tenantTileFilter === "all" ? CARD_ACTIVE : CARD_INACTIVE}`}
         onClick={() => apply(() => setTenantTileFilter("all"))}
       >
-        <div className="p-1 rounded bg-success/10">
-          <Users className="h-4 w-4 text-success" />
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-success/5">
+          <div className="p-1 rounded bg-success/10">
+            <Users className="h-4 w-4 text-success" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Total Tenants</span>
         </div>
-        <span className="text-sm text-muted-foreground">Total Tenants</span>
-        <span className="text-xl font-bold">{allTenants.length}</span>
+        <div className="flex-1 flex items-center justify-center px-3 py-3">
+          <span className="text-muted-foreground font-extrabold text-2xl">{allTenants.length}</span>
+        </div>
       </div>
 
+      {/* Active Tenants */}
       <div
-        className={`${TILE_BASE} ${tenantTileFilter === "active" ? TILE_ACTIVE : TILE_INACTIVE}`}
+        className={`${CARD_BASE} ${tenantTileFilter === "active" ? CARD_ACTIVE : CARD_INACTIVE}`}
         onClick={() => apply(() => setTenantTileFilter("active"))}
       >
-        <div className="p-1 rounded bg-info/10">
-          <UserCheck className="h-4 w-4 text-info" />
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-info/5">
+          <div className="p-1 rounded bg-info/10">
+            <UserCheck className="h-4 w-4 text-info" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Active Tenants</span>
         </div>
-        <span className="text-sm text-muted-foreground">Active Tenants</span>
-        <span className="text-xl font-bold">{activeTenantCount}</span>
+        <div className="flex-1 flex items-center justify-center px-3 py-3">
+          <span className="text-muted-foreground font-extrabold text-2xl">{activeTenantCount}</span>
+        </div>
       </div>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className={`${TILE_BASE} ${tenantTileFilter === "pending" ? TILE_ACTIVE : TILE_INACTIVE}`}>
-            <div className="p-1 rounded bg-warning/10">
-              <Clock className="h-4 w-4 text-warning" />
-            </div>
-            <span className="text-sm text-muted-foreground">Pending</span>
-            <span className="text-xl font-bold">{getTenantPendingCount()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+      {/* Pending (Expanded) */}
+      <div className={`${CARD_BASE} ${tenantTileFilter === "pending" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
+          <div className="p-1 rounded bg-warning/10">
+            <Clock className="h-4 w-4 text-warning" />
           </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-[200px] p-1" align="start">
+          <span className="text-xs font-medium text-foreground">Pending</span>
+          <span className="text-lg font-bold ml-auto">{getTenantPendingCount()}</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
           {[
-            { label: "All", value: "all" as const, count: tenantPendingTasksTotal + tenantPendingProcessesTotal },
             { label: "Pending Tasks", value: "tasks" as const, count: tenantPendingTasksTotal },
             { label: "Pending Processes", value: "processes" as const, count: tenantPendingProcessesTotal },
           ].map((item) => (
             <button
               key={item.value}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
+              type="button"
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
                 tenantTileFilter === "pending" && tenantPendingSubFilter === item.value
                   ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-foreground"
+                  : "hover:bg-muted/80 text-muted-foreground"
               }`}
-              onClick={() => apply(() => { setTenantTileFilter("pending"); setTenantPendingSubFilter(item.value) })}
+              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("pending"); setTenantPendingSubFilter(item.value) }) }}
             >
               <span>{item.label}</span>
-              <Badge variant="secondary" className="text-xs">
-                {item.count}
-              </Badge>
+              <span className="font-semibold">{item.count}</span>
             </button>
           ))}
-        </PopoverContent>
-      </Popover>
+        </div>
+      </div>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className={`${TILE_BASE} ${tenantTileFilter === "moveout" ? TILE_ACTIVE : TILE_INACTIVE}`}>
-            <div className="p-1 rounded bg-warning/10">
-              <LogOut className="h-4 w-4 text-warning" />
-            </div>
-            <span className="text-sm text-muted-foreground">Move-out</span>
-            <span className="text-xl font-bold">{getMoveoutCount()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+      {/* Move-out (Expanded) */}
+      <div className={`${CARD_BASE} ${tenantTileFilter === "moveout" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
+          <div className="p-1 rounded bg-warning/10">
+            <LogOut className="h-4 w-4 text-warning" />
           </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-1" align="start">
+          <span className="text-xs font-medium text-foreground">Move-out</span>
+          <span className="text-lg font-bold ml-auto">{pendingMoveouts + completedMoveouts}</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
           {[
-            { label: "All", value: "all" as const, count: pendingMoveouts + completedMoveouts },
             { label: "Pending Move-outs", value: "pending" as const, count: pendingMoveouts },
             { label: "Completed Move-outs", value: "completed" as const, count: completedMoveouts },
           ].map((item) => (
             <button
               key={item.value}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
+              type="button"
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
                 tenantTileFilter === "moveout" && tenantMoveoutSubFilter === item.value
                   ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-foreground"
+                  : "hover:bg-muted/80 text-muted-foreground"
               }`}
-              onClick={() => apply(() => { setTenantTileFilter("moveout"); setTenantMoveoutSubFilter(item.value) })}
+              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("moveout"); setTenantMoveoutSubFilter(item.value) }) }}
             >
               <span>{item.label}</span>
-              <Badge variant="secondary" className="text-xs">
-                {item.count}
-              </Badge>
+              <span className="font-semibold">{item.count}</span>
             </button>
           ))}
-        </PopoverContent>
-      </Popover>
+        </div>
+      </div>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className={`${TILE_BASE} ${tenantTileFilter === "evictions" ? TILE_ACTIVE : TILE_INACTIVE}`}>
-            <div className="p-1 rounded bg-destructive/10">
-              <Gavel className="h-4 w-4 text-destructive" />
-            </div>
-            <span className="text-sm text-muted-foreground">Evictions</span>
-            <span className="text-xl font-bold">{getEvictionCount()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+      {/* Evictions (Expanded) */}
+      <div className={`${CARD_BASE} ${tenantTileFilter === "evictions" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-destructive/5">
+          <div className="p-1 rounded bg-destructive/10">
+            <Gavel className="h-4 w-4 text-destructive" />
           </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-1" align="start">
+          <span className="text-xs font-medium text-foreground">Evictions</span>
+          <span className="text-lg font-bold ml-auto">{pendingEvictions + completedEvictions}</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
           {[
-            { label: "All", value: "all" as const, count: pendingEvictions + completedEvictions },
             { label: "Pending Evictions", value: "pending" as const, count: pendingEvictions },
             { label: "Completed Evictions", value: "completed" as const, count: completedEvictions },
           ].map((item) => (
             <button
               key={item.value}
-              className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
+              type="button"
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
                 tenantTileFilter === "evictions" && tenantEvictionSubFilter === item.value
                   ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-foreground"
+                  : "hover:bg-muted/80 text-muted-foreground"
               }`}
-              onClick={() => apply(() => { setTenantTileFilter("evictions"); setTenantEvictionSubFilter(item.value) })}
+              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("evictions"); setTenantEvictionSubFilter(item.value) }) }}
             >
               <span>{item.label}</span>
-              <Badge variant="secondary" className="text-xs">
-                {item.count}
-              </Badge>
+              <span className="font-semibold">{item.count}</span>
             </button>
           ))}
-        </PopoverContent>
-      </Popover>
+        </div>
+      </div>
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <div className={`${TILE_BASE} ${tenantTileFilter === "type" ? TILE_ACTIVE : TILE_INACTIVE}`}>
-            <div className="p-1 rounded bg-accent">
-              <Layers className="h-4 w-4 text-accent-foreground" />
-            </div>
-            <span className="text-sm text-muted-foreground">Type</span>
-            <span className="text-xl font-bold">{getTenantTypeCount()}</span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground ml-1" />
+      {/* Type (Expanded) */}
+      <div className={`${CARD_BASE} ${tenantTileFilter === "type" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
+          <div className="p-1 rounded bg-accent">
+            <Layers className="h-4 w-4 text-accent-foreground" />
           </div>
-        </PopoverTrigger>
-        <PopoverContent className="w-[220px] p-1" align="start">
-          <button
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
-              tenantTileFilter === "type" && selectedTenantType === "all"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-foreground"
-            }`}
-            onClick={() => apply(() => { setTenantTileFilter("type"); setSelectedTenantType("all") })}
-          >
-            <span>All</span>
-            <Badge variant="secondary" className="text-xs">
-              {allTenants.length}
-            </Badge>
-          </button>
-          <button
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
-              tenantTileFilter === "type" && selectedTenantType === "Self Paying"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-foreground"
-            }`}
-            onClick={() => apply(() => { setTenantTileFilter("type"); setSelectedTenantType("Self Paying") })}
-          >
-            <span>Self Paying</span>
-            <Badge variant="secondary" className="text-xs">
-              {allTenants.filter((c) => c.tenantType === "Self Paying").length}
-            </Badge>
-          </button>
-          <button
-            className={`w-full flex items-center justify-between px-3 py-2 text-sm rounded-md transition-colors ${
-              tenantTileFilter === "type" && selectedTenantType === "Section 8"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-foreground"
-            }`}
-            onClick={() => apply(() => { setTenantTileFilter("type"); setSelectedTenantType("Section 8") })}
-          >
-            <span>Section 8</span>
-            <Badge variant="secondary" className="text-xs">
-              {allTenants.filter((c) => c.tenantType === "Section 8").length}
-            </Badge>
-          </button>
-        </PopoverContent>
-      </Popover>
+          <span className="text-xs font-medium text-foreground">Type</span>
+          <span className="text-lg font-bold ml-auto">{allTenants.length}</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+          {[
+            { label: "Self Paying", value: "Self Paying" as const, count: selfPayingCount },
+            { label: "Section 8", value: "Section 8" as const, count: section8Count },
+          ].map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
+                tenantTileFilter === "type" && selectedTenantType === item.value
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "hover:bg-muted/80 text-muted-foreground"
+              }`}
+              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("type"); setSelectedTenantType(item.value) }) }}
+            >
+              <span>{item.label}</span>
+              <span className="font-semibold">{item.count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

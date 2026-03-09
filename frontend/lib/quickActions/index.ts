@@ -50,6 +50,7 @@ import {
   ClipboardList,
   HelpCircle,
   Workflow,
+  FolderOpen,
 } from "lucide-react"
 
 // ----- Dashboard -----
@@ -219,6 +220,32 @@ export function getLeadQuickActions(handlers: {
   ]
   return [{ id: "lead", actions }]
 }
+
+// ----- Leads: Owner Prospects categories (screen 1) -----
+// Matches the screenshot: a single "Add Process/Pipeline" quick action.
+export const ownerProspectsCategoriesQuickActions: QuickActionGroup[] = [
+  {
+    id: "owner-prospects-categories",
+    actions: [{ icon: Workflow, label: "Add Process/Pipeline" }],
+  },
+]
+
+// ----- Leads: Owner Prospects category single page (screen 2) -----
+// Bulk actions set (previously used in the legacy leads page).
+export const ownerProspectsCategoryQuickActions: QuickActionGroup[] = [
+  {
+    id: "owner-prospects-category",
+    actions: [
+      { icon: UserPlus, label: "Add New Owner" },
+      { icon: FolderOpen, label: "Import List" },
+      { icon: FolderOpen, label: "Export List" },
+      { icon: Users, label: "Bulk Email" },
+      { icon: Users, label: "Bulk SMS" },
+      { icon: Users, label: "Bulk Assignment" },
+      { icon: Settings, label: "Bulk Stage change" },
+    ],
+  },
+]
 
 // ----- Calendar -----
 export function getCalendarQuickActions(handlers: {

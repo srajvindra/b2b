@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Plus, Pencil, ChevronDown, ChevronUp, Bell, Settings, X, AlertTriangle, CheckCircle, Filter, FolderPlus, Copy, Users, Trash2, Search } from "lucide-react"
+import { MoreHorizontal, Plus, Pencil, ChevronDown, ChevronUp, Bell, Settings, X, AlertTriangle, CheckCircle, Filter, FolderPlus, Copy, Users, Trash2, Search, GripVertical } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,12 +27,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { StageWorkflowPage } from "./stack-workflow-page"
+
+interface StageItem {
+  id: string
+  name: string
+  steps: number
+  days: number
+  processes: number
+}
 
 interface ProcessType {
   id: string
   name: string
   isDraft: boolean
   stages: number
+  stagesList: StageItem[]
   folder?: string
   team?: string
 }
@@ -66,21 +76,138 @@ interface SummaryCard {
 }
 
 const initialProcessTypes: ProcessType[] = [
-  { id: "1", name: "2 Property Onboarding Process", isDraft: false, stages: 7 },
-  { id: "2", name: "Accounting Mistakes", isDraft: true, stages: 4 },
-  { id: "3", name: "Applications screening process", isDraft: false, stages: 11 },
-  { id: "4", name: "Delinquency Process", isDraft: false, stages: 10 },
-  { id: "5", name: "Employee Onboarding Process", isDraft: false, stages: 5 },
-  { id: "6", name: "Employee Termination Process", isDraft: true, stages: 3 },
-  { id: "7", name: "Employee Training Process", isDraft: true, stages: 21 },
-  { id: "8", name: "EOM Accounting Process for Month", isDraft: true, stages: 4 },
-  { id: "9", name: "Escalated Owner Funds Collection Process", isDraft: true, stages: 5 },
-  { id: "10", name: "Eviction Process", isDraft: false, stages: 10 },
-  { id: "11", name: "Haro PM", isDraft: true, stages: 3 },
-  { id: "12", name: "Hiring Requisition Process", isDraft: true, stages: 8 },
-  { id: "13", name: "Lease Renewal Process", isDraft: false, stages: 10 },
-  { id: "14", name: "Legal Cases Complaints and Notices", isDraft: true, stages: 8 },
-  { id: "15", name: "Make Ready Process", isDraft: false, stages: 9 },
+  { id: "1", name: "2 Property Onboarding Process", isDraft: false, stages: 7, stagesList: [
+    { id: "1-1", name: "Initial Contact", steps: 3, days: 2, processes: 2 },
+    { id: "1-2", name: "Document Collection", steps: 5, days: 5, processes: 3 },
+    { id: "1-3", name: "Property Inspection", steps: 2, days: 3, processes: 1 },
+    { id: "1-4", name: "System Setup", steps: 8, days: 14, processes: 4 },
+    { id: "1-5", name: "Owner Portal Access", steps: 6, days: 7, processes: 3 },
+    { id: "1-6", name: "Final Review", steps: 4, days: 5, processes: 2 },
+    { id: "1-7", name: "Go Live", steps: 1, days: 1, processes: 1 },
+  ]},
+  { id: "2", name: "Accounting Mistakes", isDraft: true, stages: 4, stagesList: [
+    { id: "2-1", name: "Issue Identification", steps: 2, days: 1, processes: 1 },
+    { id: "2-2", name: "Investigation", steps: 4, days: 3, processes: 2 },
+    { id: "2-3", name: "Correction", steps: 3, days: 2, processes: 1 },
+    { id: "2-4", name: "Verification", steps: 2, days: 1, processes: 1 },
+  ]},
+  { id: "3", name: "Applications screening process", isDraft: false, stages: 11, stagesList: [
+    { id: "3-1", name: "Application Received", steps: 2, days: 1, processes: 5 },
+    { id: "3-2", name: "Initial Review", steps: 3, days: 2, processes: 4 },
+    { id: "3-3", name: "Credit Check", steps: 2, days: 1, processes: 3 },
+    { id: "3-4", name: "Background Check", steps: 2, days: 2, processes: 3 },
+    { id: "3-5", name: "Income Verification", steps: 3, days: 3, processes: 2 },
+    { id: "3-6", name: "Reference Check", steps: 4, days: 2, processes: 2 },
+    { id: "3-7", name: "Landlord Verification", steps: 3, days: 3, processes: 2 },
+    { id: "3-8", name: "Employment Verification", steps: 2, days: 2, processes: 2 },
+    { id: "3-9", name: "Final Review", steps: 3, days: 1, processes: 1 },
+    { id: "3-10", name: "Decision", steps: 2, days: 1, processes: 1 },
+    { id: "3-11", name: "Notification", steps: 1, days: 1, processes: 1 },
+  ]},
+  { id: "4", name: "Delinquency Process", isDraft: false, stages: 10, stagesList: [
+    { id: "4-1", name: "Payment Missed", steps: 1, days: 1, processes: 8 },
+    { id: "4-2", name: "Initial Reminder", steps: 2, days: 3, processes: 6 },
+    { id: "4-3", name: "Late Fee Applied", steps: 1, days: 1, processes: 5 },
+    { id: "4-4", name: "Second Notice", steps: 2, days: 5, processes: 4 },
+    { id: "4-5", name: "Phone Contact", steps: 3, days: 2, processes: 3 },
+    { id: "4-6", name: "Demand Letter", steps: 2, days: 3, processes: 2 },
+    { id: "4-7", name: "Payment Plan Offer", steps: 4, days: 7, processes: 2 },
+    { id: "4-8", name: "Final Notice", steps: 2, days: 5, processes: 1 },
+    { id: "4-9", name: "Legal Review", steps: 3, days: 3, processes: 1 },
+    { id: "4-10", name: "Eviction Referral", steps: 2, days: 2, processes: 1 },
+  ]},
+  { id: "5", name: "Employee Onboarding Process", isDraft: false, stages: 5, stagesList: [
+    { id: "5-1", name: "Offer Accepted", steps: 3, days: 2, processes: 2 },
+    { id: "5-2", name: "Paperwork Completion", steps: 5, days: 5, processes: 3 },
+    { id: "5-3", name: "System Access Setup", steps: 2, days: 3, processes: 1 },
+    { id: "5-4", name: "Training", steps: 8, days: 14, processes: 4 },
+    { id: "5-5", name: "First Day", steps: 4, days: 1, processes: 2 },
+  ]},
+  { id: "6", name: "Employee Termination Process", isDraft: true, stages: 3, stagesList: [
+    { id: "6-1", name: "Exit Interview", steps: 3, days: 2, processes: 1 },
+    { id: "6-2", name: "Access Revocation", steps: 2, days: 1, processes: 1 },
+    { id: "6-3", name: "Final Paycheck", steps: 2, days: 3, processes: 1 },
+  ]},
+  { id: "7", name: "Employee Training Process", isDraft: true, stages: 21, stagesList: [
+    { id: "7-1", name: "Orientation", steps: 4, days: 2, processes: 3 },
+    { id: "7-2", name: "Company Policies", steps: 3, days: 1, processes: 2 },
+    { id: "7-3", name: "Software Training", steps: 6, days: 5, processes: 4 },
+    { id: "7-4", name: "Property Management Basics", steps: 8, days: 7, processes: 3 },
+    { id: "7-5", name: "Leasing Fundamentals", steps: 5, days: 4, processes: 2 },
+  ]},
+  { id: "8", name: "EOM Accounting Process for Month", isDraft: true, stages: 4, stagesList: [
+    { id: "8-1", name: "Close Books", steps: 5, days: 2, processes: 1 },
+    { id: "8-2", name: "Generate Reports", steps: 3, days: 1, processes: 1 },
+    { id: "8-3", name: "Owner Distributions", steps: 4, days: 3, processes: 1 },
+    { id: "8-4", name: "Reconciliation", steps: 6, days: 2, processes: 1 },
+  ]},
+  { id: "9", name: "Escalated Owner Funds Collection Process", isDraft: true, stages: 5, stagesList: [
+    { id: "9-1", name: "Balance Review", steps: 2, days: 1, processes: 2 },
+    { id: "9-2", name: "Initial Contact", steps: 3, days: 2, processes: 2 },
+    { id: "9-3", name: "Payment Request", steps: 2, days: 3, processes: 1 },
+    { id: "9-4", name: "Follow Up", steps: 4, days: 5, processes: 1 },
+    { id: "9-5", name: "Resolution", steps: 2, days: 2, processes: 1 },
+  ]},
+  { id: "10", name: "Eviction Process", isDraft: false, stages: 10, stagesList: [
+    { id: "10-1", name: "Notice to Quit", steps: 3, days: 3, processes: 4 },
+    { id: "10-2", name: "Filing Preparation", steps: 4, days: 5, processes: 3 },
+    { id: "10-3", name: "Court Filing", steps: 2, days: 2, processes: 2 },
+    { id: "10-4", name: "Service of Process", steps: 2, days: 7, processes: 2 },
+    { id: "10-5", name: "Court Hearing", steps: 3, days: 14, processes: 2 },
+    { id: "10-6", name: "Judgment", steps: 2, days: 3, processes: 1 },
+    { id: "10-7", name: "Writ of Possession", steps: 2, days: 5, processes: 1 },
+    { id: "10-8", name: "Sheriff Lockout", steps: 3, days: 7, processes: 1 },
+    { id: "10-9", name: "Property Securing", steps: 2, days: 2, processes: 1 },
+    { id: "10-10", name: "Cleanup & Turnover", steps: 5, days: 10, processes: 1 },
+  ]},
+  { id: "11", name: "Haro PM", isDraft: true, stages: 3, stagesList: [
+    { id: "11-1", name: "Setup", steps: 4, days: 3, processes: 1 },
+    { id: "11-2", name: "Configuration", steps: 6, days: 5, processes: 1 },
+    { id: "11-3", name: "Launch", steps: 2, days: 2, processes: 1 },
+  ]},
+  { id: "12", name: "Hiring Requisition Process", isDraft: true, stages: 8, stagesList: [
+    { id: "12-1", name: "Requisition Submitted", steps: 2, days: 1, processes: 3 },
+    { id: "12-2", name: "Manager Approval", steps: 2, days: 2, processes: 2 },
+    { id: "12-3", name: "HR Review", steps: 3, days: 2, processes: 2 },
+    { id: "12-4", name: "Job Posting", steps: 2, days: 1, processes: 2 },
+    { id: "12-5", name: "Candidate Screening", steps: 5, days: 14, processes: 5 },
+    { id: "12-6", name: "Interviews", steps: 4, days: 10, processes: 3 },
+    { id: "12-7", name: "Selection", steps: 3, days: 3, processes: 1 },
+    { id: "12-8", name: "Offer Extended", steps: 2, days: 2, processes: 1 },
+  ]},
+  { id: "13", name: "Lease Renewal Process", isDraft: false, stages: 10, stagesList: [
+    { id: "13-1", name: "Upcoming Renewal", steps: 2, days: 60, processes: 12 },
+    { id: "13-2", name: "Market Analysis", steps: 3, days: 5, processes: 8 },
+    { id: "13-3", name: "Renewal Offer Prep", steps: 4, days: 3, processes: 6 },
+    { id: "13-4", name: "Send Renewal Offer", steps: 2, days: 1, processes: 5 },
+    { id: "13-5", name: "Tenant Response", steps: 2, days: 14, processes: 4 },
+    { id: "13-6", name: "Negotiation", steps: 3, days: 7, processes: 2 },
+    { id: "13-7", name: "Lease Preparation", steps: 4, days: 3, processes: 2 },
+    { id: "13-8", name: "Lease Signing", steps: 2, days: 5, processes: 2 },
+    { id: "13-9", name: "System Update", steps: 3, days: 1, processes: 1 },
+    { id: "13-10", name: "Confirmation", steps: 1, days: 1, processes: 1 },
+  ]},
+  { id: "14", name: "Legal Cases Complaints and Notices", isDraft: true, stages: 8, stagesList: [
+    { id: "14-1", name: "Complaint Received", steps: 2, days: 1, processes: 2 },
+    { id: "14-2", name: "Initial Assessment", steps: 3, days: 2, processes: 2 },
+    { id: "14-3", name: "Documentation", steps: 4, days: 3, processes: 1 },
+    { id: "14-4", name: "Legal Review", steps: 3, days: 5, processes: 1 },
+    { id: "14-5", name: "Response Drafting", steps: 4, days: 3, processes: 1 },
+    { id: "14-6", name: "Filing", steps: 2, days: 2, processes: 1 },
+    { id: "14-7", name: "Follow Up", steps: 3, days: 7, processes: 1 },
+    { id: "14-8", name: "Resolution", steps: 2, days: 5, processes: 1 },
+  ]},
+  { id: "15", name: "Make Ready Process", isDraft: false, stages: 9, stagesList: [
+    { id: "15-1", name: "Unit Inspection", steps: 3, days: 1, processes: 5 },
+    { id: "15-2", name: "Scope of Work", steps: 4, days: 2, processes: 4 },
+    { id: "15-3", name: "Vendor Assignment", steps: 2, days: 1, processes: 3 },
+    { id: "15-4", name: "Repairs", steps: 6, days: 7, processes: 3 },
+    { id: "15-5", name: "Cleaning", steps: 2, days: 2, processes: 2 },
+    { id: "15-6", name: "Painting", steps: 3, days: 3, processes: 2 },
+    { id: "15-7", name: "Final Walkthrough", steps: 2, days: 1, processes: 1 },
+    { id: "15-8", name: "Photography", steps: 2, days: 1, processes: 1 },
+    { id: "15-9", name: "List for Rent", steps: 3, days: 1, processes: 1 },
+  ]},
 ]
 
 const initialProcessInstances: ProcessInstance[] = [
@@ -206,6 +333,7 @@ export function ProcessesPage() {
   // Listing page state
   const [processTypes, setProcessTypes] = useState<ProcessType[]>(initialProcessTypes)
   const [selectedProcess, setSelectedProcess] = useState<string | null>(null)
+  const [expandedProcesses, setExpandedProcesses] = useState<string[]>([])
   const [showDashboard, setShowDashboard] = useState(false)
   
   // Dashboard state
@@ -240,6 +368,21 @@ export function ProcessesPage() {
   const [selectedFolder, setSelectedFolder] = useState("")
   const [selectedTeam, setSelectedTeam] = useState("")
   const [selectedProcessForAction, setSelectedProcessForAction] = useState<ProcessType | null>(null)
+  
+  // Stage modal states
+  const [showAddStageModal, setShowAddStageModal] = useState(false)
+  const [showRenameStageModal, setShowRenameStageModal] = useState(false)
+  const [newStageName, setNewStageName] = useState("")
+  const [selectedStageForRename, setSelectedStageForRename] = useState<{processId: string, stageId: string, stageName: string} | null>(null)
+  const [processForNewStage, setProcessForNewStage] = useState<string | null>(null)
+  
+  // Drag and drop state
+  const [draggedStage, setDraggedStage] = useState<{processId: string, stageIndex: number} | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  
+  // Stage workflow view state
+  const [showStageWorkflow, setShowStageWorkflow] = useState(false)
+  const [selectedStageForWorkflow, setSelectedStageForWorkflow] = useState<{stageName: string, processName: string} | null>(null)
   const [newFilterType, setNewFilterType] = useState<FilterType>("status")
   const [newFilterValue, setNewFilterValue] = useState("")
   const [newFilterStage, setNewFilterStage] = useState("") // For processes filter
@@ -258,6 +401,97 @@ export function ProcessesPage() {
 
   const handleBackToList = () => {
     setShowDashboard(false)
+  }
+
+  const toggleProcessExpand = (processId: string) => {
+    setExpandedProcesses(prev => 
+      prev.includes(processId) 
+        ? prev.filter(id => id !== processId) 
+        : [...prev, processId]
+    )
+  }
+
+  const handleAddStage = () => {
+    if (newStageName.trim() && processForNewStage) {
+      setProcessTypes(prev => prev.map(p => {
+        if (p.id === processForNewStage) {
+          const newStage: StageItem = {
+            id: `${p.id}-${Date.now()}`,
+            name: newStageName.trim(),
+            steps: 0,
+            days: 0,
+            processes: 0
+          }
+          return {
+            ...p,
+            stages: p.stages + 1,
+            stagesList: [...p.stagesList, newStage]
+          }
+        }
+        return p
+      }))
+      setNewStageName("")
+      setShowAddStageModal(false)
+      setProcessForNewStage(null)
+    }
+  }
+
+  const handleRenameStage = () => {
+    if (newStageName.trim() && selectedStageForRename) {
+      setProcessTypes(prev => prev.map(p => {
+        if (p.id === selectedStageForRename.processId) {
+          return {
+            ...p,
+            stagesList: p.stagesList.map(s => 
+              s.id === selectedStageForRename.stageId 
+                ? { ...s, name: newStageName.trim() } 
+                : s
+            )
+          }
+        }
+        return p
+      }))
+      setNewStageName("")
+      setShowRenameStageModal(false)
+      setSelectedStageForRename(null)
+    }
+  }
+
+  const handleDragStart = (processId: string, stageIndex: number) => {
+    setDraggedStage({ processId, stageIndex })
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    setDragOverIndex(index)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = (processId: string, dropIndex: number) => {
+    if (draggedStage && draggedStage.processId === processId) {
+      const fromIndex = draggedStage.stageIndex
+      if (fromIndex !== dropIndex) {
+        setProcessTypes(prev => prev.map(p => {
+          if (p.id === processId) {
+            const newStagesList = [...p.stagesList]
+            const [movedStage] = newStagesList.splice(fromIndex, 1)
+            newStagesList.splice(dropIndex, 0, movedStage)
+            return { ...p, stagesList: newStagesList }
+          }
+          return p
+        }))
+      }
+    }
+    setDraggedStage(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedStage(null)
+    setDragOverIndex(null)
   }
 
   const toggleRowSelection = (id: string) => {
@@ -328,6 +562,7 @@ export function ProcessesPage() {
         name: newProcessName,
         isDraft: true,
         stages: 0,
+        stagesList: [],
       }
       setProcessTypes(prev => [...prev, newProcess])
       setNewProcessName("")
@@ -340,6 +575,13 @@ export function ProcessesPage() {
       ...process,
       id: `dup-${Date.now()}`,
       name: `${process.name} (Copy)`,
+      stagesList: process.stagesList.map(s => ({
+        id: `dup-${s.id}-${Date.now()}`,
+        name: s.name,
+        steps: s.steps,
+        days: s.days,
+        processes: s.processes
+      }))
     }
     setProcessTypes(prev => [...prev, duplicate])
   }
@@ -467,6 +709,20 @@ export function ProcessesPage() {
     }
     return bVal.localeCompare(aVal)
   })
+
+  // Stage Workflow View
+  if (showStageWorkflow && selectedStageForWorkflow) {
+    return (
+      <StageWorkflowPage 
+        stageName={selectedStageForWorkflow.stageName}
+        processName={selectedStageForWorkflow.processName}
+        onBack={() => {
+          setShowStageWorkflow(false)
+          setSelectedStageForWorkflow(null)
+        }}
+      />
+    )
+  }
 
   // All Processes Dashboard View
   if (showDashboard) {
@@ -1030,114 +1286,235 @@ export function ProcessesPage() {
 
         {/* Process List */}
         <div className="divide-y divide-gray-200 border-t border-gray-200">
-          {processTypes.map((process) => (
-            <div
-              key={process.id}
-              className={`flex items-center justify-between py-4 px-3 hover:bg-gray-50 transition-colors cursor-pointer ${
-                selectedProcess === process.id ? "bg-teal-50/40" : ""
-              }`}
-              onClick={() => setSelectedProcess(process.id)}
-            >
-              <div className="flex items-center gap-4">
-                {/* Teal folder icon */}
-                <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-                  </svg>
-                </div>
-                
-                {/* Process name - clickable */}
-                <div className="flex items-center gap-2.5">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleViewDashboard()
-                    }}
-                    className="text-[15px] font-semibold text-gray-900 hover:text-teal-700 text-left transition-colors"
-                  >
-                    {process.name}
-                  </button>
-                  
-                  {/* Draft badge */}
-                  {process.isDraft && (
-                    <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">
-                      Draft
-                    </span>
-                  )}
-
-                  {/* Team badge */}
-                  {process.team && (
-                    <span className="px-2 py-0.5 text-xs text-teal-600 bg-teal-50 rounded">
-                      {teams.find(t => t.id === process.team)?.name}
-                    </span>
-                  )}
-
-                  {/* Folder badge */}
-                  {process.folder && (
-                    <span className="px-2 py-0.5 text-xs text-purple-600 bg-purple-50 rounded">
-                      {folders.find(f => f.id === process.folder)?.name}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                {/* Stages count */}
-                <span className="text-sm text-gray-400">{process.stages} stages</span>
-                
-                {/* More menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleViewDashboard()}>
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit Process
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDuplicateProcess(process)}>
-                      <Copy className="h-4 w-4 mr-2" />
-                      Duplicate
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedProcessForAction(process)
-                      setShowMoveToFolderModal(true)
-                    }}>
-                      <FolderPlus className="h-4 w-4 mr-2" />
-                      Move to Folder
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => {
-                      setSelectedProcessForAction(process)
-                      setShowAssignToTeamModal(true)
-                    }}>
-                      <Users className="h-4 w-4 mr-2" />
-                      Assign to Team
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={() => {
-                        setSelectedProcessForAction(process)
-                        setShowDeleteConfirmModal(true)
+          {processTypes.map((process) => {
+            const isExpanded = expandedProcesses.includes(process.id)
+            return (
+              <div key={process.id}>
+                <div
+                  className={`flex items-center justify-between py-4 px-3 hover:bg-gray-50 transition-colors cursor-pointer ${
+                    selectedProcess === process.id ? "bg-teal-50/40" : ""
+                  }`}
+                  onClick={() => setSelectedProcess(process.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    {/* Expand/Collapse icon */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleProcessExpand(process.id)
                       }}
+                      className="text-gray-400 hover:text-gray-600"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                      {isExpanded ? (
+                        <ChevronDown className="h-5 w-5" />
+                      ) : (
+                        <ChevronUp className="h-5 w-5 rotate-90" />
+                      )}
+                    </button>
+
+                    {/* Teal folder icon */}
+                    <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+                      </svg>
+                    </div>
+                    
+                    {/* Process name - clickable to expand */}
+                    <div className="flex items-center gap-2.5">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleProcessExpand(process.id)
+                        }}
+                        className="text-[15px] font-semibold text-gray-900 hover:text-teal-700 text-left transition-colors"
+                      >
+                        {process.name}
+                      </button>
+                      
+                      {/* Draft badge */}
+                      {process.isDraft && (
+                        <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">
+                          Draft
+                        </span>
+                      )}
+
+                      {/* Team badge */}
+                      {process.team && (
+                        <span className="px-2 py-0.5 text-xs text-teal-600 bg-teal-50 rounded">
+                          {teams.find(t => t.id === process.team)?.name}
+                        </span>
+                      )}
+
+                      {/* Folder badge */}
+                      {process.folder && (
+                        <span className="px-2 py-0.5 text-xs text-purple-600 bg-purple-50 rounded">
+                          {folders.find(f => f.id === process.folder)?.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    {/* Stages count */}
+                    <span className="text-sm text-gray-400">{process.stages} stages</span>
+                    
+                    {/* More menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleViewDashboard()}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Process
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDuplicateProcess(process)}>
+                          <Copy className="h-4 w-4 mr-2" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedProcessForAction(process)
+                          setShowMoveToFolderModal(true)
+                        }}>
+                          <FolderPlus className="h-4 w-4 mr-2" />
+                          Move to Folder
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => {
+                          setSelectedProcessForAction(process)
+                          setShowAssignToTeamModal(true)
+                        }}>
+                          <Users className="h-4 w-4 mr-2" />
+                          Assign to Team
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem 
+                          className="text-red-600"
+                          onClick={() => {
+                            setSelectedProcessForAction(process)
+                            setShowDeleteConfirmModal(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {/* Expanded stages list */}
+                {isExpanded && (
+                  <div className="bg-white border-t border-gray-200">
+                    <div className="py-2">
+                      {/* Add Stage button row */}
+                      <div className="flex items-center justify-end px-4 py-2 border-b border-gray-100">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs bg-white border-teal-500 text-teal-600 hover:bg-teal-50"
+                          onClick={() => {
+                            setProcessForNewStage(process.id)
+                            setNewStageName("")
+                            setShowAddStageModal(true)
+                          }}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Stage
+                        </Button>
+                      </div>
+                      {/* Stages list */}
+                      <div className="divide-y divide-gray-100">
+                        {process.stagesList.map((stage, index) => (
+                          <div
+                            key={stage.id}
+                            draggable
+                            onDragStart={() => handleDragStart(process.id, index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={() => handleDrop(process.id, index)}
+                            onDragEnd={handleDragEnd}
+                            className={`flex items-center justify-between py-3 px-4 transition-all ${
+                              draggedStage?.processId === process.id && draggedStage?.stageIndex === index
+                                ? "opacity-50 bg-blue-50"
+                                : dragOverIndex === index && draggedStage?.processId === process.id
+                                ? "bg-blue-50 border-l-2 border-l-blue-500"
+                                : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              {/* Drag handle */}
+                              <GripVertical className="h-5 w-5 text-gray-300 cursor-grab active:cursor-grabbing" />
+                              {/* Number badge */}
+                              <div className="h-7 w-7 rounded-full bg-gray-900 flex items-center justify-center">
+                                <span className="text-xs font-medium text-white">{index + 1}</span>
+                              </div>
+{/* Stage name */}
+  <button
+  type="button"
+  onClick={() => {
+    setSelectedStageForWorkflow({ stageName: stage.name, processName: process.name })
+    setShowStageWorkflow(true)
+  }}
+  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
+  >
+  {stage.name}
+  </button>
+                            </div>
+                            <div className="flex items-center gap-6">
+                              {/* Metrics */}
+                              <div className="flex items-center gap-6 text-sm text-gray-500">
+                                <span><span className="text-gray-700">{stage.steps}</span> Steps</span>
+                                <span><span className="text-gray-700">{stage.days}</span> Days</span>
+                                <span><span className="text-gray-700">{stage.processes}</span> Processes</span>
+                              </div>
+                              {/* More menu */}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-gray-400 hover:text-gray-600"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedStageForRename({
+                                        processId: process.id,
+                                        stageId: stage.id,
+                                        stageName: stage.name
+                                      })
+                                      setNewStageName(stage.name)
+                                      setShowRenameStageModal(true)
+                                    }}
+                                  >
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Rename Stage
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 
@@ -1263,6 +1640,63 @@ export function ProcessesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewFolderModal(false)} className="bg-transparent">Cancel</Button>
             <Button onClick={handleCreateFolder} className="bg-blue-600 hover:bg-blue-700">Create Folder</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Stage Modal */}
+      <Dialog open={showAddStageModal} onOpenChange={setShowAddStageModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Stage</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Stage Name</Label>
+              <Input 
+                value={newStageName}
+                onChange={(e) => setNewStageName(e.target.value)}
+                placeholder="Enter stage name..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowAddStageModal(false)
+              setNewStageName("")
+              setProcessForNewStage(null)
+            }} className="bg-transparent">Cancel</Button>
+            <Button onClick={handleAddStage} className="bg-blue-600 hover:bg-blue-700">Add Stage</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Stage Modal */}
+      <Dialog open={showRenameStageModal} onOpenChange={setShowRenameStageModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Stage</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-gray-500">
+              Renaming stage: {selectedStageForRename?.stageName}
+            </p>
+            <div className="space-y-2">
+              <Label>New Stage Name</Label>
+              <Input 
+                value={newStageName}
+                onChange={(e) => setNewStageName(e.target.value)}
+                placeholder="Enter new stage name..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowRenameStageModal(false)
+              setNewStageName("")
+              setSelectedStageForRename(null)
+            }} className="bg-transparent">Cancel</Button>
+            <Button onClick={handleRenameStage} className="bg-blue-600 hover:bg-blue-700">Rename</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

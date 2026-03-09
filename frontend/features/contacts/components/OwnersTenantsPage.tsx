@@ -30,6 +30,7 @@ import {
   BarChart3,
   LayoutGrid,
   List,
+  Filter,
 } from "lucide-react"
 
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
@@ -44,6 +45,14 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BulkActionBar } from "@/components/bulk-action-bar"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 import type {
   Contact,
@@ -60,6 +69,7 @@ import {
   MOCK_PAYMENTS,
   MOCK_NOTES,
 } from "@/features/contacts/data/constants"
+import { OWNER_CONTACT_FILTER_FIELDS, TENANT_CONTACT_FILTER_FIELDS, getOwnerContactFilterOptions, getTenantContactFilterOptions, OWNER_CONTACT_FIELDS_WITH_SELECT_ALL, TENANT_CONTACT_FIELDS_WITH_SELECT_ALL } from "@/features/contacts/data/filters"
 import { useQuickActions } from "@/context/QuickActionsContext"
 import {
   contactsOwnersQuickActions,
@@ -153,6 +163,40 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
   const uniqueCsm = uniqueArray(
     MOCK_CONTACTS.filter((c) => c.type === "Owner" && c.csm).map((c) => c.csm!),
   ).sort()
+
+  // Advanced filter modal configuration (UI-only, mirrors LeadsPageContent behavior)
+  const advancedFilterFields: string[] = type === "owner" ? OWNER_CONTACT_FILTER_FIELDS : TENANT_CONTACT_FILTER_FIELDS
+  const advancedFieldsWithSelectAll: string[] = type === "owner" ? OWNER_CONTACT_FIELDS_WITH_SELECT_ALL : TENANT_CONTACT_FIELDS_WITH_SELECT_ALL
+
+  const getAdvancedFilterOptions = type === "owner" ? getOwnerContactFilterOptions : getTenantContactFilterOptions
+
+  const showAdvancedFilterButton = true
+
+  const [showAdvancedFilterModal, setShowAdvancedFilterModal] = useState(false)
+  const [modalFilterField, setModalFilterField] = useState("")
+  const [modalFilterValues, setModalFilterValues] = useState<string[]>([])
+  const [modalOptionSearch, setModalOptionSearch] = useState("")
+  const [modalFieldSearch, setModalFieldSearch] = useState("")
+  const [showFieldDropdown, setShowFieldDropdown] = useState(false)
+
+  const closeAdvancedFilterModal = () => {
+    setShowAdvancedFilterModal(false)
+    setModalFilterField("")
+    setModalFilterValues([])
+    setModalOptionSearch("")
+    setModalFieldSearch("")
+    setShowFieldDropdown(false)
+  }
+
+  const applyAdvancedFilter = () => {
+    if (!modalFilterField || modalFilterValues.length === 0) return
+    // For now this only closes the modal; column popover filters remain the primary filtering mechanism.
+    setShowAdvancedFilterModal(false)
+    setModalFilterField("")
+    setModalFilterValues([])
+    setModalOptionSearch("")
+    setModalFieldSearch("")
+  }
 
   const hasActiveColumnFilters =
     selectedStatuses.length > 0 ||
@@ -680,22 +724,17 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
               onChange={(e) => handleSearchChange(e.target.value)}
             />
           </div>
-          <Select
-            value={statusFilter}
-            onValueChange={(value: "all" | "Active" | "Pending") => {
-              setStatusFilter(value)
-              setCurrentPage(1)
-            }}
-          >
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="All Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Active">Active</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
+          {showAdvancedFilterButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedFilterModal(true)}
+              className="h-9 px-3"
+            >
+              <Filter className="h-4 w-4 mr-1.5" />
+              Filter
+            </Button>
+          )}
           {(activeTab === "owners" || activeTab === "tenants") && (
             <div className="flex items-center border rounded-md overflow-hidden">
               <Button
@@ -759,6 +798,158 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
         </div>
       </div>
 
+      {/* Advanced Filter Dialog (single category pages) */}
+      <Dialog
+        open={showAdvancedFilterButton && showAdvancedFilterModal}
+        onOpenChange={(open) => {
+          if (!open) closeAdvancedFilterModal()
+          else setShowAdvancedFilterModal(true)
+        }}
+      >
+        <DialogContent className="w-[480px] max-w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>Add Filter</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            {/* Filter Field Dropdown - Searchable */}
+            <div className="relative">
+              <Label className="text-xs font-medium text-primary mb-1 block">
+                What do you want to filter by?
+              </Label>
+              <div className="border rounded-md w-full">
+                <div
+                  className="flex items-center gap-2 h-10 px-3 cursor-pointer"
+                  onClick={() => setShowFieldDropdown(!showFieldDropdown)}
+                >
+                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span
+                    className={`text-sm flex-1 truncate ${modalFilterField ? "text-foreground" : "text-muted-foreground"}`}
+                  >
+                    {modalFilterField || "Select a filter field"}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${showFieldDropdown ? "rotate-180" : ""}`}
+                  />
+                </div>
+                {showFieldDropdown && (
+                  <>
+                    <div className="border-t px-2 py-1.5">
+                      <Input
+                        placeholder="Search fields..."
+                        value={modalFieldSearch}
+                        onChange={(e) => setModalFieldSearch(e.target.value)}
+                        className="h-8 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto border-t">
+                      {advancedFilterFields
+                        .filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
+                        .map((field) => (
+                          <div
+                            key={field}
+                            className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 border-b border-border last:border-b-0"
+                            onClick={() => {
+                              setModalFilterField(field)
+                              setModalFilterValues([])
+                              setModalOptionSearch("")
+                              setModalFieldSearch("")
+                              setShowFieldDropdown(false)
+                            }}
+                          >
+                            <span className="truncate">{field}</span>
+                          </div>
+                        ))}
+                      {advancedFilterFields.filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
+                        .length === 0 && (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Options Dropdown - Searchable */}
+            <div>
+              <div className="border rounded-md w-full">
+                <Input
+                  placeholder="Select filter option(s)"
+                  value={modalOptionSearch}
+                  onChange={(e) => setModalOptionSearch(e.target.value)}
+                  className="border-0 border-b rounded-b-none h-10 focus-visible:ring-0 w-full"
+                />
+                {modalFilterField && (() => {
+                  const allOptions = getAdvancedFilterOptions(modalFilterField)
+                  const filtered = allOptions.filter((opt) =>
+                    opt.toLowerCase().includes(modalOptionSearch.toLowerCase()),
+                  )
+                  const allSelected = filtered.length > 0 && filtered.every((opt) => modalFilterValues.includes(opt))
+                  const showSelectAll = advancedFieldsWithSelectAll.includes(modalFilterField) && !modalOptionSearch
+                  return (
+                    <div className="max-h-[180px] overflow-y-auto">
+                      {showSelectAll && (
+                        <div className="flex items-center space-x-2 py-2 px-3 border-b border-border hover:bg-muted/50">
+                          <Checkbox
+                            id="advanced-filter-modal-opt-select-all"
+                            checked={allSelected}
+                            onCheckedChange={(checked) => {
+                              if (checked) setModalFilterValues([...new Set([...modalFilterValues, ...allOptions])])
+                              else setModalFilterValues(modalFilterValues.filter((v) => !allOptions.includes(v)))
+                            }}
+                          />
+                          <label
+                            htmlFor="advanced-filter-modal-opt-select-all"
+                            className="text-sm leading-none cursor-pointer flex-1 font-medium"
+                          >
+                            Select All
+                          </label>
+                        </div>
+                      )}
+                      {filtered.map((option) => (
+                        <div
+                          key={option}
+                          className="flex items-center space-x-2 py-2 px-3 border-b border-border last:border-b-0 hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            id={`advanced-filter-modal-opt-${option}`}
+                            checked={modalFilterValues.includes(option)}
+                            onCheckedChange={(checked) => {
+                              if (checked) setModalFilterValues([...modalFilterValues, option])
+                              else setModalFilterValues(modalFilterValues.filter((v) => v !== option))
+                            }}
+                          />
+                          <label
+                            htmlFor={`advanced-filter-modal-opt-${option}`}
+                            className="text-sm leading-none cursor-pointer flex-1 truncate"
+                          >
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching options</div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={closeAdvancedFilterModal} className="h-9 px-4">
+              Cancel <span className="text-xs text-muted-foreground ml-1.5">(esc)</span>
+            </Button>
+            <Button
+              onClick={applyAdvancedFilter}
+              disabled={!modalFilterField || modalFilterValues.length === 0}
+              className="h-9 px-4"
+            >
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Contact Detail Sheet */}
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
         <SheetContent className="w-full sm:max-w-xl overflow-y-auto">

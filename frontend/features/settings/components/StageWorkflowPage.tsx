@@ -1,54 +1,42 @@
-/* eslint-disable no-alert */
 "use client"
 
 import { useRouter } from "next/navigation"
-
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import type { StageStatus } from "../types"
-
 import {
   ArrowLeft,
   Flag,
   Check,
-  Zap,
-  FileText,
-  Hand,
-  Asterisk,
-  Timer,
-  Network,
-  Trash2,
-  Settings,
   Mail,
   Phone,
   MessageSquare,
   CheckSquare,
   Video,
+  Settings,
+  Zap,
+  FileText,
+  Hand,
+  Star,
+  Ban,
+  Users,
+  Trash2,
   Plus,
-  Bold,
-  Italic,
-  Underline,
-  ListOrdered,
-  List,
-  MoreVertical,
-  AtSign,
 } from "lucide-react"
-import React, { useRef, useState } from "react"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-type WorkflowStepType = "email" | "text" | "call" | "todo" | "meet" | "process"
-
-interface WorkflowStep {
-  id: string
-  type: WorkflowStepType
-  name: string
-  timing: string
-  day: number
-  autoSend: boolean
-  processName: string | null
-}
+import type { StageStatus, WorkflowStep } from "../types"
+import { initialWorkflowSteps } from "../data/stageWorkflow"
 
 export interface StageWorkflowPageProps {
   categoryName: string
@@ -56,454 +44,465 @@ export interface StageWorkflowPageProps {
   backHref: string
 }
 
-const defaultWorkflowSteps: WorkflowStep[] = [
-  { id: "1", type: "email", name: "Banking", timing: "immediately", day: 1, autoSend: true, processName: null },
-  { id: "2", type: "text", name: "W-9", timing: "immediately", day: 1, autoSend: false, processName: null },
-  { id: "3", type: "call", name: "Insurance", timing: "immediately", day: 1, autoSend: false, processName: null },
-  { id: "4", type: "todo", name: "Test banking info", timing: "immediately", day: 1, autoSend: false, processName: null },
-  {
-    id: "5",
-    type: "meet",
-    name: "Onboarding Meeting",
-    timing: "1 day after previous step",
-    day: 2,
-    autoSend: false,
-    processName: null,
-  },
-  {
-    id: "6",
-    type: "process",
-    name: "Document Review",
-    timing: "2 hours after previous step",
-    day: 2,
-    autoSend: false,
-    processName: "Document Verification",
-  },
-]
-
-function getTypeIcon(type: WorkflowStepType) {
-  switch (type) {
-    case "email":
-      return <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-50 text-blue-600 text-xs font-semibold">E</span>
-    case "text":
-      return <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-green-50 text-green-600 text-xs font-semibold">T</span>
-    case "call":
-      return <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-50 text-amber-600 text-xs font-semibold">C</span>
-    case "todo":
-      return <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-purple-50 text-purple-600 text-xs font-semibold">To</span>
-    case "meet":
-      return <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-pink-50 text-pink-600 text-xs font-semibold">M</span>
-    case "process":
-      return <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-teal-50 text-teal-600 text-xs font-semibold">P</span>
-    default:
-      return null
-  }
-}
-
 export function StageWorkflowPage({ categoryName, stage, backHref }: StageWorkflowPageProps) {
   const router = useRouter()
 
-  const [stageWorkflowSteps, setStageWorkflowSteps] = useState<WorkflowStep[]>(defaultWorkflowSteps)
-  const [instructionsDialogOpen, setInstructionsDialogOpen] = useState(false)
-  const [instructionsStepId, setInstructionsStepId] = useState<string | null>(null)
-  const [instructionsText, setInstructionsText] = useState("")
-  const [savedInstructions, setSavedInstructions] = useState<Record<string, string>>({})
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>(initialWorkflowSteps)
+  const [showAddStepModal, setShowAddStepModal] = useState(false)
+  const [showEditStepModal, setShowEditStepModal] = useState(false)
+  const [selectedStep, setSelectedStep] = useState<WorkflowStep | null>(null)
+  const [newStepName, setNewStepName] = useState("")
+  const [newStepType, setNewStepType] = useState<WorkflowStep["type"]>("email")
+  const [newStepTiming, setNewStepTiming] = useState<"immediately" | "after_previous">("immediately")
+  const [newStepTimingValue, setNewStepTimingValue] = useState("1")
+  const [newStepTimingUnit, setNewStepTimingUnit] = useState<"hours" | "days">("days")
 
-  const availableFieldTags = [
-    { tag: "unit_count", label: "No of Units" },
-    { tag: "any_occupied_unit", label: "Any Occupied Units" },
-    { tag: "any_vacant_unit", label: "Any Vacant Unit" },
-    { tag: "owner_name", label: "Owner Name" },
-    { tag: "property_address", label: "Property Address" },
-    { tag: "existing_owner_or_new_owner", label: "Existing Owner or New Owner?" },
-    { tag: "existing_tenant_moving_out", label: "Existing Tenant Moving Out?" },
-    { tag: "walkthrough_scheduled", label: "Property Walkthrough Scheduled?" },
-    { tag: "any_information_missing", label: "Any Information Missing?" },
-    { tag: "property_condition_rating", label: "Property Condition Rating" },
-  ]
+  const getStepIcon = (type: WorkflowStep["type"], isAutomated?: boolean) => {
+    const icons: Record<WorkflowStep["type"], React.ReactNode> = {
+      email: (
+        <div className="flex items-center gap-1">
+          <Mail className="h-4 w-4 text-gray-600" />
+          {isAutomated && <Zap className="h-3 w-3 text-amber-500" />}
+        </div>
+      ),
+      call: <Phone className="h-4 w-4 text-green-600" />,
+      text: <MessageSquare className="h-4 w-4 text-blue-500" />,
+      todo: <CheckSquare className="h-4 w-4 text-green-600" />,
+      meet: <Video className="h-4 w-4 text-red-500" />,
+      process: <Settings className="h-4 w-4 text-gray-600" />,
+      stage_change: <Flag className="h-4 w-4 text-gray-600" />,
+    }
+    return icons[type]
+  }
 
-  const handleOpenInstructions = (stepId: string) => {
-    setInstructionsStepId(stepId)
-    setInstructionsText(savedInstructions[stepId] ?? "")
-    setInstructionsDialogOpen(true)
+  const getTimingText = (timing: WorkflowStep["timing"]) => {
+    if (timing.type === "immediately") return "immediately"
+    if (timing.type === "after_previous") {
+      return `${timing.value} ${timing.unit === "hours" ? "hours" : timing.value === 1 ? "day" : "days"} after\nprevious step`
+    }
+    return "specific time"
+  }
+
+  const handleAddStep = (type: WorkflowStep["type"]) => {
+    setNewStepType(type)
+    setNewStepName("")
+    setNewStepTiming("immediately")
+    setNewStepTimingValue("1")
+    setNewStepTimingUnit("days")
+    setShowAddStepModal(true)
+  }
+
+  const handleCreateStep = () => {
+    if (!newStepName.trim()) return
+    const lastStep = workflowSteps[workflowSteps.length - 1]
+    const newStep: WorkflowStep = {
+      id: `step-${Date.now()}`,
+      name: newStepName.trim(),
+      type: newStepType,
+      timing:
+        newStepTiming === "immediately"
+          ? { type: "immediately" }
+          : { type: "after_previous", value: parseInt(newStepTimingValue, 10), unit: newStepTimingUnit },
+      day: lastStep ? (newStepTiming === "immediately" ? lastStep.day : lastStep.day + 1) : 1,
+    }
+    setWorkflowSteps([...workflowSteps, newStep])
+    setShowAddStepModal(false)
+    setNewStepName("")
+  }
+
+  const handleEditStep = (stepToEdit: WorkflowStep) => {
+    setSelectedStep(stepToEdit)
+    setNewStepName(stepToEdit.name)
+    setNewStepType(stepToEdit.type)
+    setNewStepTiming(stepToEdit.timing.type === "immediately" ? "immediately" : "after_previous")
+    setNewStepTimingValue(stepToEdit.timing.value?.toString() ?? "1")
+    setNewStepTimingUnit(stepToEdit.timing.unit ?? "days")
+    setShowEditStepModal(true)
+  }
+
+  const handleUpdateStep = () => {
+    if (!selectedStep || !newStepName.trim()) return
+    setWorkflowSteps(
+      workflowSteps.map((s) => {
+        if (s.id !== selectedStep.id) return s
+        return {
+          ...s,
+          name: newStepName.trim(),
+          type: newStepType,
+          timing:
+            newStepTiming === "immediately"
+              ? { type: "immediately" as const }
+              : { type: "after_previous" as const, value: parseInt(newStepTimingValue, 10), unit: newStepTimingUnit },
+        }
+      }),
+    )
+    setShowEditStepModal(false)
+    setSelectedStep(null)
   }
 
   const handleDeleteStep = (stepId: string) => {
-    setStageWorkflowSteps((prev) => prev.filter((s) => s.id !== stepId))
+    setWorkflowSteps(workflowSteps.filter((s) => s.id !== stepId))
   }
 
-  const handleSaveInstructions = () => {
-    if (!instructionsStepId) return
-    setSavedInstructions((prev) => ({
-      ...prev,
-      [instructionsStepId]: instructionsText,
-    }))
-    setInstructionsDialogOpen(false)
-  }
-
-  const handleInsertFieldTag = (tag: string) => {
-    const textToInsert = `{{${tag}}}`
-    const textarea = textareaRef.current
-    if (!textarea) {
-      setInstructionsText((prev) => prev + textToInsert)
-      return
+  const handleDuplicateStep = (stepToDuplicate: WorkflowStep) => {
+    const newStep: WorkflowStep = {
+      ...stepToDuplicate,
+      id: `step-${Date.now()}`,
+      name: `${stepToDuplicate.name} (Copy)`,
     }
-
-    const { selectionStart, selectionEnd } = textarea
-    setInstructionsText((prev) => prev.slice(0, selectionStart) + textToInsert + prev.slice(selectionEnd))
-
-    // move cursor to just after inserted tag on next tick
-    requestAnimationFrame(() => {
-      const pos = selectionStart + textToInsert.length
-      textarea.setSelectionRange(pos, pos)
-      textarea.focus()
-    })
-  }
-
-  const handleAddWorkflowStep = (type: WorkflowStepType, name: string) => {
-    setStageWorkflowSteps((prev) => {
-      const nextIndex = prev.length + 1
-      const lastDay = prev[prev.length - 1]?.day ?? 1
-      return [
-        ...prev,
-        {
-          id: String(nextIndex),
-          type,
-          name,
-          timing: "immediately",
-          day: lastDay,
-          autoSend: type === "email" || type === "text",
-          processName: null,
-        },
-      ]
-    })
+    const idx = workflowSteps.findIndex((s) => s.id === stepToDuplicate.id)
+    const next = [...workflowSteps]
+    next.splice(idx + 1, 0, newStep)
+    setWorkflowSteps(next)
   }
 
   return (
-    <div className="p-6 bg-muted/30 min-h-screen">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push(backHref)}
-            className="h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-muted"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <Input
-              defaultValue={stage.name}
-              className="text-xl font-bold text-foreground border-none bg-transparent p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-            <p className="text-sm text-muted-foreground mt-1">{categoryName}</p>
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              type="button"
+              onClick={() => router.push(backHref)}
+              className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 text-gray-600" />
+            </button>
+            <div>
+              <h1 className="text-lg font-semibold text-gray-900">{stage.name}</h1>
+              <p className="text-sm text-gray-500">{categoryName}</p>
+            </div>
           </div>
+          <Button className="bg-gray-800 hover:bg-gray-900 text-white gap-2">
+            <Settings className="h-4 w-4" />
+            Workflow Settings
+          </Button>
         </div>
-        <Button variant="outline" className="bg-foreground text-background hover:bg-foreground/90 border-foreground">
-          <Settings className="h-4 w-4 mr-2" />
-          Workflow Settings
-        </Button>
       </div>
 
-      {/* Process enters stage indicator */}
-      <div className="flex items-center gap-3 mb-8">
-        <div className="w-10 h-10 rounded bg-[#6B8E23] flex items-center justify-center">
-          <Flag className="h-5 w-5 text-white" />
+      {/* Content */}
+      <div className="px-6 py-8">
+        {/* Stage Entry Indicator */}
+        <div className="flex items-center gap-3 mb-8">
+          <div
+            className="h-10 w-10 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: "#6b7c4c" }}
+          >
+            <Flag className="h-5 w-5 text-white" />
+          </div>
+          <p className="text-sm text-gray-700">
+            Process enters stage <span className="font-medium text-gray-900">{stage.name}</span>.
+          </p>
         </div>
-        <span className="text-sm text-foreground/80">
-          Process enters stage <span className="text-primary font-medium">{stage.name}</span>.
-        </span>
-      </div>
 
-      {/* Workflow Steps */}
-      <div className="space-y-0 mb-6">
-        {stageWorkflowSteps.map((step, index) => (
-          <div key={step.id} className="flex items-start">
-            {/* Timing column */}
-            <div className="w-24 text-right pr-4 pt-4">
-              <p className="text-xs text-muted-foreground font-medium">{step.timing}</p>
-              <p className="text-xs text-muted-foreground/70">day {step.day}</p>
-            </div>
-
-            {/* Timeline connector */}
-            <div className="flex flex-col items-center">
-              <div className="w-8 h-8 rounded-full bg-primary/10 border-2 border-primary flex items-center justify-center">
-                <Check className="h-4 w-4 text-primary" />
+        {/* Workflow Steps Timeline */}
+        <div className="relative">
+          {workflowSteps.map((step, index) => (
+            <div key={step.id} className="flex items-center min-h-[60px]">
+              {/* Timing Column */}
+              <div className="w-24 flex-shrink-0 flex flex-col justify-center items-end pr-4 text-right">
+                <p className="text-xs text-gray-500 whitespace-pre-line leading-tight italic">{getTimingText(step.timing)}</p>
+                <p className="text-xs text-gray-400 mt-0.5">day {step.day}</p>
               </div>
-              {index < stageWorkflowSteps.length - 1 && <div className="w-0.5 h-12 bg-border" />}
-            </div>
 
-            {/* Step content */}
-            <div className="flex-1 ml-4">
-              <div className="bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group">
-                <div className="flex items-center gap-2">
-                  {/* Type Icon */}
-                  <span title={step.type.charAt(0).toUpperCase() + step.type.slice(1)}>{getTypeIcon(step.type)}</span>
-                  {/* Auto-send lightning icon for email/text */}
-                  {(step.type === "email" || step.type === "text") && step.autoSend && (
-                    <span title="Auto-send enabled" className="text-chart-4">
-                      <Zap className="h-3.5 w-3.5" />
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left"
-                    onClick={() => {
-                      alert(`Edit step: ${step.name}`)
-                    }}
-                  >
-                    {step.name}
-                  </button>
-                  {/* Process name badge aligned to the right of step name */}
-                  {step.processName && (
-                    <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full border border-primary/20">
-                      {step.processName}
-                    </span>
-                  )}
+              {/* Timeline Connector */}
+              <div className="flex flex-col items-center flex-shrink-0 relative w-8 self-stretch">
+                {index < workflowSteps.length - 1 && (
+                  <div
+                    className="absolute top-1/2 bottom-0 left-1/2 -translate-x-1/2 w-px bg-gray-300"
+                    style={{ top: "50%", height: "100%" }}
+                  />
+                )}
+                <div className="h-7 w-7 rounded-full border-2 border-gray-300 bg-white flex items-center justify-center z-10 my-auto">
+                  <Check className="h-3.5 w-3.5 text-gray-400" />
                 </div>
-                <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-primary hover:bg-primary/10"
-                    title="Instructions"
-                    onClick={() => handleOpenInstructions(step.id)}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    title="Manual Action"
-                  >
-                    <Hand className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    title="Required"
-                  >
-                    <Asterisk className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                    title="Set Timer"
-                  >
-                    <Timer className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    title="Delete Step"
-                    onClick={() => handleDeleteStep(step.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+              </div>
+
+              {/* Step Card */}
+              <div className="flex-1 py-1.5 pl-4 pr-2">
+                <div className="bg-white border border-gray-200 rounded-md px-4 py-3 hover:border-gray-300 transition-colors flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {getStepIcon(step.type, step.isAutomated)}
+                    <span
+                      className="text-sm font-medium text-gray-900 cursor-pointer hover:text-blue-600"
+                      onClick={() => handleEditStep(step)}
+                    >
+                      {step.name}
+                    </span>
+                    {step.badge && (
+                      <Badge variant="outline" className="text-xs bg-gray-100 text-gray-600 border-gray-300 ml-1">
+                        {step.badge}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Action Icons */}
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+                      <Hand className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+                      <Star className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+                      <span className="text-xs font-medium">P</span>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+                      <Ban className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+                      <Users className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
+                          <span className="text-xs font-medium">⋯</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleDuplicateStep(step)}>Duplicate</DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-600" onClick={() => handleDeleteStep(step.id)}>
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-gray-50"
+                      onClick={() => handleDeleteStep(step.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
 
-      {/* Add Action Controls */}
-      <div className="flex items-start mb-8">
-        <div className="w-24" />
-        <div className="flex flex-col items-center">
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-8 w-8 rounded-full border-foreground text-foreground hover:bg-muted bg-transparent"
-          >
-            <Plus className="h-4 w-4" />
+        {/* Bottom Action Bar */}
+        <div className="flex items-center gap-2 mt-8 flex-wrap">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-gray-300">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => handleAddStep("email")}>
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddStep("call")}>
+                <Phone className="h-4 w-4 mr-2" />
+                Call
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddStep("text")}>
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Text Message
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddStep("todo")}>
+                <CheckSquare className="h-4 w-4 mr-2" />
+                Todo
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddStep("meet")}>
+                <Video className="h-4 w-4 mr-2" />
+                Meet
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => handleAddStep("process")}>
+                <Settings className="h-4 w-4 mr-2" />
+                Create Process
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleAddStep("stage_change")}>
+                <Flag className="h-4 w-4 mr-2" />
+                Stage Change
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button variant="outline" className="h-9 gap-2 border-gray-300" onClick={() => handleAddStep("email")}>
+            <Mail className="h-4 w-4" />
+            Email
+          </Button>
+          <Button variant="outline" className="h-9 gap-2 border-gray-300" onClick={() => handleAddStep("call")}>
+            <Phone className="h-4 w-4" />
+            Call
+          </Button>
+          <Button variant="outline" className="h-9 gap-2 border-gray-300" onClick={() => handleAddStep("text")}>
+            <MessageSquare className="h-4 w-4" />
+            Text Message
+          </Button>
+          <Button variant="outline" className="h-9 gap-2 border-gray-300" onClick={() => handleAddStep("todo")}>
+            <CheckSquare className="h-4 w-4" />
+            Todo
+          </Button>
+          <Button variant="outline" className="h-9 gap-2 border-gray-300" onClick={() => handleAddStep("meet")}>
+            <Video className="h-4 w-4" />
+            Meet
+          </Button>
+          <Button variant="outline" className="h-9 gap-2 border-gray-300" onClick={() => handleAddStep("process")}>
+            <Settings className="h-4 w-4" />
+            Create Process
+          </Button>
+          <Button variant="outline" className="h-9 gap-2 border-gray-300" onClick={() => handleAddStep("stage_change")}>
+            <Flag className="h-4 w-4" />
+            Stage Change
           </Button>
         </div>
-        <div className="flex-1 ml-4">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent text-foreground/80 border-border hover:bg-muted"
-              onClick={() => handleAddWorkflowStep("email", "New Email")}
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Email
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent text-foreground/80 border-border hover:bg-muted"
-              onClick={() => handleAddWorkflowStep("call", "New Call")}
-            >
-              <Phone className="h-4 w-4 mr-2" />
-              Call
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent text-foreground/80 border-border hover:bg-muted"
-              onClick={() => handleAddWorkflowStep("text", "New Text Message")}
-            >
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Text Message
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent text-foreground/80 border-border hover:bg-muted"
-              onClick={() => handleAddWorkflowStep("todo", "New Todo")}
-            >
-              <CheckSquare className="h-4 w-4 mr-2" />
-              Todo
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent text-foreground/80 border-border hover:bg-muted"
-              onClick={() => handleAddWorkflowStep("meet", "New Meeting")}
-            >
-              <Video className="h-4 w-4 mr-2" />
-              Meet
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent text-primary border-primary/30 hover:bg-primary/10"
-              onClick={() => handleAddWorkflowStep("process", "New Process")}
-            >
-              <Settings className="h-4 w-4 mr-2" />
-              Create Process
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-transparent text-primary border-primary/30 hover:bg-primary/10"
-            >
-              <Flag className="h-4 w-4 mr-2" />
-              Stage Change
-            </Button>
-          </div>
-        </div>
       </div>
 
-      {/* Instructions dialog */}
-      <Dialog open={instructionsDialogOpen} onOpenChange={setInstructionsDialogOpen}>
-        <DialogContent className="max-w-lg">
+      {/* Add Step Modal */}
+      <Dialog open={showAddStepModal} onOpenChange={setShowAddStepModal}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Step instructions</DialogTitle>
+            <DialogTitle>Add New Step</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            {/* Toolbar */}
-            <div className="flex items-center justify-between rounded-md border bg-muted/60 px-2 py-1.5">
-              <span className="text-xs font-medium text-muted-foreground">Instructions</span>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  title="Bold"
-                >
-                  <Bold className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  title="Italic"
-                >
-                  <Italic className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  title="Underline"
-                >
-                  <Underline className="h-4 w-4" />
-                </Button>
-                <div className="w-px h-5 bg-border mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  title="Numbered List"
-                >
-                  <ListOrdered className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  title="Bullet List"
-                >
-                  <List className="h-4 w-4" />
-                </Button>
-                <div className="w-px h-5 bg-border mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                  title="More options"
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Textarea */}
-            <Textarea
-              ref={textareaRef}
-              rows={6}
-              value={instructionsText}
-              onChange={(e) => setInstructionsText(e.target.value)}
-              placeholder="Enter instructions here. Use tags below to reference custom fields..."
-            />
-
-            {/* Insert Field Tag */}
+          <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <AtSign className="h-4 w-4" />
-                Insert Field Tag
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {availableFieldTags.map((field) => (
-                  <Button
-                    key={field.tag}
-                    variant="outline"
-                    size="sm"
-                    className="text-xs bg-transparent hover:bg-primary/10 hover:text-primary hover:border-primary"
-                    onClick={() => handleInsertFieldTag(field.tag)}
-                  >
-                    {field.label}
-                  </Button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Click a tag to insert it at the cursor position. Tags will be replaced with actual values when the
-                process runs.
-              </p>
+              <Label>Step Name</Label>
+              <Input value={newStepName} onChange={(e) => setNewStepName(e.target.value)} placeholder="Enter step name..." />
             </div>
+            <div className="space-y-2">
+              <Label>Step Type</Label>
+              <Select value={newStepType} onValueChange={(value: WorkflowStep["type"]) => setNewStepType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="call">Call</SelectItem>
+                  <SelectItem value="text">Text Message</SelectItem>
+                  <SelectItem value="todo">Todo</SelectItem>
+                  <SelectItem value="meet">Meet</SelectItem>
+                  <SelectItem value="process">Create Process</SelectItem>
+                  <SelectItem value="stage_change">Stage Change</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Timing</Label>
+              <Select value={newStepTiming} onValueChange={(value: "immediately" | "after_previous") => setNewStepTiming(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="immediately">Immediately</SelectItem>
+                  <SelectItem value="after_previous">After Previous Step</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {newStepTiming === "after_previous" && (
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-2">
+                  <Label>Delay</Label>
+                  <Input type="number" value={newStepTimingValue} onChange={(e) => setNewStepTimingValue(e.target.value)} min="1" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label>Unit</Label>
+                  <Select value={newStepTimingUnit} onValueChange={(value: "hours" | "days") => setNewStepTimingUnit(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hours">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
           </div>
-          <DialogFooter className="mt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setInstructionsDialogOpen(false)
-                setInstructionsStepId(null)
-                setInstructionsText("")
-              }}
-            >
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddStepModal(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSaveInstructions} disabled={!instructionsStepId}>
-              Save
+            <Button onClick={handleCreateStep} className="bg-teal-600 hover:bg-teal-700">
+              Add Step
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Step Modal */}
+      <Dialog
+        open={showEditStepModal}
+        onOpenChange={(open) => {
+          setShowEditStepModal(open)
+          if (!open) setSelectedStep(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Step</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Step Name</Label>
+              <Input value={newStepName} onChange={(e) => setNewStepName(e.target.value)} placeholder="Enter step name..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Step Type</Label>
+              <Select value={newStepType} onValueChange={(value: WorkflowStep["type"]) => setNewStepType(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="call">Call</SelectItem>
+                  <SelectItem value="text">Text Message</SelectItem>
+                  <SelectItem value="todo">Todo</SelectItem>
+                  <SelectItem value="meet">Meet</SelectItem>
+                  <SelectItem value="process">Create Process</SelectItem>
+                  <SelectItem value="stage_change">Stage Change</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Timing</Label>
+              <Select value={newStepTiming} onValueChange={(value: "immediately" | "after_previous") => setNewStepTiming(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="immediately">Immediately</SelectItem>
+                  <SelectItem value="after_previous">After Previous Step</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {newStepTiming === "after_previous" && (
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-2">
+                  <Label>Delay</Label>
+                  <Input type="number" value={newStepTimingValue} onChange={(e) => setNewStepTimingValue(e.target.value)} min="1" />
+                </div>
+                <div className="flex-1 space-y-2">
+                  <Label>Unit</Label>
+                  <Select value={newStepTimingUnit} onValueChange={(value: "hours" | "days") => setNewStepTimingUnit(value)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hours">Hours</SelectItem>
+                      <SelectItem value="days">Days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditStepModal(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateStep} className="bg-teal-600 hover:bg-teal-700">
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -511,4 +510,6 @@ export function StageWorkflowPage({ categoryName, stage, backHref }: StageWorkfl
     </div>
   )
 }
+
+export default StageWorkflowPage
 

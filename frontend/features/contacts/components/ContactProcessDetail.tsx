@@ -33,46 +33,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-
-interface ProcessTask {
-  id: string
-  name: string
-  startDate: string | null
-  completedDate: string | null
-  staffName: string
-  staffEmail: string
-}
-
-interface ProcessData {
-  id: string
-  name: string
-  prospectingStage?: string
-  leaseProspectStage?: string
-  startedOn?: string
-  completedOn?: string
-  status: string
-  tasks: ProcessTask[]
-}
-
-interface ActivityItem {
-  id: string
-  type: "email" | "task_completed" | "process_assigned" | "email_opened" | "note"
-  actor: string
-  actorInitials: string
-  target?: string
-  subject?: string
-  preview?: string
-  detail?: string
-  timestamp: string
-  address?: string
-  noteText?: string
-}
-
-interface ContactProcessDetailViewProps {
-  process: ProcessData
-  contactName: string
-  onBack: () => void
-}
+import type { ProcessData, ActivityItem, ContactProcessDetailViewProps } from "../types"
+import { stageColors } from "../data/contactDetailMock"
 
 function generateActivities(process: ProcessData, contactName: string): ActivityItem[] {
   const staffNames = [...new Set(process.tasks.map(t => t.staffName))]
@@ -183,13 +145,6 @@ function generateActivities(process: ProcessData, contactName: string): Activity
 
   return activities
 }
-
-const stageColors = [
-  "bg-green-500",
-  "bg-teal-500",
-  "bg-amber-500",
-  "bg-orange-500",
-]
 
 export function ContactProcessDetailView({ process, contactName, onBack }: ContactProcessDetailViewProps) {
   const [taskFilter, setTaskFilter] = useState("upcoming")

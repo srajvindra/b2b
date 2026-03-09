@@ -44,7 +44,7 @@ export function Topbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated")
-    router.push("/")
+    router.push("/login")
   }
 
   const runSearch = (e?: React.FormEvent) => {
@@ -146,7 +146,7 @@ export function Topbar() {
             <DropdownMenuItem disabled>{seedUser.email}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/settings/profile">Profile</Link>
+              <Link href="/profile">Profile</Link>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => toast({ title: `Role: ${seedUser.role}` })}>
               Role: {seedUser.role}

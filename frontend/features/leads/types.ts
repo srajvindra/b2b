@@ -26,3 +26,20 @@ export type Lead = {
   interestedUnits?: { address: string; unit: string }[] // Unit addresses for lease prospects
 }
 
+// Tenant application / lease prospect detail
+export type ProspectTaskStatus = "Pending" | "In Progress" | "Skipped" | "Completed"
+
+export interface ProspectTask {
+  id: number
+  title: string
+  processName?: string
+  relatedEntityType: string
+  relatedEntityName: string
+  assignee: string
+  dueDate: string
+  priority: string
+  status: ProspectTaskStatus
+  isOverdue: boolean
+  autoCreated?: boolean
+}
+

@@ -976,3 +976,43 @@ export const getFilterOptions = (field: string): string[] => {
   return ["Option A", "Option B", "Option C"]
 }
 
+export const propertyColumns = [
+  { id: "propertyName", label: "Property Name" },
+  { id: "propertyAddress", label: "Property Address" },
+  { id: "unitCount", label: "Unit Count" },
+  { id: "ownerName", label: "Owner Name" },
+  { id: "occupancy", label: "Occupancy" },
+  { id: "csr", label: "CSR" },
+  { id: "csm", label: "CSM" },
+  { id: "agm", label: "AGM" },
+  { id: "lc", label: "LC" },
+  { id: "fc", label: "FC" },
+  { id: "mrs", label: "MRS" },
+  { id: "type", label: "Type" },
+  { id: "tags", label: "Tags" },
+  { id: "portfolioGroup", label: "Portfolio Group" },
+  { id: "propertyGroup", label: "Property Group" },
+  { id: "dateAdded", label: "Date Added" },
+  { id: "propertyStatus", label: "Property Status" },
+] as const
+
+export const unitColumns = [
+  { id: "unitAddress", label: "Unit Address" },
+  { id: "propertyName", label: "Property Name" },
+  { id: "ownerName", label: "Owner Name" },
+  { id: "tenantName", label: "Tenant Name" },
+  { id: "occupancy", label: "Occupancy" },
+  { id: "csr", label: "CSR" },
+  { id: "csm", label: "CSM" },
+  { id: "agm", label: "AGM" },
+  { id: "lc", label: "LC" },
+  { id: "fc", label: "FC" },
+  { id: "mrs", label: "MRS" },
+  { id: "type", label: "Type" },
+  { id: "tags", label: "Tags" },
+  { id: "portfolioGroup", label: "Portfolio Group" },
+  { id: "propertyGroup", label: "Property Group" },
+  { id: "dateAdded", label: "Date Added" },
+  { id: "propertyStatus", label: "Property Status" },
+] as const
+

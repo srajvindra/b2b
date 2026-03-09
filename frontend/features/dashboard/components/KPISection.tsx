@@ -14,7 +14,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
 import type { KPITableRow, KPIHistoryPoint } from "../types"
-import type { KPIViewMode } from "../hooks/useKPIs"
+import type { KPIViewMode } from "../types"
 
 interface KPISectionProps {
   title: string

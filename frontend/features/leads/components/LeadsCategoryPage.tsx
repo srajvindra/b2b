@@ -1,8 +1,9 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useLeads } from "@/features/leads/hooks/useLeads"
+import { useState } from "react"
 import { CategoryListView } from "@/features/leads/components/CategoryListView"
+import { OWNER_CATEGORIES, OWNER_PROSPECT_CATEGORIES } from "@/features/leads/data/mockLeads"
 
 export interface LeadsCategoryPageProps {
   mode: "owner-prospects" | "lease-prospects"
@@ -10,14 +11,15 @@ export interface LeadsCategoryPageProps {
 
 export function LeadsCategoryPage({ mode }: LeadsCategoryPageProps) {
   const router = useRouter()
-  const view = mode === "owner-prospects" ? "owners" : "lease-prospects"
-  const params = { view }
-  const {
-    categorySearchQuery,
-    setCategorySearchQuery,
-    filteredCategories,
-    filteredProspectCategories,
-  } = useLeads({ params })
+  const [categorySearchQuery, setCategorySearchQuery] = useState("")
+
+  // Inlined (duplicated) from features/leads/hooks/useLeads.ts by request
+  const filteredCategories = OWNER_CATEGORIES.filter((cat) =>
+    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()),
+  )
+  const filteredProspectCategories = OWNER_PROSPECT_CATEGORIES.filter((cat) =>
+    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()),
+  )
 
   const categories = mode === "owner-prospects" ? filteredCategories : filteredProspectCategories
   const basePath = `/leads/${mode}`

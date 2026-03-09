@@ -11,10 +11,17 @@ const TOPBAR_HEIGHT = "3.5rem" // 56px - match Topbar py-3 + content
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { panel } = useRightPanel()
-  const { actions: quickActions, subtitle: quickActionsSubtitle } = useQuickActionsContext()
+  const {
+    actions: quickActions,
+    subtitle: quickActionsSubtitle,
+    aiSuggestedPrompts,
+    aiPlaceholder,
+  } = useQuickActionsContext()
   const sidebarCollapsed = useAppStore((s) => s.sidebarCollapsed)
   const hasQuickActions = quickActions.length > 0
   const showPanel = panel !== null || hasQuickActions
+  const rightPanelWidthClass = "lg:right-64"
+  const rightPanelAsideWidthClass = "w-64"
   const panelContent =
     panel !== null ? (
       panel
@@ -23,6 +30,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         className="w-full max-h-none static bg-[rgba(248,245,245,1)]"
         subtitle={quickActionsSubtitle}
         actions={quickActions}
+        aiSuggestedPrompts={aiSuggestedPrompts}
+        aiPlaceholder={aiPlaceholder}
       />
     ) : null
 
@@ -36,9 +45,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Main content - ONLY scrollable area; fixed insets so topbar + sidebars stay fixed */}
       <main
-        className={`overflow-auto px-4 py-6 fixed bottom-0 top-14 ${
-          sidebarCollapsed ? "left-0 lg:left-[72px]" : "left-0 lg:left-[260px]"
-        } ${showPanel ? "right-0 lg:right-[224px]" : "right-0"}`}
+        className={`overflow-auto px-4 py-6 fixed bottom-0 top-14 ${sidebarCollapsed ? "left-0 lg:left-[72px]" : "left-0 lg:left-[260px]"
+          } ${showPanel ? `right-0 ${rightPanelWidthClass}` : "right-0"}`}
       >
         {children}
       </main>
@@ -46,7 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {/* Fixed right sidebar - below topbar (driven by RightPanel or QuickActions context) */}
       {showPanel && panelContent && (
         <aside
-          className="hidden lg:block fixed top-[3.5rem] right-0 bottom-0 w-[224px] z-40 border-l bg-muted/10 overflow-hidden flex flex-col"
+          className={`hidden lg:block fixed top-[3.5rem] right-0 bottom-0 ${rightPanelAsideWidthClass} z-40 border-l bg-muted/10 overflow-hidden flex flex-col`}
           style={{ height: `calc(100vh - ${TOPBAR_HEIGHT})` }}
         >
           {panelContent}

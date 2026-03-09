@@ -58,6 +58,25 @@ export interface StageCategory {
   statuses: StageStatus[]
 }
 
+// Stage workflow builder
+export type WorkflowStepType = "email" | "call" | "text" | "todo" | "meet" | "process" | "stage_change"
+
+export interface WorkflowStepTiming {
+  type: "immediately" | "after_previous" | "specific_time"
+  value?: number
+  unit?: "hours" | "days"
+}
+
+export interface WorkflowStep {
+  id: string
+  name: string
+  type: WorkflowStepType
+  timing: WorkflowStepTiming
+  day: number
+  badge?: string
+  isAutomated?: boolean
+}
+
 // Staff Management
 export interface StaffMember {
   id: string

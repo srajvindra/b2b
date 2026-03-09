@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts"
 import type { KPITableRow, KPIHistoryPoint } from "../types"
-import type { KPIViewMode } from "../hooks/useKPIs"
+import type { KPIViewMode } from "../types"
 
 interface KPIGridOrChartProps {
   view: KPIViewMode

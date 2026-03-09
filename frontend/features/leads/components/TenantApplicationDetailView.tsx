@@ -24,6 +24,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   ArrowLeft,
   Mail,
@@ -89,379 +90,59 @@ import {
   Smile,
   Type,
   Share2,
+  Copy,
+  QrCode,
 } from "lucide-react"
 import { SMSPopupModal } from "@/components/sms-popup-modal"
 import { EmailPopupModal } from "@/components/email-popup-modal"
 import { useNav } from "@/app/dashboard/page"
 import { useQuickActions } from "@/context/QuickActionsContext"
 import { getLeadQuickActions } from "@/lib/quickActions"
+import { useRouter } from "next/navigation"
+import {
+  STAGES,
+  getStageColor,
+  getActivitiesData,
+  AVAILABLE_PROCESS_TYPES,
+  STAGE_PROGRESS_COLORS,
+  resolveStageIndex,
+  STAFF_LIST,
+  type StaffListItem,
+  DEPARTMENTS,
+  prospectDetailTabs,
+  recentMessagesMock,
+  auditLogMock,
+  prospectDocumentsMock,
+  prospectAuditLogsMock,
+  prospectTaskStaffMembersMock,
+  prospectPropertyUnitsMock,
+  ALL_AVAILABLE_PROPERTIES,
+  initialApplicant,
+  initialResidentialHistory,
+  initialBankAccounts,
+  initialCreditCards,
+  initialInterestedProperties,
+  initialProspectTasks,
+  leaseProspectProcesses,
+} from "@/features/leads/data/tenantApplicationDetail"
 
-// Pipeline stages with colors (13-step lifecycle)
-const STAGES = [
-  "Attempting to Contact (Call / Email / Message)",
-  "Scheduled Showing",
-  "No Show - Prospect",
-  "Showing Agent - No Show",
-  "Showing Completed - Awaiting Feedback",
-  "Interested - Application Sent",
-  "Application Received - Under Review",
-  "Application Approved - Lease Sent",
-  "Lease Signed - Schedule Move In",
-  "Move In - Completed and Feedback",
-  "Not Interested / Disliked Property",
-  "Application Rejected",
-  "Tenant - Lost or Backed Out",
-]
-
-const getStageColor = (index: number) => {
-  const colors = [
-    "bg-info",
-    "bg-warning",
-    "bg-warning",
-    "bg-chart-4",
-    "bg-primary",
-    "bg-success",
-    "bg-destructive",
-  ]
-  return colors[index] || "bg-muted"
+// All tasks or reasons for each stage (shown in tooltip)
+// All tasks or reasons for each stage (shown in tooltip)
+const STAGE_TASKS: Record<number, { type: "task" | "reason"; text: string }[]> = {
+  0: [{ type: "task", text: "Send Email" }, { type: "task", text: "Make Call" }],
+  1: [{ type: "task", text: "Make Call" }, { type: "task", text: "Send SMS" }],
+  2: [{ type: "task", text: "Send SMS" }, { type: "task", text: "Send Email" }],
+  3: [{ type: "task", text: "Make Call" }, { type: "task", text: "Todo points" }],
+  4: [{ type: "task", text: "Todo points" }, { type: "task", text: "Send Email" }],
+  5: [{ type: "task", text: "Send Email" }, { type: "task", text: "Set Video meeting" }],
+  6: [{ type: "task", text: "Todo points" }, { type: "task", text: "Make Call" }],
+  7: [{ type: "task", text: "Send Email" }, { type: "task", text: "Send SMS" }],
+  8: [{ type: "task", text: "Set Video meeting" }, { type: "task", text: "Todo points" }],
+  9: [{ type: "task", text: "Send SMS" }, { type: "task", text: "Send Email" }],
+  10: [{ type: "reason", text: "Prospect not interested or property disliked" }],
+  11: [{ type: "reason", text: "Application did not meet criteria" }],
 }
-
-// Available process types to start (from Operations > Processes)
-const AVAILABLE_PROCESS_TYPES = [
-  { id: "apt-1", name: "2 Property Onboarding Process", stages: 7 },
-  { id: "apt-2", name: "Accounting Mistakes", stages: 4 },
-  { id: "apt-3", name: "Applications screening process", stages: 11 },
-  { id: "apt-4", name: "Delinquency Process", stages: 10 },
-  { id: "apt-5", name: "Employee Onboarding Process", stages: 5 },
-  { id: "apt-6", name: "Employee Termination Process", stages: 3 },
-  { id: "apt-7", name: "Employee Training Process", stages: 21 },
-  { id: "apt-8", name: "EOM Accounting Process for Month", stages: 4 },
-  { id: "apt-9", name: "Escalated Owner Funds Collection Process", stages: 5 },
-  { id: "apt-10", name: "Eviction Process", stages: 10 },
-  { id: "apt-11", name: "Haro PM", stages: 3 },
-  { id: "apt-12", name: "Hiring Requisition Process", stages: 8 },
-  { id: "apt-13", name: "Lease Renewal Process", stages: 10 },
-  { id: "apt-14", name: "Legal Cases Complaints and Notices", stages: 8 },
-  { id: "apt-15", name: "Make Ready Process", stages: 9 },
-]
-
-// Stage progress bar colors (13 cubes: 1 amber, 9 greens, 3 reds)
-const STAGE_PROGRESS_COLORS = [
-  "rgb(235, 186, 93)",  // Cube 1  - Warm golden-amber
-  "#D5F5E3",            // Cube 2  - Lightest green
-  "#ABEBC6",            // Cube 3  - Very light green
-  "#82E0AA",            // Cube 4  - Light green
-  "#58D68D",            // Cube 5  - Light-medium green
-  "#2ECC71",            // Cube 6  - Medium green
-  "#27AE60",            // Cube 7  - Medium-dark green
-  "#1E8449",            // Cube 8  - Dark green
-  "#196F3D",            // Cube 9  - Darker green
-  "#145A32",            // Cube 10 - Darkest green
-  "#F5918A",            // Cube 11 - Lightest red
-  "#E74C3C",            // Cube 12 - Medium red
-  "#B71C1C",            // Cube 13 - Darkest red
-]
-
-// Map legacy stage names to new 13-step indices
-const LEGACY_STAGE_MAP: Record<string, number> = {
-  "new lead": 0,
-  "new prospects": 0,
-  "attempting to contact": 0,
-  "scheduled intro call": 1,
-  "scheduled showing": 1,
-  "working": 4,
-  "under review": 6,
-  "closing": 8,
-  "new client": 9,
-  "lost": 12,
-  "disqualified": 12,
-  "application approved – lease sent": 7,
-  "application approved - lease sent": 7,
-}
-
-const resolveStageIndex = (stageName: string): number => {
-  // First try exact match against new STAGES
-  const exactIndex = STAGES.findIndex((s) => s.toLowerCase() === stageName.toLowerCase())
-  if (exactIndex >= 0) return exactIndex
-  // Then try legacy mapping
-  const legacyIndex = LEGACY_STAGE_MAP[stageName.toLowerCase()]
-  if (legacyIndex !== undefined) return legacyIndex
-  return 0
-}
-
-const STAFF_LIST = [
-  { id: "1", name: "Richard Surovi", initials: "RS", role: "Lead Agent", department: "Sales" },
-  { id: "2", name: "Sarah Johnson", initials: "SJ", role: "Property Manager", department: "Property Management" },
-  { id: "3", name: "Michael Chen", initials: "MC", role: "Sales Associate", department: "Sales" },
-  { id: "4", name: "Emily Davis", initials: "ED", role: "Leasing Agent", department: "Leasing" },
-  { id: "5", name: "James Wilson", initials: "JW", role: "Marketing Specialist", department: "Marketing" },
-  { id: "6", name: "Nina Patel", initials: "NP", role: "Accountant", department: "Accounting" },
-  { id: "7", name: "Laura Taylor", initials: "LT", role: "Senior Accountant", department: "Accounting" },
-  { id: "8", name: "David Brown", initials: "DB", role: "Maintenance Lead", department: "Maintenance" },
-]
-
-const DEPARTMENTS = ["Sales", "Accounting", "Property Management", "Leasing", "Marketing", "Maintenance"]
-
-// Generate activities data for the prospect
-const getActivitiesData = (prospectName: string, prospectPhone: string, prospectEmail: string) => [
-  {
-    id: 1,
-    type: "sms",
-    user: "Richard Surovi",
-    userInitials: "RS",
-    phone: "(216) 810-2564",
-    action: "texted",
-    target: prospectName,
-    targetPhone: prospectPhone,
-    message: "Sounds good. Let me know what we can do to move forward. Reply STOP to opt out of future messages.",
-    fullMessage: "Sounds good. Let me know what we can do to move forward. Reply STOP to opt out of future messages.",
-    timestamp: "12/4/2025, 12:24 PM",
-    isNote: false,
-    isRead: true,
-  },
-  {
-    id: 2,
-    type: "sms",
-    user: prospectName,
-    userInitials: prospectName
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase(),
-    phone: prospectPhone,
-    action: "texted",
-    target: "Richard Surovi",
-    targetPhone: "(216) 810-2564",
-    message: "Hi Richard. Thanks for following up. I'm speaking to a few other companies and will get back soon.",
-    fullMessage: `Hi Richard. Thanks for following up. I'm speaking to a few other companies and will get back soon. I appreciate your patience and will reach out once I've made a decision. Best regards, ${prospectName.split(" ")[0]}`,
-    timestamp: "12/4/2025, 12:22 PM",
-    isNote: false,
-    isRead: false,
-  },
-  {
-    id: 3,
-    type: "note",
-    user: "Richard Surovi",
-    userInitials: "RS",
-    action: "left a Note",
-    message: "Sent text",
-    timestamp: "12/4/2025, 11:46 AM",
-    isNote: true,
-    isRead: true,
-  },
-  {
-    id: 4,
-    type: "call",
-    user: "Richard Surovi",
-    userInitials: "RS",
-    phone: "(216) 810-2564",
-    action: "called",
-    target: prospectName,
-    targetPhone: prospectPhone,
-    message: "Left voicemail about property management services. Call lasted 2 minutes.",
-    callNotes: `Called to follow up on rental inquiry. Prospect was not available, left voicemail about available units and scheduling a viewing. ${prospectName} is interested in a 2-bedroom unit. Call duration: 2 minutes 34 seconds.`,
-    appfolioLink: "https://appfolio.com/calls/recording/abc123xyz",
-    timestamp: "12/4/2025, 10:30 AM",
-    isNote: false,
-    isRead: true,
-  },
-  {
-    id: 5,
-    type: "sms",
-    user: "Richard Surovi",
-    userInitials: "RS",
-    phone: "(216) 810-2564",
-    action: "texted",
-    target: prospectName,
-    targetPhone: prospectPhone,
-    message: `Hi ${prospectName.split(" ")[0]}. Richard Surovi here from B2B Property Management. Just want to make sure you received my voicemail yesterday, indicating that if you w...`,
-    fullMessage: `Hi ${prospectName.split(" ")[0]}. Richard Surovi here from B2B Property Management. Just want to make sure you received my voicemail yesterday, indicating that if you would like to schedule a tour of the available units, I'm available anytime. We have great options that match your requirements. Please let me know if you'd like to schedule a viewing.`,
-    timestamp: "11/29/2025, 9:50 PM",
-    isNote: false,
-    isRead: true,
-  },
-  {
-    id: 6,
-    type: "email",
-    user: "Richard Surovi",
-    userInitials: "RS",
-    phone: "",
-    action: "emailed",
-    target: prospectName,
-    targetPhone: prospectEmail,
-    message: "Sent follow-up email regarding property management proposal and pricing details.",
-    timestamp: "11/28/2025, 3:15 PM",
-    isNote: false,
-    isRead: true,
-    emailThread: [
-      {
-        id: "e1",
-        from: "Richard Surovi",
-        fromEmail: "richard@b2bpm.com",
-        to: prospectName,
-        toEmail: prospectEmail,
-        subject: "Available Units - B2B Property Management",
-        content: `Hi ${prospectName.split(" ")[0]},\n\nThank you for your interest in our available rental units.\n\nAs discussed, here are some options that match your requirements:\n- 2BR/2BA at Oak Street - $1,800/month\n- 2BR/1BA at Maple Ave - $1,650/month\n- 3BR/2BA at Pine Lane - $2,100/month\n\nAll units include water and trash. Let me know if you'd like to schedule a viewing.\n\nBest regards,\nRichard Surovi\nB2B Property Management`,
-        timestamp: "11/28/2025, 3:15 PM",
-        isFromMe: true,
-      },
-      {
-        id: "e2",
-        from: prospectName,
-        fromEmail: prospectEmail,
-        to: "Richard Surovi",
-        toEmail: "richard@b2bpm.com",
-        subject: "RE: Available Units - B2B Property Management",
-        content: `Hi Richard,\n\nThank you for sending this over. I'm interested in the 2BR/2BA at Oak Street.\n\nA few questions:\n1. Is there parking available?\n2. What's the lease term?\n3. When can I schedule a viewing?\n\nLooking forward to hearing from you.\n\n${prospectName.split(" ")[0]}`,
-        timestamp: "11/29/2025, 10:30 AM",
-        isFromMe: false,
-      },
-      {
-        id: "e3",
-        from: "Richard Surovi",
-        fromEmail: "richard@b2bpm.com",
-        to: prospectName,
-        toEmail: prospectEmail,
-        subject: "RE: Available Units - B2B Property Management",
-        content: `Hi ${prospectName.split(" ")[0]},\n\nGreat choice! Here are the answers:\n\n1. Yes, one covered parking spot is included, additional spots are $50/month.\n\n2. Standard lease term is 12 months, but we can discuss shorter terms.\n\n3. I'm available tomorrow at 2pm or Thursday at 10am for a viewing.\n\nLet me know what works for you!\n\nBest,\nRichard`,
-        timestamp: "11/29/2025, 2:45 PM",
-        isFromMe: true,
-      },
-    ],
-  },
-  {
-    id: 7,
-    type: "call",
-    user: "Richard Surovi",
-    userInitials: "RS",
-    phone: "(216) 810-2564",
-    action: "called",
-    target: prospectName,
-    targetPhone: prospectPhone,
-    message: "Initial discovery call - discussed property portfolio and management needs.",
-    callNotes: `Initial discovery call with prospect ${prospectName}.\n\nKey Points Discussed:\n- Looking for 2-bedroom apartment\n- Preferred move-in date: First week of next month\n- Budget: $1,500-$2,000/month\n- Requirements: Pet-friendly, in-unit laundry preferred\n- Current situation: Lease ending at current place\n\nNext Steps:\n- Send available listings by end of day\n- Schedule viewing for this weekend\n\nCall duration: 12 minutes 18 seconds`,
-    appfolioLink: "https://appfolio.com/calls/recording/def456uvw",
-    timestamp: "11/25/2025, 11:00 AM",
-    isNote: false,
-    isRead: true,
-  },
-  // Group Chat Communications
-  {
-    id: 8,
-    type: "sms",
-    user: "Nina Patel",
-    userInitials: "NP",
-    phone: "(216) 555-1234",
-    action: "texted",
-    target: "Leasing Team",
-    targetPhone: "",
-    message: "Team, we have a new prospect interested in the Oak Street 2BR. Can we coordinate availability for showings?",
-    fullMessage: "Team, we have a new prospect interested in the Oak Street 2BR. Can we coordinate availability for showings this week?",
-    timestamp: "12/6/2025, 10:00 AM",
-    isNote: false,
-    isRead: true,
-    isGroupChat: true,
-    groupParticipants: ["Nina Patel", "Richard Surovi", "Sarah Johnson", prospectName],
-    unreadCount: 3,
-  },
-  {
-    id: 9,
-    type: "sms",
-    user: "Richard Surovi",
-    userInitials: "RS",
-    phone: "(216) 810-2564",
-    action: "texted",
-    target: "Leasing Team",
-    targetPhone: "",
-    message: "I'm available Tuesday and Thursday afternoon for showings.",
-    fullMessage: "I'm available Tuesday and Thursday afternoon for showings. Let me know what works best.",
-    timestamp: "12/6/2025, 10:15 AM",
-    isNote: false,
-    isRead: true,
-    isGroupChat: true,
-    groupParticipants: ["Nina Patel", "Richard Surovi", "Sarah Johnson", prospectName],
-    unreadCount: 0,
-  },
-  {
-    id: 10,
-    type: "email",
-    user: "Sarah Johnson",
-    userInitials: "SJ",
-    phone: "",
-    action: "emailed",
-    target: "Leasing Team",
-    targetPhone: "",
-    message: "Prospect Application Review - Action Items for scheduling and verification.",
-    timestamp: "12/5/2025, 3:30 PM",
-    isNote: false,
-    isRead: true,
-    isGroupChat: true,
-    groupParticipants: ["Sarah Johnson", "Richard Surovi", "Nina Patel", prospectName],
-    unreadCount: 8,
-    emailThread: [
-      {
-        id: "g1",
-        from: "Sarah Johnson",
-        fromEmail: "sarah@b2bpm.com",
-        to: "Leasing Team",
-        toEmail: "leasing@b2bpm.com",
-        subject: "Prospect Application Review - Action Items",
-        content: `Hi team,\n\nFollowing up on the new prospect application. Here are the action items:\n\n1. Richard - Schedule showing for the Oak Street unit\n2. Nina - Process background check\n3. Verify employment and previous landlord references\n\n${prospectName} is looking to move in by the first week of next month, so let's prioritize this.\n\nThanks,\nSarah`,
-        timestamp: "12/5/2025, 3:30 PM",
-        isFromMe: false,
-      },
-    ],
-  },
-  {
-    id: 11,
-    type: "sms",
-    user: prospectName,
-    userInitials: prospectName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase(),
-    phone: prospectPhone,
-    action: "texted",
-    target: "Leasing Team",
-    targetPhone: "",
-    message: "Thanks for the update everyone. Thursday at 2pm works great for me.",
-    fullMessage: "Thanks for the update everyone. Thursday at 2pm works great for me. Looking forward to seeing the unit!",
-    timestamp: "12/6/2025, 11:30 AM",
-    isNote: false,
-    isRead: false,
-    isGroupChat: true,
-    groupParticipants: ["Nina Patel", "Richard Surovi", "Sarah Johnson", prospectName],
-    unreadCount: 2,
-  },
-  {
-    id: 12,
-    type: "email",
-    user: "Mike Davis",
-    userInitials: "MD",
-    phone: "",
-    action: "emailed",
-    target: "Unit Preparation Group",
-    targetPhone: "",
-    message: "Unit turnover coordination for the prospect's potential move-in.",
-    timestamp: "12/4/2025, 2:00 PM",
-    isNote: false,
-    isRead: true,
-    isGroupChat: true,
-    groupParticipants: ["Mike Davis", "Richard Surovi", "Cleaning Services", prospectName],
-    unreadCount: 0,
-    emailThread: [
-      {
-        id: "g2",
-        from: "Mike Davis",
-        fromEmail: "mike@b2bpm.com",
-        to: "Unit Preparation Group",
-        toEmail: "maintenance@b2bpm.com",
-        subject: "Re: Oak Street Unit Turnover - Coordination",
-        content: `Team,\n\nThe cleaning crew has confirmed availability for the Oak Street unit. Schedule:\n- Deep clean: Monday 9 AM - 1 PM\n- Touch-up paint: Monday 2 PM\n- Final inspection: Tuesday 10 AM\n\n${prospectName}, the unit will be ready for your viewing on Thursday.\n\nBest,\nMike`,
-        timestamp: "12/4/2025, 2:00 PM",
-        isFromMe: false,
-      },
-    ],
-  },
-]
+import type { ProspectTaskStatus, ProspectTask } from "@/features/leads/types"
 
 interface TenantApplicationDetailViewProps {
   lead: any
@@ -495,20 +176,22 @@ export function TenantApplicationDetailView({
   const [replyText, setReplyText] = useState("")
   const [showAddNoteModal, setShowAddNoteModal] = useState(false)
   const [noteText, setNoteText] = useState("")
-  const [taggedUsers, setTaggedUsers] = useState<typeof STAFF_LIST>([])
+  const [taggedUsers, setTaggedUsers] = useState<StaffListItem[]>([])
   const [showMentionDropdown, setShowMentionDropdown] = useState(false)
   const [mentionFilter, setMentionFilter] = useState("")
   const [cursorPosition, setCursorPosition] = useState(0)
-  const [assignedTeam, setAssignedTeam] = useState([STAFF_LIST[0]])
+  const [assignedTeam, setAssignedTeam] = useState<StaffListItem[]>([STAFF_LIST[0]])
   const [teamPopoverOpen, setTeamPopoverOpen] = useState(false)
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
-  
+  const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
+  const [missingInfoTab, setMissingInfoTab] = useState<"fields" | "documents">("fields")
+  const router = useRouter()
   // SMS & Email Modal state
   const [showSMSModal, setShowSMSModal] = useState(false)
   const [selectedSMSActivity, setSelectedSMSActivity] = useState<(typeof ACTIVITIES_DATA)[0] | null>(null)
   const [showEmailModal, setShowEmailModal] = useState(false)
   const [selectedEmailActivity, setSelectedEmailActivity] = useState<(typeof ACTIVITIES_DATA)[0] | null>(null)
-  
+
   // Communication Thread Modal State
   const [showThreadModal, setShowThreadModal] = useState(false)
   const [selectedCommunication, setSelectedCommunication] = useState<(typeof ACTIVITIES_DATA)[0] | null>(null)
@@ -532,7 +215,16 @@ export function TenantApplicationDetailView({
   const [emailComposeBody, setEmailComposeBody] = useState("")
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
 
-  // Share link dialog state
+  // Add Custom Field modal state (Prospect Info card)
+  const [showAddCustomFieldModal, setShowAddCustomFieldModal] = useState(false)
+  const [customFieldData, setCustomFieldData] = useState({
+    section: "Federal Tax",
+    fieldName: "",
+    fieldType: "Text",
+    isRequired: false,
+  })
+
+  // Share link dialog state (property resource links)
   const [showShareDialog, setShowShareDialog] = useState(false)
   const [shareLinkLabel, setShareLinkLabel] = useState("")
   const [shareLinkType, setShareLinkType] = useState<"prospect-only" | "choose-recipient">("prospect-only")
@@ -558,6 +250,89 @@ export function TenantApplicationDetailView({
     setShareConfirmed(true)
   }
 
+  const handleOpenShareDialog = (linkType: string) => handleShareLink(linkType)
+
+  // Access Information dialogs (Lockbox / ShowMojo)
+  const [showGenerateCodeDialog, setShowGenerateCodeDialog] = useState(false)
+  const [showShareLinksDialog, setShowShareLinksDialog] = useState(false)
+  const [shareLinksType, setShareLinksType] = useState<"lockbox" | "showmojo">("lockbox")
+  const [shareLinkRecipients, setShareLinkRecipients] = useState<Record<string, boolean>>({
+    leasingProspect: false,
+    owner: false,
+    csr: false,
+    csm: false,
+    leasingCoordinator1: false,
+    leasingCoordinator2: false,
+    leasingManager: false,
+  })
+  const [shareLinkMethod, setShareLinkMethod] = useState<{ email: boolean; sms: boolean }>({
+    email: false,
+    sms: false,
+  })
+  const [shareLinkMessage, setShareLinkMessage] = useState("")
+
+  const shareRecipientOptions = [
+    { id: "leasingProspect", label: "Leasing Prospect", color: "bg-teal-500" },
+    { id: "owner", label: "Owner", color: "bg-red-500" },
+    { id: "csr", label: "CSR", color: "bg-gray-400" },
+    { id: "csm", label: "CSM", color: "bg-orange-500" },
+    { id: "leasingCoordinator1", label: "Leasing Coordinator", color: "bg-green-500" },
+    { id: "leasingCoordinator2", label: "Leasing Coordinator", color: "bg-red-400" },
+    { id: "leasingManager", label: "Leasing Manager", color: "bg-gray-400" },
+  ]
+
+  const [lockboxCode] = useState("5893 2474")
+  const [lockboxCopied, setLockboxCopied] = useState(false)
+  const [showmojoAccessOption, setShowmojoAccessOption] = useState("one-day")
+  const [showmojoCodeDate, setShowmojoCodeDate] = useState("Feb 23, 2026")
+
+  const showmojoAccessOptions = [
+    { id: "one-day", label: "One day" },
+    { id: "multiple-days", label: "Multiple days" },
+    { id: "multiple-months", label: "Multiple months" },
+    { id: "one-hour", label: "One hour" },
+    { id: "two-hours", label: "Two hours" },
+    { id: "three-hours", label: "Three hours" },
+    { id: "four-hours", label: "Four hours" },
+    { id: "five-hours", label: "Five hours" },
+    { id: "six-hours", label: "Six hours" },
+  ]
+
+  const handleOpenShareLinksDialog = (type: "lockbox" | "showmojo") => {
+    setShareLinksType(type)
+    setShowShareLinksDialog(true)
+  }
+
+  const handleCopyLockboxCode = () => {
+    navigator.clipboard.writeText(lockboxCode)
+    setLockboxCopied(true)
+    setTimeout(() => setLockboxCopied(false), 2000)
+  }
+
+  const handleShareLinkRecipientToggle = (id: string) => {
+    setShareLinkRecipients((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const handleShareLinkMethodToggle = (method: "email" | "sms") => {
+    setShareLinkMethod((prev) => ({ ...prev, [method]: !prev[method] }))
+  }
+
+  const handleSendShareLink = () => {
+    // In this UI-only port we just close and reset; actual sending would be wired to backend later.
+    setShowShareLinksDialog(false)
+    setShareLinkRecipients({
+      leasingProspect: false,
+      owner: false,
+      csr: false,
+      csm: false,
+      leasingCoordinator1: false,
+      leasingCoordinator2: false,
+      leasingManager: false,
+    })
+    setShareLinkMethod({ email: false, sms: false })
+    setShareLinkMessage("")
+  }
+
   // Handler to open modals for Activity items
   const handleActivityClick = (activity: (typeof ACTIVITIES_DATA)[0]) => {
     if (activity.type === "sms" || activity.type === "email") {
@@ -574,7 +349,7 @@ export function TenantApplicationDetailView({
       setExpandedActivityId(expandedActivityId === activity.id ? null : activity.id)
     }
   }
-  
+
   // Toggle email expansion in thread
   const toggleEmailExpand = (emailId: string) => {
     setExpandedEmails((prev) =>
@@ -586,9 +361,9 @@ export function TenantApplicationDetailView({
   const getCommunicationThread = () => {
     // Filter only private chat activities (not group chat) and exclude notes
     const threadItems = ACTIVITIES_DATA.filter(
-      (a) => !a.isGroupChat && !a.isNote && (a.type === "sms" || a.type === "email" || a.type === "call")
+      (a) => !a.isGroupChat && !a.isNote && (a.type === "sms" || a.type === "email" || a.type === "call"),
     )
-    
+
     // Sort by timestamp (oldest first for thread view)
     return threadItems.sort((a, b) => {
       const dateA = new Date(a.timestamp)
@@ -671,7 +446,7 @@ export function TenantApplicationDetailView({
     setMentionFilter("")
   }
 
-  const handleSelectMention = (member: (typeof STAFF_LIST)[0]) => {
+  const handleSelectMention = (member: StaffListItem) => {
     const textBeforeCursor = noteText.substring(0, cursorPosition)
     const atIndex = textBeforeCursor.lastIndexOf("@")
     const textAfterCursor = noteText.substring(cursorPosition)
@@ -679,7 +454,7 @@ export function TenantApplicationDetailView({
     const newText = noteText.substring(0, atIndex) + `@${member.name} ` + textAfterCursor
     setNoteText(newText)
 
-    if (!taggedUsers.find((u) => u.id === member.id)) {
+    if (!taggedUsers.find((u) => u.id === member.id.toString())) {
       setTaggedUsers([...taggedUsers, member])
     }
 
@@ -687,8 +462,8 @@ export function TenantApplicationDetailView({
     setMentionFilter("")
   }
 
-  const removeTaggedUser = (userId: number) => {
-    setTaggedUsers(taggedUsers.filter((u) => u.id !== userId))
+  const removeTaggedUser = (userId: number | string) => {
+    setTaggedUsers(taggedUsers.filter((u) => u.id !== String(userId)))
   }
 
   const handleSaveNote = () => {
@@ -702,7 +477,7 @@ export function TenantApplicationDetailView({
 
   // Modified TEAM_MEMBERS to STAFF_LIST and adjusted type
   const filteredMentionUsers = STAFF_LIST.filter(
-    (member) => member.name.toLowerCase().includes(mentionFilter) && !taggedUsers.find((u) => u.id === member.id),
+    (member) => member.name.toLowerCase().includes(mentionFilter) && !taggedUsers.find((u) => u.id === member.id.toString()),
   )
 
   const renderExpandedContent = (activity: (typeof ACTIVITIES_DATA)[0]) => {
@@ -757,11 +532,10 @@ export function TenantApplicationDetailView({
               {emailThread.map((email) => (
                 <div
                   key={email.id}
-                  className={`rounded-lg border transition-all cursor-pointer ${
-                    expandedThreadMessage === email.id
-                      ? "border-primary/30 bg-primary/5"
-                      : "border-border hover:border-primary/20 hover:bg-muted/30"
-                  }`}
+                  className={`rounded-lg border transition-all cursor-pointer ${expandedThreadMessage === email.id
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border hover:border-primary/20 hover:bg-muted/30"
+                    }`}
                   onClick={() => setExpandedThreadMessage(expandedThreadMessage === email.id ? null : email.id)}
                 >
                   <div className="p-3 flex items-center justify-between">
@@ -880,96 +654,14 @@ export function TenantApplicationDetailView({
     }
   }
 
-  // Existing Applicant Data (kept for structure if needed, but new logic uses lead prop)
-  const [applicant] = useState({
-    name: "Diana Prince",
-    type: "Financially Responsible",
-    phone: "9876543210",
-    email: "dprince@mail.com",
-    status: "Decision Pending",
-    unit: "8 SH - 3 - 8",
-    listingStatus: "Not Posted",
-    vacantOn: "Not Vacant",
-    desiredMoveIn: "12/01/2025",
-    screeningStatus: "Not Done",
-    assignedUser: "--",
-    receivedDate: "11/18/2025 12:34 AM",
-    receivedBy: "George Guraya",
-    residentialHistory: "almost 45 years provided",
-    totalMonthlyIncome: "None provided",
-    dependents: "No",
-    pets: "No",
-    attachments: "No",
-    dob: "09/04/1995",
-    ssn: "XXX-XX-9854",
-    governmentId: "--",
-    issuingState: "--",
-  })
+  const [applicant] = useState(initialApplicant)
+  const [residentialHistory] = useState(initialResidentialHistory)
+  const [bankAccounts] = useState(initialBankAccounts)
+  const [creditCards] = useState(initialCreditCards)
 
-  const [residentialHistory] = useState({
-    occupancyType: "Owner",
-    currentAddress: "1234 Elm Street Springfield\nSpringfield, IL 62704",
-    resided: "From February 1981 to Present",
-    monthlyPayment: "--",
-    landlord: "N/A - Owner at this address",
-    reasonForLeaving: "--",
-  })
-
-  const [bankAccounts] = useState([
-    { name: "John brown", type: "Savings", accountNumber: "22990015090090448", balance: "50,000.00" },
-  ])
-
-  const [creditCards] = useState([{ issuer: "American Bank", balance: "100,000.00" }])
-
-  const auditLog = [
-    { date: "11/18/2025 12:34 AM", action: "Changed Status from New to Decision Pending", by: "George Guraya" },
-    { date: "11/18/2025 12:34 AM", action: "Created Rental Application for Diana Prince", by: "George Guraya" },
-  ]
-
-  // Keeping recentMessages for comparison, but new logic uses ACTIVITIES_DATA
-  const recentMessages = [
-    {
-      id: 1,
-      type: "sms",
-      sender: "Diana Prince",
-      senderType: "prospect", // Added senderType field to distinguish between prospect and staff
-      message: "Thank you for the update on the application...",
-      time: "2h ago",
-    },
-    {
-      id: 2,
-      type: "email",
-      sender: "Diana Prince",
-      senderType: "prospect", // Added senderType field
-      message: "RE: Application Status - I have reviewed the charges and...",
-      time: "1d ago",
-    },
-    {
-      id: 3,
-      type: "call",
-      sender: "Nina Patel",
-      senderType: "staff", // Added senderType field to identify staff messages
-      message: "Discussed document requirements for the application",
-      time: "3d ago",
-    },
-    {
-      id: 4,
-      type: "sms",
-      sender: "Diana Prince",
-      senderType: "prospect", // Added senderType field
-      message: "Can I schedule a viewing for next week?",
-      time: "5d ago",
-    },
-  ]
-
-  // Tabs definition (might be replaced by new structure)
-  const tabs = [
-    { id: "overview", label: "Overview" },
-    { id: "background", label: "Background & Screening" },
-    { id: "financial", label: "Financial" },
-    { id: "household", label: "Household" },
-    { id: "activity", label: "Activity & History" },
-  ]
+  const auditLog = auditLogMock
+  const recentMessages = recentMessagesMock
+  const tabs = prospectDetailTabs
 
   // State for modals (kept for potential fallback or if needed later)
   const [messageType, setMessageType] = useState("email")
@@ -1006,7 +698,9 @@ export function TenantApplicationDetailView({
       }),
     []
   )
-  useQuickActions(leadQuickActions, { subtitle: "Lead" })
+  // Let the global Quick Actions panel subtitle follow the route name
+  // (e.g. "Leads - Owner Prospects", "Leads - Lease Prospects").
+  useQuickActions(leadQuickActions)
 
   const [showProcessPanel, setShowProcessPanel] = useState(false)
   const [editingProcess, setEditingProcess] = useState<{
@@ -1073,181 +767,7 @@ export function TenantApplicationDetailView({
   const [showViewTaskModal, setShowViewTaskModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<any>(null)
 
-  const ALL_AVAILABLE_PROPERTIES = [
-    {
-      id: 1,
-      name: "Sunset Apartments",
-      address: "1234 Sunset Blvd, Los Angeles, CA 90028",
-      type: "Multi Family",
-      bedrooms: 2,
-      bathrooms: 1,
-      sqft: 950,
-      rent: 2400,
-      available: "Available Now",
-      unit: "Unit 12B",
-      image: "/sunset-apartment-building.jpg",
-      amenities: ["Pool", "Gym", "Parking"],
-      ownerName: "Emma Wilson",
-      deposit: 2400,
-      status: "Available",
-    },
-    {
-      id: 2,
-      name: "Oakwood Residence",
-      address: "567 Oak Street, San Francisco, CA 94102",
-      type: "Multi Family",
-      bedrooms: 1,
-      bathrooms: 1,
-      sqft: 750,
-      rent: 2100,
-      available: "Available 02/01",
-      unit: "Unit 3A",
-      image: "/oakwood-residence-building.jpg",
-      amenities: ["Laundry", "Parking", "Pet Friendly"],
-      ownerName: "Sarah Lee",
-      deposit: 2100,
-      status: "Pending",
-    },
-    {
-      id: 3,
-      name: "Metro Plaza",
-      address: "456 Metro Blvd, Portland, OR 97201",
-      type: "Multi Family",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1050,
-      rent: 2600,
-      available: "Available Now",
-      unit: "Unit 507",
-      image: "/metro-plaza-apartment.jpg",
-      amenities: ["Gym", "Rooftop", "Concierge"],
-      ownerName: "Sarah Lee",
-      deposit: 2600,
-      status: "Available",
-    },
-    {
-      id: 4,
-      name: "Harbor View Complex",
-      address: "321 Harbor Dr, San Diego, CA 92101",
-      type: "Multi Family",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1100,
-      rent: 2800,
-      available: "Available Now",
-      unit: "Unit 405",
-      image: "/modern-apartment-building-harbor-view.jpg",
-      amenities: ["Pool", "Gym", "Parking", "Laundry"],
-      ownerName: "Emma Wilson",
-      deposit: 2800,
-      status: "Available",
-    },
-    {
-      id: 5,
-      name: "Riverside Apartments",
-      address: "789 River Rd, Austin, TX 78701",
-      type: "Multi Family",
-      bedrooms: 3,
-      bathrooms: 2,
-      sqft: 1400,
-      rent: 3200,
-      available: "Available 01/15",
-      unit: "Unit 201",
-      image: "/riverside-apartments.png",
-      amenities: ["Pool", "Gym", "Pet Friendly", "Balcony"],
-      ownerName: "Linda Martinez",
-      deposit: 3200,
-      status: "Available",
-    },
-    {
-      id: 6,
-      name: "Lakeside Villas",
-      address: "234 Lake Dr, Chicago, IL 60601",
-      type: "Multi Family",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1200,
-      rent: 2900,
-      available: "Available Now",
-      unit: "Unit 1102",
-      image: "/lakeside-villas.jpg",
-      amenities: ["Pool", "Gym", "Concierge", "Parking"],
-      ownerName: "Robert Taylor",
-      deposit: 2900,
-      status: "Available",
-    },
-    {
-      id: 9,
-      name: "Downtown Lofts",
-      address: "890 Main St, Boston, MA 02108",
-      type: "Multi Family",
-      bedrooms: 1,
-      bathrooms: 1,
-      sqft: 850,
-      rent: 2200,
-      available: "Available 01/15",
-      unit: "Unit 302",
-      image: "/modern-downtown-loft.png",
-      amenities: ["Rooftop", "Concierge", "Parking"],
-      ownerName: "Michael Chen",
-      deposit: 2200,
-      status: "Pending",
-    },
-    {
-      id: 10,
-      name: "Skyline Towers",
-      address: "321 Sky Blvd, Dallas, TX 75201",
-      type: "Multi Family",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1150,
-      rent: 2700,
-      available: "Available Now",
-      unit: "Unit 2401",
-      image: "/skyline-towers-dallas.jpg",
-      amenities: ["Pool", "Gym", "Rooftop", "Concierge"],
-      ownerName: "Emma Wilson",
-      deposit: 2700,
-      status: "Available",
-    },
-  ]
-
-  const [interestedProperties, setInterestedProperties] = useState([
-    {
-      id: 4,
-      name: "Harbor View Complex",
-      address: "321 Harbor Dr, San Diego, CA 92101",
-      type: "Multi Family",
-      bedrooms: 2,
-      bathrooms: 2,
-      sqft: 1100,
-      rent: 2800,
-      available: "Available Now",
-      unit: "Unit 405",
-      image: "/modern-apartment-building-harbor-view.jpg",
-      amenities: ["Pool", "Gym", "Parking", "Laundry"],
-      ownerName: "Emma Wilson",
-      deposit: 2800,
-      status: "Available",
-    },
-    {
-      id: 9,
-      name: "Downtown Lofts",
-      address: "890 Main St, Boston, MA 02108",
-      type: "Multi Family",
-      bedrooms: 1,
-      bathrooms: 1,
-      sqft: 850,
-      rent: 2200,
-      available: "Available 01/15",
-      unit: "Unit 302",
-      image: "/modern-downtown-loft.png",
-      amenities: ["Rooftop", "Concierge", "Parking"],
-      ownerName: "Michael Chen",
-      deposit: 2200,
-      status: "Pending",
-    },
-  ])
+  const [interestedProperties, setInterestedProperties] = useState(initialInterestedProperties)
 
   const [showAddPropertyModal, setShowAddPropertyModal] = useState(false)
   const [showFinalizeConfirmModal, setShowFinalizeConfirmModal] = useState(false)
@@ -1277,93 +797,7 @@ export function TenantApplicationDetailView({
     return iconMap[amenity] || <Check className="h-4 w-4" />
   }
 
-  const [prospectTasks, setProspectTasks] = useState([
-    {
-      id: 1,
-      title: "Review rental application - Sarah Johnson",
-      processName: "Lease Prospect Onboarding",
-      relatedEntityType: "Lease Prospect" as const,
-      relatedEntityName: "Sarah Johnson",
-      assignee: "Nina Patel",
-      dueDate: "2025-12-20",
-      priority: "High" as const,
-      status: "Pending" as const,
-      isOverdue: true,
-    },
-    {
-      id: 2,
-      title: "Send lease agreement - Unit 305",
-      processName: "New Lease Signing",
-      relatedEntityType: "Lease Prospect" as const,
-      relatedEntityName: "Unit 305",
-      assignee: "Sarah Chen",
-      dueDate: "2025-12-21",
-      priority: "High" as const,
-      status: "In Progress" as const,
-      isOverdue: true,
-    },
-    {
-      id: 3,
-      title: "Schedule property showing",
-      processName: "Lease Prospect Onboarding",
-      relatedEntityType: "Property" as const,
-      relatedEntityName: "Sunset Villa",
-      assignee: "Richard Surovi",
-      dueDate: "2025-12-23",
-      priority: "High" as const,
-      status: "Pending" as const,
-      isOverdue: false,
-    },
-    {
-      id: 4,
-      title: "Follow up with prospect - Unit 204",
-      processName: "Lease Renewal Process",
-      relatedEntityType: "Tenant" as const,
-      relatedEntityName: "John Smith",
-      assignee: "Nina Patel",
-      dueDate: "2025-12-23",
-      priority: "Medium" as const,
-      status: "Pending" as const,
-      isOverdue: false,
-    },
-    {
-      id: 5,
-      title: "Verify employment documents",
-      processName: "",
-      relatedEntityType: "Lease Prospect" as const,
-      relatedEntityName: "Sarah Johnson",
-      assignee: "Mike Johnson",
-      dueDate: "2025-12-24",
-      priority: "Medium" as const,
-      status: "In Progress" as const,
-      isOverdue: false,
-    },
-    {
-      id: 6,
-      title: "Call about viewing feedback",
-      processName: "Lease Prospect Outreach",
-      relatedEntityType: "Lease Prospect" as const,
-      relatedEntityName: "Emily Brown",
-      assignee: "Richard Surovi",
-      dueDate: "2025-12-25",
-      priority: "Low" as const,
-      status: "Skipped" as const,
-      isOverdue: false,
-    },
-    {
-      id: 7,
-      title: "Respond to inquiry",
-      processName: "",
-      relatedEntityType: "Lease Prospect" as const,
-      relatedEntityName: "Robert Garcia",
-      assignee: "Nina Patel",
-      dueDate: "2025-12-24",
-      priority: "Low" as const,
-      status: "Pending" as const,
-      isOverdue: false,
-      autoCreated: true,
-    },
-  ])
+  const [prospectTasks, setProspectTasks] = useState<ProspectTask[]>(initialProspectTasks as ProspectTask[])
 
   const handleMarkTaskComplete = (taskId: number) => {
     setProspectTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status: "Completed" } : task)))
@@ -1410,429 +844,11 @@ export function TenantApplicationDetailView({
       p.address.toLowerCase().includes(propertySearchQuery.toLowerCase()),
   )
 
-  // Keeping recentMessages for comparison, but new logic uses ACTIVITIES_DATA
-  const prospectDocuments = [
-    {
-      id: 1,
-      name: "Rental Application",
-      type: "Application",
-      property: "Harbor View Apartments",
-      dateShared: "12/20/2025",
-      status: "Submitted",
-    },
-    {
-      id: 2,
-      name: "Proof of Income",
-      type: "Financial",
-      property: "Harbor View Apartments",
-      dateShared: "12/22/2025",
-      status: "Pending Review",
-    },
-    {
-      id: 3,
-      name: "ID Verification",
-      type: "Identity",
-      property: "Downtown Loft",
-      dateShared: "12/18/2025",
-      status: "Verified",
-    },
-    {
-      id: 4,
-      name: "Employment Letter",
-      type: "Financial",
-      property: "Harbor View Apartments",
-      dateShared: "12/23/2025",
-      status: "Requested",
-    },
-  ]
+  const prospectDocuments = prospectDocumentsMock
 
-  // Lease Prospect Processes Data
-  const leaseProspectProcesses = {
-    inProgress: [
-      {
-        id: "proc-1",
-        name: "Application Review & Screening",
-        leaseProspectStage: "Working",
-        startedOn: "01/10/2026",
-        status: "In Progress",
-        tasks: [
-          { id: "t1", name: "Verify applicant identity", startDate: "01/10/2026", completedDate: "01/10/2026", staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-          { id: "t2", name: "Run credit check", startDate: "01/11/2026", completedDate: "01/12/2026", staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t3", name: "Contact previous landlord", startDate: "01/13/2026", completedDate: null, staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-          { id: "t4", name: "Verify employment", startDate: null, completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-2",
-        name: "Property Tour & Selection",
-        leaseProspectStage: "Scheduled Intro call",
-        startedOn: "01/08/2026",
-        status: "In Progress",
-        tasks: [
-          { id: "t5", name: "Schedule property tour", startDate: "01/08/2026", completedDate: "01/08/2026", staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t6", name: "Conduct property showing", startDate: "01/09/2026", completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t7", name: "Collect tour feedback", startDate: null, completedDate: null, staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-7",
-        name: "Income & Employment Verification",
-        leaseProspectStage: "Working",
-        startedOn: "01/12/2026",
-        status: "In Progress",
-        tasks: [
-          { id: "t20", name: "Request pay stubs", startDate: "01/12/2026", completedDate: "01/12/2026", staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t21", name: "Contact employer HR", startDate: "01/13/2026", completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t22", name: "Calculate income-to-rent ratio", startDate: null, completedDate: null, staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-8",
-        name: "Background Check Process",
-        leaseProspectStage: "Under review",
-        startedOn: "01/14/2026",
-        status: "In Progress",
-        tasks: [
-          { id: "t23", name: "Run criminal background check", startDate: "01/14/2026", completedDate: "01/14/2026", staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-          { id: "t24", name: "Check eviction history", startDate: "01/15/2026", completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t25", name: "Compile screening report", startDate: null, completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-9",
-        name: "Rental History Verification",
-        leaseProspectStage: "Attempting to contact",
-        startedOn: "01/11/2026",
-        status: "In Progress",
-        tasks: [
-          { id: "t26", name: "Contact current landlord", startDate: "01/11/2026", completedDate: "01/11/2026", staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t27", name: "Contact previous landlord", startDate: "01/12/2026", completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-10",
-        name: "Pet Screening",
-        leaseProspectStage: "Working",
-        startedOn: "01/15/2026",
-        status: "In Progress",
-        tasks: [
-          { id: "t28", name: "Collect pet documentation", startDate: "01/15/2026", completedDate: null, staffName: "Mike Johnson", staffEmail: "mike.johnson@heropm.com" },
-          { id: "t29", name: "Verify pet breed and weight", startDate: null, completedDate: null, staffName: "Mike Johnson", staffEmail: "mike.johnson@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-11",
-        name: "Co-Signer Evaluation",
-        leaseProspectStage: "Under review",
-        startedOn: "01/16/2026",
-        status: "In Progress",
-        tasks: [
-          { id: "t30", name: "Request co-signer application", startDate: "01/16/2026", completedDate: null, staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-          { id: "t31", name: "Run co-signer credit check", startDate: null, completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-        ],
-      },
-    ],
-    upcoming: [
-      {
-        id: "proc-3",
-        name: "Lease Preparation",
-        leaseProspectStage: "Closing",
-        status: "Upcoming",
-        tasks: [
-          { id: "t8", name: "Prepare lease agreement", startDate: null, completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t9", name: "Review lease terms with prospect", startDate: null, completedDate: null, staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-          { id: "t10", name: "Collect security deposit", startDate: null, completedDate: null, staffName: "Laura Taylor", staffEmail: "laura.taylor@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-4",
-        name: "Move-In Coordination",
-        leaseProspectStage: "New client",
-        status: "Upcoming",
-        tasks: [
-          { id: "t11", name: "Schedule move-in inspection", startDate: null, completedDate: null, staffName: "Mike Johnson", staffEmail: "mike.johnson@heropm.com" },
-          { id: "t12", name: "Prepare welcome package", startDate: null, completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t13", name: "Set up tenant portal access", startDate: null, completedDate: null, staffName: "Michael Chen", staffEmail: "michael.chen@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-12",
-        name: "Utility Transfer Setup",
-        leaseProspectStage: "New client",
-        status: "Upcoming",
-        tasks: [
-          { id: "t32", name: "Provide utility transfer instructions", startDate: null, completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t33", name: "Verify utility account setup", startDate: null, completedDate: null, staffName: "Mike Johnson", staffEmail: "mike.johnson@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-13",
-        name: "Renter's Insurance Verification",
-        leaseProspectStage: "Closing",
-        status: "Upcoming",
-        tasks: [
-          { id: "t34", name: "Request proof of renter's insurance", startDate: null, completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t35", name: "Verify coverage meets requirements", startDate: null, completedDate: null, staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-14",
-        name: "Key and Access Distribution",
-        leaseProspectStage: "New client",
-        status: "Upcoming",
-        tasks: [
-          { id: "t36", name: "Prepare key sets", startDate: null, completedDate: null, staffName: "Mike Johnson", staffEmail: "mike.johnson@heropm.com" },
-          { id: "t37", name: "Program access codes", startDate: null, completedDate: null, staffName: "Michael Chen", staffEmail: "michael.chen@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-15",
-        name: "Parking Assignment",
-        leaseProspectStage: "New client",
-        status: "Upcoming",
-        tasks: [
-          { id: "t38", name: "Assign parking space", startDate: null, completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t39", name: "Issue parking permit", startDate: null, completedDate: null, staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-        ],
-      },
-    ],
-    completed: [
-      {
-        id: "proc-5",
-        name: "Initial Contact & Qualification",
-        leaseProspectStage: "New lead",
-        startedOn: "01/02/2026",
-        completedOn: "01/05/2026",
-        status: "Completed",
-        tasks: [
-          { id: "t14", name: "Send welcome email", startDate: "01/02/2026", completedDate: "01/02/2026", staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-          { id: "t15", name: "Conduct initial phone screening", startDate: "01/03/2026", completedDate: "01/03/2026", staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t16", name: "Collect rental requirements", startDate: "01/04/2026", completedDate: "01/05/2026", staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-6",
-        name: "Document Collection",
-        leaseProspectStage: "Attempting to contact",
-        startedOn: "01/05/2026",
-        completedOn: "01/08/2026",
-        status: "Completed",
-        tasks: [
-          { id: "t17", name: "Request proof of income", startDate: "01/05/2026", completedDate: "01/05/2026", staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t18", name: "Request ID documents", startDate: "01/06/2026", completedDate: "01/06/2026", staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t19", name: "Verify documents received", startDate: "01/07/2026", completedDate: "01/08/2026", staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-16",
-        name: "Inquiry Response",
-        leaseProspectStage: "New lead",
-        startedOn: "12/28/2025",
-        completedOn: "12/30/2025",
-        status: "Completed",
-        tasks: [
-          { id: "t40", name: "Respond to initial inquiry", startDate: "12/28/2025", completedDate: "12/28/2025", staffName: "Sarah Johnson", staffEmail: "sarah.johnson@heropm.com" },
-          { id: "t41", name: "Send property details", startDate: "12/29/2025", completedDate: "12/30/2025", staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-17",
-        name: "Pre-Qualification Check",
-        leaseProspectStage: "New lead",
-        startedOn: "12/30/2025",
-        completedOn: "01/01/2026",
-        status: "Completed",
-        tasks: [
-          { id: "t42", name: "Verify basic eligibility", startDate: "12/30/2025", completedDate: "12/30/2025", staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-          { id: "t43", name: "Confirm income threshold met", startDate: "12/31/2025", completedDate: "01/01/2026", staffName: "Nina Patel", staffEmail: "nina.patel@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-18",
-        name: "CRM Lead Entry",
-        leaseProspectStage: "New lead",
-        startedOn: "12/26/2025",
-        completedOn: "12/26/2025",
-        status: "Completed",
-        tasks: [
-          { id: "t44", name: "Create prospect record", startDate: "12/26/2025", completedDate: "12/26/2025", staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-          { id: "t45", name: "Assign to leasing agent", startDate: "12/26/2025", completedDate: "12/26/2025", staffName: "Emily Davis", staffEmail: "emily.davis@heropm.com" },
-        ],
-      },
-      {
-        id: "proc-19",
-        name: "Preferred Property Matching",
-        leaseProspectStage: "Attempting to contact",
-        startedOn: "12/27/2025",
-        completedOn: "12/29/2025",
-        status: "Completed",
-        tasks: [
-          { id: "t46", name: "Analyze preferences", startDate: "12/27/2025", completedDate: "12/27/2025", staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-          { id: "t47", name: "Match available units", startDate: "12/28/2025", completedDate: "12/29/2025", staffName: "Richard Surovi", staffEmail: "richard.surovi@heropm.com" },
-        ],
-      },
-    ],
-  }
-
-  const prospectAuditLogs = [
-    {
-      id: "1",
-      dateTime: "Jan 18, 2026 – 10:42 AM",
-      user: "Sarah M",
-      userRole: "CSR",
-      actionType: "Updated",
-      entity: "Prospect Profile",
-      description: "Updated primary phone number from (555) 111-2222 to (555) 123-4567",
-      source: "Web App",
-    },
-    {
-      id: "2",
-      dateTime: "Jan 17, 2026 – 3:15 PM",
-      user: "System",
-      userRole: "Automation",
-      actionType: "Status Changed",
-      entity: "Prospect Profile",
-      description: "Prospect moved from New Lead to Working stage",
-      source: "System Automation",
-    },
-    {
-      id: "3",
-      dateTime: "Jan 16, 2026 – 11:30 AM",
-      user: "Mike D",
-      userRole: "Property Manager",
-      actionType: "Created",
-      entity: "Attachments",
-      description: "Uploaded proof of income document",
-      source: "Web App",
-    },
-    {
-      id: "4",
-      dateTime: "Jan 15, 2026 – 2:45 PM",
-      user: "Nina P",
-      userRole: "Admin",
-      actionType: "Updated",
-      entity: "Application",
-      description: "Updated rental application with co-signer information",
-      source: "Web App",
-    },
-    {
-      id: "5",
-      dateTime: "Jan 14, 2026 – 9:20 AM",
-      user: "Richard S",
-      userRole: "Leasing Agent",
-      actionType: "Assignment Changed",
-      entity: "Tasks",
-      description: "Reassigned task 'Schedule property tour' to Sarah M",
-      source: "Mobile App",
-    },
-    {
-      id: "6",
-      dateTime: "Jan 12, 2026 – 4:30 PM",
-      user: "Sarah M",
-      userRole: "CSR",
-      actionType: "Created",
-      entity: "Properties",
-      description: "Added property interest 'Harbor View Apartments'",
-      source: "Web App",
-    },
-    {
-      id: "7",
-      dateTime: "Jan 10, 2026 – 10:15 AM",
-      user: "Mike D",
-      userRole: "Property Manager",
-      actionType: "Updated",
-      entity: "Notes",
-      description: "Edited note regarding move-in date preferences",
-      source: "Web App",
-    },
-    {
-      id: "8",
-      dateTime: "Jan 8, 2026 – 1:00 PM",
-      user: "Nina P",
-      userRole: "Admin",
-      actionType: "Deleted",
-      entity: "Attachments",
-      description: "Removed duplicate ID document upload",
-      source: "Web App",
-    },
-    {
-      id: "9",
-      dateTime: "Jan 5, 2026 – 11:45 AM",
-      user: "System",
-      userRole: "Automation",
-      actionType: "Viewed",
-      entity: "Prospect Profile",
-      description: "Prospect profile accessed via tenant portal",
-      source: "System Automation",
-    },
-    {
-      id: "10",
-      dateTime: "Jan 3, 2026 – 9:00 AM",
-      user: "Richard S",
-      userRole: "Leasing Agent",
-      actionType: "Created",
-      entity: "Prospect Profile",
-      description: "Prospect record created from website inquiry",
-      source: "Web App",
-    },
-    {
-      id: "11",
-      dateTime: "Jan 11, 2026 – 2:18 PM",
-      user: "Sarah M",
-      userRole: "CSR",
-      actionType: "Deleted",
-      entity: "Notes",
-      description: "Deleted note: 'Follow-up reminder for property tour'",
-      source: "Web App",
-      deletedNoteContent: "Follow-up reminder for property tour scheduled for next Tuesday at 3 PM. Prospect mentioned they are also considering two other properties in the downtown area. Need to highlight our amenities and competitive pricing. Contact before end of day Friday to confirm.",
-      deletedBy: "Sarah M",
-      deletedOn: "Jan 11, 2026 – 2:18 PM",
-    },
-    {
-      id: "12",
-      dateTime: "Jan 6, 2026 – 9:45 AM",
-      user: "Richard S",
-      userRole: "Leasing Agent",
-      actionType: "Deleted",
-      entity: "Notes",
-      description: "Deleted note: 'Initial contact notes - incorrect information'",
-      source: "Mobile App",
-      deletedNoteContent: "Initial contact via phone. Prospect expressed interest in 2BR units at Harbor View. Budget mentioned was $2,500/month but later corrected to $2,200/month in subsequent call. Pet owner - has one small dog (under 25 lbs). Current lease ends March 2026. Prefers ground floor unit if available.",
-      deletedBy: "Richard S",
-      deletedOn: "Jan 6, 2026 – 9:45 AM",
-    },
-    {
-      id: "13",
-      dateTime: "Dec 28, 2025 – 4:30 PM",
-      user: "Mike D",
-      userRole: "Property Manager",
-      actionType: "Deleted",
-      entity: "Notes",
-      description: "Deleted note: 'Duplicate entry - income verification'",
-      source: "Web App",
-      deletedNoteContent: "Income verification received. Prospect provided pay stubs showing monthly income of $6,800. Debt-to-income ratio appears favorable. Note: This was a duplicate entry - original note already captured this information with additional details about employment history.",
-      deletedBy: "Mike D",
-      deletedOn: "Dec 28, 2025 – 4:30 PM",
-    },
-  ]
-
-  // Units per property for task creation
-  const prospectPropertyUnits: Record<string, string[]> = {
-    "Harbor View Complex": ["Unit 101", "Unit 102", "Unit 201", "Unit 202", "Unit 301", "Unit 302"],
-    "Downtown Lofts": ["Unit 301", "Unit 302", "Unit 401", "Unit 402"],
-    "Sunset Apartments": ["Unit A", "Unit B", "Unit C"],
-    "Skyline Towers": [], // Single unit - Unit 2401 already specified
-  }
-
-  // Staff members for task assignment
-  const prospectTaskStaffMembers = [
-    { id: "1", name: "Nina Patel", role: "Leasing Agent" },
-    { id: "2", name: "John Smith", role: "CSR" },
-    { id: "3", name: "Sarah Johnson", role: "Property Manager" },
-    { id: "4", name: "Michael Chen", role: "Maintenance Coordinator" },
-    { id: "5", name: "Emily Davis", role: "CSR" },
-    { id: "6", name: "Richard Surovi", role: "Leasing Agent" },
-  ]
+  const prospectAuditLogs = prospectAuditLogsMock
+  const prospectPropertyUnits = prospectPropertyUnitsMock
+  const prospectTaskStaffMembers = prospectTaskStaffMembersMock
 
   // State for task modal fields
   const [taskProperty, setTaskProperty] = useState("")
@@ -1842,7 +858,7 @@ export function TenantApplicationDetailView({
   // Merged code starts here, replacing the original structure with the new layout
   return (
     <>
-    <div className="px-6 pb-6 pt-2 overflow-auto">
+      <div className="px-6 pb-6 pt-2 overflow-auto">
         {/* Back Button */}
         <button onClick={onBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-2">
           <ArrowLeft className="h-4 w-4 text-[rgba(10,10,10,1)]" />
@@ -1884,6 +900,14 @@ export function TenantApplicationDetailView({
                     <span className="text-muted-foreground">Source:</span>
                     <span className="text-foreground">{prospectInfo.source}</span>
                   </div>
+                  {/* Add Field Button */}
+                  <button
+                    onClick={() => setShowAddCustomFieldModal(true)}
+                    className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 transition-colors border border-teal-600 hover:border-teal-700 rounded-md px-2 py-1"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Field</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2018,7 +1042,17 @@ export function TenantApplicationDetailView({
                       </div>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>{stage}</p>
+                      <p className="font-medium">{stage}</p>
+                      {STAGE_TASKS[index] && STAGE_TASKS[index].length > 0 && (
+                        <div className="flex flex-col gap-0.5 mt-0.5">
+                          {STAGE_TASKS[index].map((task, taskIdx) => (
+                            <p key={taskIdx} className="text-xs" style={{ color: "rgba(255,255,255,0.85)" }}>
+                              {task.type === "reason" ? "Reason" : "Task"}:{" "}
+                              {task.text}
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -2048,203 +1082,151 @@ export function TenantApplicationDetailView({
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
-        {/* Bar 1: Pending Communications */}
-        <button
-          type="button"
-          onClick={() => {
-            setActiveMainTab("overview")
-            setTimeout(() => {
-              const activitySection = document.getElementById("activity-section")
-              if (activitySection) activitySection.scrollIntoView({ behavior: "smooth" })
-            }, 100)
-          }}
-          className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
-        >
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-800">Pending Communications</span>
-          </div>
-          <div className="flex items-center">
-            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-              <Mail className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                {"Unread Emails: "}
-                <span className="font-semibold">2</span>
-              </span>
+          {/* Bar 1: Pending Communications */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMainTab("overview")
+              setTimeout(() => {
+                const activitySection = document.getElementById("activity-section")
+                if (activitySection) activitySection.scrollIntoView({ behavior: "smooth" })
+              }, 100)
+            }}
+            className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-semibold text-amber-800">Pending Communications</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-              <MessageSquare className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                {"Unread SMS: "}
-                <span className="font-semibold">1</span>
-              </span>
+            <div className="flex items-center">
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <Mail className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Unread Emails: "}
+                  <span className="font-semibold">2</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <MessageSquare className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Unread SMS: "}
+                  <span className="font-semibold">1</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3">
+                <Phone className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Pending Calls: "}
+                  <span className="font-semibold">3</span>
+                </span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 px-3">
-              <Phone className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                {"Pending Calls: "}
-                <span className="font-semibold">3</span>
-              </span>
-            </div>
-          </div>
-        </button>
+          </button>
 
-        {/* Bar 2: Pending Actions */}
-        <div className="flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-800">Pending Actions</span>
+          {/* Bar 2: Pending Actions */}
+          <div className="flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-semibold text-amber-800">Pending Actions</span>
+            </div>
+            <div className="flex items-center">
+              <button
+                type="button"
+                onClick={() => setShowMissingInfoModal(true)}
+                className="flex items-center gap-1.5 px-3 border-r border-amber-300 hover:underline"
+              >
+                <FileText className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Missing Fields: "}
+                  <span className="font-semibold">2</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMissingInfoModal(true)}
+                className="flex items-center gap-1.5 px-3 hover:underline"
+              >
+                <Upload className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Missing Documents: "}
+                  <span className="font-semibold">1</span>
+                </span>
+              </button>
+            </div>
           </div>
-          <div className="flex items-center">
-            <button
-              type="button"
-              onClick={() => {
-                setShowMissingInfoModal?.(true)
-              }}
-              className="flex items-center gap-1.5 px-3 border-r border-amber-300 hover:underline"
-            >
-              <FileText className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                {"Missing Fields: "}
-                <span className="font-semibold">2</span>
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowMissingInfoModal?.(true)
-              }}
-              className="flex items-center gap-1.5 px-3 hover:underline"
-            >
-              <Upload className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                {"Missing Documents: "}
-                <span className="font-semibold">1</span>
-              </span>
-            </button>
-          </div>
+
+          {/* Bar 3: Task Overview */}
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMainTab("overview")
+              setTimeout(() => {
+                const tasksSection = document.getElementById("tasks-section")
+                if (tasksSection) tasksSection.scrollIntoView({ behavior: "smooth" })
+              }, 100)
+            }}
+            className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-semibold text-amber-800">Task Overview</span>
+            </div>
+            <div className="flex items-center">
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <ListTodo className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Pending Tasks: "}
+                  <span className="font-semibold">{prospectTasks.filter(t => t.status === "Pending" && !t.processName).length}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <RotateCcw className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-sm text-amber-800">
+                  {"Pending Processes: "}
+                  <span className="font-semibold">{prospectTasks.filter(t => t.status === "Pending" && !!t.processName).length}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
+                <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                <span className="text-sm text-red-700">
+                  {"Overdue Tasks: "}
+                  <span className="font-semibold">{prospectTasks.filter(t => t.isOverdue && !t.processName).length}</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3">
+                <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                <span className="text-sm text-red-700">
+                  {"Overdue Processes: "}
+                  <span className="font-semibold">{prospectTasks.filter(t => t.isOverdue && !!t.processName).length}</span>
+                </span>
+              </div>
+            </div>
+          </button>
         </div>
-
-        {/* Bar 3: Task Overview */}
-        <button
-          type="button"
-          onClick={() => {
-            setActiveMainTab("overview")
-            setTimeout(() => {
-              const tasksSection = document.getElementById("tasks-section")
-              if (tasksSection) tasksSection.scrollIntoView({ behavior: "smooth" })
-            }, 100)
-          }}
-          className="w-full flex items-center justify-between px-5 py-2.5 rounded-lg border border-amber-300 bg-amber-50/80 hover:bg-amber-100/60 transition-colors text-left"
-        >
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <span className="text-sm font-semibold text-amber-800">Task Overview</span>
-          </div>
-          <div className="flex items-center">
-            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-              <ListTodo className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                {"Pending Tasks: "}
-                <span className="font-semibold">{prospectTasks.filter(t => t.status === "Pending" && !t.processName).length}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-              <RotateCcw className="h-3.5 w-3.5 text-amber-600" />
-              <span className="text-sm text-amber-800">
-                {"Pending Processes: "}
-                <span className="font-semibold">{prospectTasks.filter(t => t.status === "Pending" && !!t.processName).length}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 border-r border-amber-300">
-              <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-              <span className="text-sm text-red-700">
-                {"Overdue Tasks: "}
-                <span className="font-semibold">{prospectTasks.filter(t => t.isOverdue && !t.processName).length}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3">
-              <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-              <span className="text-sm text-red-700">
-                {"Overdue Processes: "}
-                <span className="font-semibold">{prospectTasks.filter(t => t.isOverdue && !!t.processName).length}</span>
-              </span>
-            </div>
-          </div>
-        </button>
-        </div>
-
         <div className="mb-6">
-          <div className="flex border-b border-border">
-            <button
-              onClick={() => setActiveMainTab("overview")}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeMainTab === "overview"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => setActiveMainTab("property")} // Changed from "properties" to "property"
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                activeMainTab === "property" // Changed from "properties" to "property"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Property Information
-              <Badge variant="secondary" className="text-xs">
-                {interestedProperties.length}
-              </Badge>
-            </button>
-            <button
-              onClick={() => setActiveMainTab("communications")}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                activeMainTab === "communications"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Communications
-            </button>
-            <button
-              onClick={() => setActiveMainTab("processes")}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                activeMainTab === "processes"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Processes
-              <Badge variant="secondary" className="text-xs">
-                {leaseProspectProcesses.inProgress.length + leaseProspectProcesses.upcoming.length + leaseProspectProcesses.completed.length}
-              </Badge>
-            </button>
-            <button
-              onClick={() => setActiveMainTab("tasks-docs")}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                activeMainTab === "tasks-docs"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Documents
-              <Badge variant="secondary" className="text-xs">
-                {prospectDocuments.length}
-              </Badge>
-            </button>
-            <button
-              onClick={() => setActiveMainTab("audit-log")}
-              className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                activeMainTab === "audit-log"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Audit Log
-            </button>
+          <div className="flex items-stretch border-b border-border">
+            {[
+              { id: "overview", label: "Overview" },
+              { id: "property", label: "Property Information", count: interestedProperties.length },
+              { id: "communications", label: "Communications" },
+              { id: "processes", label: "Processes", count: leaseProspectProcesses.inProgress.length + leaseProspectProcesses.upcoming.length + leaseProspectProcesses.completed.length },
+              { id: "tasks-docs", label: "Documents", count: prospectDocuments.length },
+              { id: "audit-log", label: "Audit Log" },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveMainTab(tab.id as typeof activeMainTab)}
+                className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${activeMainTab === tab.id
+                  ? "border border-success text-foreground bg-background"
+                  : "border border-transparent text-muted-foreground hover:text-foreground"
+                  }`}
+              >
+                {tab.label}
+                {tab.count !== undefined && (
+                  <span className="text-xs text-muted-foreground">{tab.count}</span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -2264,118 +1246,118 @@ export function TenantApplicationDetailView({
               </div>
               <div className="border rounded-lg overflow-hidden">
                 <div className="max-h-[280px] overflow-y-auto">
-                <Table>
-                  <TableHeader className="sticky top-0 z-10 bg-white">
-                    <TableRow className="bg-muted/30">
-                      <TableHead className="font-medium">Task</TableHead>
-                      <TableHead className="font-medium">Related Entity</TableHead>
-                      <TableHead className="font-medium">Due Date</TableHead>
-                      <TableHead className="font-medium">Priority</TableHead>
-                      <TableHead className="font-medium">Status</TableHead>
-                      <TableHead className="font-medium">Assigned To</TableHead>
-                      <TableHead className="font-medium text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {prospectTasks.map((task) => (
-                      <TableRow key={task.id} className="hover:bg-muted/20">
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <span className="font-medium text-foreground">{task.title}</span>
-                            {task.processName && (
-                              <div className="flex items-center gap-1">
-                                <Workflow className="h-3 w-3 text-teal-600" />
-                                <span className="text-xs text-teal-600">{task.processName}</span>
-                              </div>
-                            )}
-                            {task.autoCreated && (
-                              <span className="text-xs text-muted-foreground">Auto-created</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground">
-                            {task.relatedEntityType}: {task.relatedEntityName}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                              {task.dueDate}
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-white">
+                      <TableRow className="bg-muted/30">
+                        <TableHead className="font-medium">Task</TableHead>
+                        <TableHead className="font-medium">Related Entity</TableHead>
+                        <TableHead className="font-medium">Due Date</TableHead>
+                        <TableHead className="font-medium">Priority</TableHead>
+                        <TableHead className="font-medium">Status</TableHead>
+                        <TableHead className="font-medium">Assigned To</TableHead>
+                        <TableHead className="font-medium text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {prospectTasks.map((task) => (
+                        <TableRow key={task.id} className="hover:bg-muted/20">
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <span className="font-medium text-foreground">{task.title}</span>
+                              {task.processName && (
+                                <div className="flex items-center gap-1">
+                                  <Workflow className="h-3 w-3 text-teal-600" />
+                                  <span className="text-xs text-teal-600">{task.processName}</span>
+                                </div>
+                              )}
+                              {task.autoCreated && (
+                                <span className="text-xs text-muted-foreground">Auto-created</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">
+                              {task.relatedEntityType}: {task.relatedEntityName}
                             </span>
-                            {task.isOverdue && (
-                              <span className="text-xs text-red-500">(Overdue)</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              task.priority === "High"
-                                ? "bg-red-50 text-red-700 border-red-200"
-                                : task.priority === "Medium"
-                                  ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                  : "bg-gray-50 text-gray-600 border-gray-200"
-                            }
-                          >
-                            {task.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={
-                              task.status === "In Progress"
-                                ? "bg-teal-50 text-teal-700 border-teal-200"
-                                : task.status === "Pending"
-                                  ? "bg-yellow-50 text-yellow-600 border-yellow-200"
-                                  : task.status === "Skipped"
-                                    ? "bg-orange-50 text-orange-600 border-orange-200"
-                                    : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            }
-                          >
-                            {task.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-muted-foreground">{task.assignee}</span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              title="View Task"
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
+                                {task.dueDate}
+                              </span>
+                              {task.isOverdue && (
+                                <span className="text-xs text-red-500">(Overdue)</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                task.priority === "High"
+                                  ? "bg-red-50 text-red-700 border-red-200"
+                                  : task.priority === "Medium"
+                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                    : "bg-gray-50 text-gray-600 border-gray-200"
+                              }
                             >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-                              title="Edit Task"
+                              {task.priority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={
+                                task.status === "In Progress"
+                                  ? "bg-teal-50 text-teal-700 border-teal-200"
+                                  : task.status === "Pending"
+                                    ? "bg-yellow-50 text-yellow-600 border-yellow-200"
+                                    : task.status === "Skipped"
+                                      ? "bg-orange-50 text-orange-600 border-orange-200"
+                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                              }
                             >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            {task.status !== "Completed" && task.status !== "Skipped" && (
+                              {task.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm text-muted-foreground">{task.assignee}</span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-success"
-                                title="Mark Complete"
-                                onClick={() => handleMarkTaskComplete(task.id)}
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                                title="View Task"
                               >
-                                <Check className="h-4 w-4" />
+                                <Eye className="h-4 w-4" />
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
+                                title="Edit Task"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              {task.status !== "Completed" && task.status !== "Skipped" && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-success"
+                                  title="Mark Complete"
+                                  onClick={() => handleMarkTaskComplete(task.id)}
+                                >
+                                  <Check className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               </div>
 
@@ -2393,56 +1375,56 @@ export function TenantApplicationDetailView({
                     .filter((a) => pinnedActivities.includes(a.id))
                     .filter((a) => activityChatTab === "private" ? !a.isGroupChat : a.isGroupChat === true)
                     .map((activity) => {
-                    const { icon: Icon, color } = getActivityIcon(activity.type)
-                    return (
-                      <div
-                        key={`pinned-${activity.id}`}
-                        className="flex items-start gap-3 p-3 rounded-lg border border-warning/20 bg-warning/5"
-                      >
-                        <div className="relative">
-                          <Avatar className="h-10 w-10 bg-primary/10">
-                            <AvatarFallback className="text-sm font-medium text-primary">
-                              {activity.userInitials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div
-                            className={`absolute -bottom-1 -right-1 w-5 h-5 ${color} rounded-full flex items-center justify-center`}
-                          >
-                            <Icon className="h-3 w-3 text-white" />
+                      const { icon: Icon, color } = getActivityIcon(activity.type)
+                      return (
+                        <div
+                          key={`pinned-${activity.id}`}
+                          className="flex items-start gap-3 p-3 rounded-lg border border-warning/20 bg-warning/5"
+                        >
+                          <div className="relative">
+                            <Avatar className="h-10 w-10 bg-primary/10">
+                              <AvatarFallback className="text-sm font-medium text-primary">
+                                {activity.userInitials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div
+                              className={`absolute -bottom-1 -right-1 w-5 h-5 ${color} rounded-full flex items-center justify-center`}
+                            >
+                              <Icon className="h-3 w-3 text-white" />
+                            </div>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm">
+                              <span className="font-medium">{activity.user}</span>
+                              {activity.phone && <span className="text-muted-foreground"> {activity.phone}</span>}
+                              <span className="text-muted-foreground"> {activity.action} </span>
+                              {activity.target && (
+                                <>
+                                  <span className="font-medium text-primary">{activity.target}</span>
+                                  {activity.targetPhone && (
+                                    <span className="text-muted-foreground"> {activity.targetPhone}</span>
+                                  )}
+                                </>
+                              )}
+                            </p>
+                            {activity.message && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{activity.message}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.timestamp}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 text-warning"
+                              onClick={() => togglePin(activity.id)}
+                            >
+                              <Pin className="h-3 w-3 fill-current" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm">
-                            <span className="font-medium">{activity.user}</span>
-                            {activity.phone && <span className="text-muted-foreground"> {activity.phone}</span>}
-                            <span className="text-muted-foreground"> {activity.action} </span>
-                            {activity.target && (
-                              <>
-                                <span className="font-medium text-primary">{activity.target}</span>
-                                {activity.targetPhone && (
-                                  <span className="text-muted-foreground"> {activity.targetPhone}</span>
-                                )}
-                              </>
-                            )}
-                          </p>
-                          {activity.message && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{activity.message}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.timestamp}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-warning"
-                            onClick={() => togglePin(activity.id)}
-                          >
-                            <Pin className="h-3 w-3 fill-current" />
-                          </Button>
-                        </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
                 </div>
               )}
             </div>
@@ -2451,17 +1433,16 @@ export function TenantApplicationDetailView({
             <div className="rounded-lg border border-border bg-card">
               <div className="p-4">
                 <h3 className="font-semibold mb-3">Activity</h3>
-                
+
                 {/* Private Chat / Group Chat Sub-tabs */}
                 <div className="flex items-center gap-1 mb-4 border-b border-slate-200">
                   <button
                     type="button"
                     onClick={() => setActivityChatTab("private")}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                      activityChatTab === "private"
-                        ? "border-teal-600 text-teal-600"
-                        : "border-transparent text-slate-500 hover:text-slate-700"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activityChatTab === "private"
+                      ? "border-teal-600 text-teal-600"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      }`}
                   >
                     Private Chat
                     {ACTIVITIES_DATA.some(a => !a.isGroupChat && !a.isRead) && (
@@ -2471,11 +1452,10 @@ export function TenantApplicationDetailView({
                   <button
                     type="button"
                     onClick={() => setActivityChatTab("group")}
-                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                      activityChatTab === "group"
-                        ? "border-teal-600 text-teal-600"
-                        : "border-transparent text-slate-500 hover:text-slate-700"
-                    }`}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activityChatTab === "group"
+                      ? "border-teal-600 text-teal-600"
+                      : "border-transparent text-slate-500 hover:text-slate-700"
+                      }`}
                   >
                     Group Chat
                     {ACTIVITIES_DATA.some(a => a.isGroupChat && (a.unreadCount ?? 0) > 0) && (
@@ -2483,16 +1463,15 @@ export function TenantApplicationDetailView({
                     )}
                   </button>
                 </div>
-                
+
                 {/* Summary Tiles */}
                 <div className="flex items-center gap-2 mb-4">
                   {/* All Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "all"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "all"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("all")}
                   >
                     <Bell className={`h-4 w-4 ${activityTileFilter === "all" ? "text-white" : "text-slate-500"}`} />
@@ -2508,11 +1487,10 @@ export function TenantApplicationDetailView({
 
                   {/* Emails Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "emails"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "emails"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("emails")}
                   >
                     <Mail className={`h-4 w-4 ${activityTileFilter === "emails" ? "text-white" : "text-slate-500"}`} />
@@ -2528,11 +1506,10 @@ export function TenantApplicationDetailView({
 
                   {/* SMS Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "sms"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "sms"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("sms")}
                   >
                     <MessageSquare className={`h-4 w-4 ${activityTileFilter === "sms" ? "text-white" : "text-slate-500"}`} />
@@ -2548,11 +1525,10 @@ export function TenantApplicationDetailView({
 
                   {/* Notes Tile */}
                   <div
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${
-                      activityTileFilter === "notes"
-                        ? "bg-slate-800 text-white"
-                        : "bg-white border border-slate-200 hover:border-slate-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-all ${activityTileFilter === "notes"
+                      ? "bg-slate-800 text-white"
+                      : "bg-white border border-slate-200 hover:border-slate-300"
+                      }`}
                     onClick={() => setActivityTileFilter("notes")}
                   >
                     <FileText className={`h-4 w-4 ${activityTileFilter === "notes" ? "text-white" : "text-slate-500"}`} />
@@ -2566,7 +1542,7 @@ export function TenantApplicationDetailView({
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Radio Filters */}
                 <div className="flex items-center gap-4 mb-4">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -2601,107 +1577,107 @@ export function TenantApplicationDetailView({
                   </label>
                 </div>
               </div>
-              
+
               <div className="max-h-[320px] overflow-y-auto">
                 {ACTIVITIES_DATA
                   .filter((activity) => {
                     // Filter by chat tab
                     if (activityChatTab === "private" && activity.isGroupChat) return false
                     if (activityChatTab === "group" && !activity.isGroupChat) return false
-                    
+
                     // Filter by tile selection
                     if (activityTileFilter === "emails" && activity.type !== "email") return false
                     if (activityTileFilter === "sms" && activity.type !== "sms") return false
                     if (activityTileFilter === "notes" && activity.type !== "note" && !activity.isNote) return false
-                    
+
                     // Filter by radio selection
                     if (activityRadioFilter === "unread" && activity.isRead) return false
-                    
+
                     return true
                   })
                   .map((activity) => {
-                  const { icon: Icon, color } = getActivityIcon(activity.type)
-                  const isExpanded = expandedActivityId === activity.id
-                  const isPinned = pinnedActivities.includes(activity.id)
+                    const { icon: Icon, color } = getActivityIcon(activity.type)
+                    const isExpanded = expandedActivityId === activity.id
+                    const isPinned = pinnedActivities.includes(activity.id)
 
-                  return (
-                    <div
-                      key={activity.id}
-                      className={`border-b border-border last:border-b-0 ${!activity.isRead ? "bg-info/5" : ""}`}
-                    >
+                    return (
                       <div
-                        className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/30"
-                        onClick={() => handleActivityClick(activity)}
+                        key={activity.id}
+                        className={`border-b border-border last:border-b-0 ${!activity.isRead ? "bg-info/5" : ""}`}
                       >
-                        <div className="relative flex-shrink-0">
-                          <Avatar className="h-10 w-10 bg-primary/10">
-                            <AvatarFallback className="text-sm font-medium text-primary">
-                              {activity.userInitials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div
-                            className={`absolute -bottom-1 -right-1 w-5 h-5 ${color} rounded-full flex items-center justify-center`}
-                          >
-                            <Icon className="h-3 w-3 text-white" />
+                        <div
+                          className="flex items-start gap-3 p-4 cursor-pointer hover:bg-muted/30"
+                          onClick={() => handleActivityClick(activity)}
+                        >
+                          <div className="relative flex-shrink-0">
+                            <Avatar className="h-10 w-10 bg-primary/10">
+                              <AvatarFallback className="text-sm font-medium text-primary">
+                                {activity.userInitials}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div
+                              className={`absolute -bottom-1 -right-1 w-5 h-5 ${color} rounded-full flex items-center justify-center`}
+                            >
+                              <Icon className="h-3 w-3 text-white" />
+                            </div>
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm">
+                              <span className="font-medium">{activity.user}</span>
+                              {activity.phone && <span className="text-muted-foreground"> {activity.phone}</span>}
+                              <span className={`${activity.isNote ? "text-warning" : "text-muted-foreground"}`}>
+                                {" "}
+                                {activity.action}{" "}
+                              </span>
+                              {activity.target && (
+                                <>
+                                  <span className="font-medium text-primary">{activity.target}</span>
+                                  {activity.targetPhone && (
+                                    <span className="text-muted-foreground"> {activity.targetPhone}</span>
+                                  )}
+                                </>
+                              )}
+                            </p>
+                            {activity.isGroupChat && activity.groupParticipants && (
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {activity.groupParticipants.length <= 3
+                                  ? activity.groupParticipants.join(", ")
+                                  : `${activity.groupParticipants[0]} + ${activity.groupParticipants.length - 1} others`}
+                              </p>
+                            )}
+                            {activity.message && (
+                              <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{activity.message}</p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {activity.isGroupChat && activity.unreadCount > 0 && (
+                              <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-500 text-white text-xs font-medium">
+                                {activity.unreadCount}
+                              </span>
+                            )}
+                            {!activity.isRead && !activity.isGroupChat && <div className="w-2 h-2 rounded-full bg-info" />}
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.timestamp}</span>
+                            <ChevronDown className={`h-4 w-4 text-muted-foreground ${isExpanded ? "rotate-180" : ""}`} />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-6 w-6 p-0 ${isPinned ? "text-warning" : "text-muted-foreground hover:text-warning"}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                togglePin(activity.id)
+                              }}
+                            >
+                              <Pin className={`h-3 w-3 ${isPinned ? "fill-current" : ""}`} />
+                            </Button>
                           </div>
                         </div>
 
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm">
-                            <span className="font-medium">{activity.user}</span>
-                            {activity.phone && <span className="text-muted-foreground"> {activity.phone}</span>}
-                            <span className={`${activity.isNote ? "text-warning" : "text-muted-foreground"}`}>
-                              {" "}
-                              {activity.action}{" "}
-                            </span>
-                            {activity.target && (
-                              <>
-                                <span className="font-medium text-primary">{activity.target}</span>
-                                {activity.targetPhone && (
-                                  <span className="text-muted-foreground"> {activity.targetPhone}</span>
-                                )}
-                              </>
-                            )}
-                          </p>
-                          {activity.isGroupChat && activity.groupParticipants && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {activity.groupParticipants.length <= 3
-                                ? activity.groupParticipants.join(", ")
-                                : `${activity.groupParticipants[0]} + ${activity.groupParticipants.length - 1} others`}
-                            </p>
-                          )}
-                          {activity.message && (
-                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{activity.message}</p>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {activity.isGroupChat && activity.unreadCount > 0 && (
-                            <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-green-500 text-white text-xs font-medium">
-                              {activity.unreadCount}
-                            </span>
-                          )}
-                          {!activity.isRead && !activity.isGroupChat && <div className="w-2 h-2 rounded-full bg-info" />}
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">{activity.timestamp}</span>
-                          <ChevronDown className={`h-4 w-4 text-muted-foreground ${isExpanded ? "rotate-180" : ""}`} />
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className={`h-6 w-6 p-0 ${isPinned ? "text-warning" : "text-muted-foreground hover:text-warning"}`}
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              togglePin(activity.id)
-                            }}
-                          >
-                            <Pin className={`h-3 w-3 ${isPinned ? "fill-current" : ""}`} />
-                          </Button>
-                        </div>
+                        {isExpanded && renderExpandedContent(activity)}
                       </div>
-
-                      {isExpanded && renderExpandedContent(activity)}
-                    </div>
-                  )
-                })}
+                    )
+                  })}
               </div>
             </div>
           </>
@@ -2731,9 +1707,8 @@ export function TenantApplicationDetailView({
                 {interestedProperties.map((property) => (
                   <div
                     key={property.id}
-                    className={`border rounded-lg overflow-hidden hover:border-primary/30 transition-colors relative ${
-                      finalizedPropertyId === property.id ? "border-success border-2 bg-success/5" : ""
-                    }`}
+                    className={`border rounded-lg overflow-hidden hover:border-primary/30 transition-colors relative ${finalizedPropertyId === property.id ? "border-success border-2 bg-success/5" : ""
+                      }`}
                   >
                     {finalizedPropertyId === property.id && (
                       <div className="absolute top-3 left-3 z-10">
@@ -2754,37 +1729,42 @@ export function TenantApplicationDetailView({
                           }}
                           onClick={() => onNavigateToProperty?.(property.name)}
                         />
-                        <div className="px-2 py-2 border-r border-border flex flex-col gap-1.5">
+                        <div className="px-2 py-2 border-r border-border flex flex-col gap-1.5 flex-1">
                           {[
                             { label: "Application Link", href: "#" },
                             { label: "Showing Link", href: "#" },
                             { label: "Matterport Scan", href: "#" },
                             { label: "Rental Comps", href: "#" },
-                            { label: "Access Information", href: "#" },
                           ].map(({ label, href }) => (
-                            <div
-                              key={label}
-                              className="flex items-center justify-between gap-1 px-2 py-1.5 rounded-md border border-border hover:border-teal-300 hover:bg-teal-50/40 transition-colors"
-                            >
+                            <div key={label} className="flex items-center rounded-md border border-border transition-colors flex-1">
                               <a
                                 href={href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 hover:underline transition-colors text-xs text-[rgba(1,96,209,1)] min-w-0 truncate"
+                                onClick={(e) => {
+                                  if (href === "#") e.preventDefault()
+                                }}
+                                className="flex items-center gap-1.5 px-2 py-1.5 text-xs text-info hover:underline flex-1 min-w-0 cursor-pointer"
                               >
                                 <ExternalLink className="h-3 w-3 shrink-0" />
-                                <span className="truncate">{label}</span>
+                                <span className="truncate text-sm font-semibold">{label}</span>
                               </a>
                               <button
                                 type="button"
-                                onClick={() => handleShareLink(label)}
-                                className="p-0.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground shrink-0"
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleOpenShareDialog(label)
+                                }}
+                                className="flex items-center justify-center px-2 py-1.5 transition-colors shrink-0 cursor-pointer"
+                                style={{ color: "#228B22" }}
                                 title={`Share ${label}`}
                               >
-                                <Share2 className="h-3 w-3" />
+                                <Share2 className="h-3.5 w-3.5" />
                               </button>
                             </div>
                           ))}
+
                         </div>
                       </div>
 
@@ -2889,11 +1869,86 @@ export function TenantApplicationDetailView({
                           </div>
                         </div>
 
+                        {/* Access Information */}
+                        <div className="mt-4 border-t pt-4">
+                          <p className="text-sm font-medium text-foreground mb-3">Access Information</p>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            {/* Lockbox Code Card */}
+                            <div className="border border-border rounded-lg bg-white p-4">
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="h-4 w-4 rounded-full border-2 border-green-600 flex items-center justify-center">
+                                  <div className="h-2 w-2 rounded-full bg-green-600" />
+                                </div>
+                                <span className="text-sm font-medium text-foreground">Lockbox Code</span>
+                              </div>
+
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="flex items-center gap-3 px-3 py-2 rounded border border-border bg-white flex-1">
+                                  <span className="text-sm font-mono font-semibold text-foreground tracking-wider">{lockboxCode}</span>
+                                  <button
+                                    type="button"
+                                    onClick={handleCopyLockboxCode}
+                                    className="ml-auto text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                    {lockboxCopied ? "Copied!" : "Copy Lockbox Code"}
+                                  </button>
+                                </div>
+                                <div className="w-12 h-12 rounded border border-border bg-white flex items-center justify-center shrink-0">
+                                  <QrCode className="h-8 w-8 text-foreground" />
+                                </div>
+                              </div>
+
+                              <Button
+                                size="sm"
+                                className="w-full bg-green-500 hover:bg-green-600 text-white"
+                                onClick={() => handleOpenShareLinksDialog("lockbox")}
+                              >
+                                <Share2 className="h-3.5 w-3.5 mr-1.5" />
+                                Share Lockbox Code
+                              </Button>
+                            </div>
+
+                            {/* ShowMojo Code Card */}
+                            <div className="border border-border rounded-lg bg-white p-4">
+                              <div className="flex items-center gap-2 mb-4">
+                                <div className="h-4 w-4 rounded-full border-2 border-green-600 flex items-center justify-center">
+                                  <div className="h-2 w-2 rounded-full bg-green-600" />
+                                </div>
+                                <span className="text-sm font-medium text-foreground">ShowMojo Code</span>
+                              </div>
+
+                              <div className="mb-4 space-y-1">
+                                <p className="text-sm text-muted-foreground">Expires on Feb 23, 2026</p>
+                                <p className="text-sm text-muted-foreground">5:00 AM EST</p>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowGenerateCodeDialog(true)}
+                                  className="text-sm text-teal-600 hover:text-teal-700 font-medium mt-2 cursor-pointer"
+                                >
+                                  Generate New Code
+                                </button>
+                              </div>
+
+                              <Button
+                                size="sm"
+                                className="w-full bg-green-500 hover:bg-green-600 text-white"
+                                onClick={() => handleOpenShareLinksDialog("showmojo")}
+                              >
+                                <Share2 className="h-3.5 w-3.5 mr-1.5" />
+                                Share ShowMojo Code
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* View Property Details + Actions */}
                         <div className="mt-4 flex items-center justify-between border-t pt-4">
                           <Button
                             size="sm"
                             variant="link"
-                            className="text-primary hover:text-primary/80 p-0"
+                            className="hover:text-primary/80 p-0 text-[rgba(1,96,209,1)]"
                             onClick={() => onNavigateToProperty?.(property.name)}
                           >
                             View Property Details <ArrowRight className="h-4 w-4 ml-1" />
@@ -2953,11 +2008,10 @@ export function TenantApplicationDetailView({
               <div className="flex items-center gap-1 mb-4 border-b">
                 <button
                   onClick={() => { setCommSubTab("private"); setSelectedGroupId(null) }}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    commSubTab === "private"
-                      ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${commSubTab === "private"
+                    ? "border-teal-600 text-teal-700"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   Private
                   {(() => {
@@ -2971,11 +2025,10 @@ export function TenantApplicationDetailView({
                 </button>
                 <button
                   onClick={() => { setCommSubTab("group"); setSelectedGroupId(null) }}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    commSubTab === "group"
-                      ? "border-teal-600 text-teal-700"
-                      : "border-transparent text-slate-500 hover:text-slate-700"
-                  }`}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${commSubTab === "group"
+                    ? "border-teal-600 text-teal-700"
+                    : "border-transparent text-slate-500 hover:text-slate-700"
+                    }`}
                 >
                   Group
                   {(() => {
@@ -3012,23 +2065,21 @@ export function TenantApplicationDetailView({
 
                             return (
                               <div key={item.id} className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                                <div className={`max-w-[75%] ${
-                                  isOutgoing
-                                    ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                                    : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
-                                } p-3 shadow-sm`}>
+                                <div className={`max-w-[75%] ${isOutgoing
+                                  ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                  : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                                  } p-3 shadow-sm`}>
                                   {/* Sender & Channel Badge */}
                                   <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
                                     <span className={`text-xs font-medium ${isOutgoing ? "text-teal-100" : "text-slate-500"}`}>
                                       {item.user}
                                     </span>
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                                      item.type === "email"
-                                        ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
-                                        : item.type === "sms"
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.type === "email"
+                                      ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
+                                      : item.type === "sms"
                                         ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-green-100 text-green-600"
                                         : isOutgoing ? "bg-teal-500 text-teal-100" : "bg-orange-100 text-orange-600"
-                                    }`}>
+                                      }`}>
                                       {item.type === "email" ? "Email" : item.type === "sms" ? "SMS" : "Call"}
                                     </span>
                                   </div>
@@ -3258,18 +2309,16 @@ export function TenantApplicationDetailView({
                           const isOutgoing = item.user === "Richard Surovi"
                           return (
                             <div key={item.id} className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
-                              <div className={`max-w-[75%] ${
-                                isOutgoing
-                                  ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
-                                  : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
-                              } p-3 shadow-sm`}>
+                              <div className={`max-w-[75%] ${isOutgoing
+                                ? "bg-teal-600 text-white rounded-tl-xl rounded-tr-xl rounded-bl-xl"
+                                : "bg-white border border-slate-200 text-slate-900 rounded-tl-xl rounded-tr-xl rounded-br-xl"
+                                } p-3 shadow-sm`}>
                                 <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
                                   <span className={`text-xs font-medium ${isOutgoing ? "text-teal-100" : "text-slate-500"}`}>{item.user}</span>
-                                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${
-                                    item.type === "email"
-                                      ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
-                                      : isOutgoing ? "bg-teal-500 text-teal-100" : "bg-green-100 text-green-600"
-                                  }`}>
+                                  <span className={`text-[10px] px-1.5 py-0.5 rounded ${item.type === "email"
+                                    ? isOutgoing ? "bg-teal-500 text-teal-100" : "bg-blue-100 text-blue-600"
+                                    : isOutgoing ? "bg-teal-500 text-teal-100" : "bg-green-100 text-green-600"
+                                    }`}>
                                     {item.type === "email" ? "Email" : "SMS"}
                                   </span>
                                 </div>
@@ -3372,33 +2421,30 @@ export function TenantApplicationDetailView({
               <button
                 type="button"
                 onClick={() => setProcessStatusFilter("in-progress")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  processStatusFilter === "in-progress"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "in-progress"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 In Progress ({leaseProspectProcesses.inProgress.length + newlyStartedProcesses.length})
               </button>
               <button
                 type="button"
                 onClick={() => setProcessStatusFilter("completed")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  processStatusFilter === "completed"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "completed"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Completed ({leaseProspectProcesses.completed.length})
               </button>
               <button
                 type="button"
                 onClick={() => setProcessStatusFilter("upcoming")}
-                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                  processStatusFilter === "upcoming"
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "upcoming"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 Upcoming ({leaseProspectProcesses.upcoming.length})
               </button>
@@ -3407,225 +2453,225 @@ export function TenantApplicationDetailView({
             <div className="space-y-6">
               {/* In Progress Processes */}
               {processStatusFilter === "in-progress" && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <PlayCircle className="h-4 w-4 text-amber-500" />
-                  <h4 className="font-semibold text-foreground">In Progress ({leaseProspectProcesses.inProgress.length + newlyStartedProcesses.length})</h4>
-                </div>
-                <div className="space-y-2">
-                  {/* Newly started processes */}
-                  {newlyStartedProcesses.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden border-teal-200 bg-teal-50/30 cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
-                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <div className="flex items-center gap-2">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <PlayCircle className="h-4 w-4 text-amber-500" />
+                    <h4 className="font-semibold text-foreground">In Progress ({leaseProspectProcesses.inProgress.length + newlyStartedProcesses.length})</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {/* Newly started processes */}
+                    {newlyStartedProcesses.map((process) => (
+                      <div key={process.id} className="border rounded-lg overflow-hidden border-teal-200 bg-teal-50/30 cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
+                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-4 flex-1 text-left">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-medium text-foreground">{process.name}</p>
+                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">New</Badge>
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                  {process.leaseProspectStage}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {process.status}
+                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Process
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                  e.stopPropagation()
+                                  setNewlyStartedProcesses(prev => prev.filter(p => p.id !== process.id))
+                                }}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Process
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Existing in-progress processes */}
+                    {leaseProspectProcesses.inProgress.map((process) => (
+                      <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
+                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-4 flex-1 text-left">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            <div>
                               <p className="font-medium text-foreground">{process.name}</p>
-                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">New</Badge>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                {process.leaseProspectStage}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {process.status}
-                          </Badge>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Process
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={(e) => {
-                                e.stopPropagation()
-                                setNewlyStartedProcesses(prev => prev.filter(p => p.id !== process.id))
-                              }}>
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Process
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {/* Existing in-progress processes */}
-                  {leaseProspectProcesses.inProgress.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
-                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium text-foreground">{process.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                {process.leaseProspectStage}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                  {process.leaseProspectStage}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-amber-100 text-amber-700 border-amber-200">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {process.status}
-                          </Badge>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Process
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Process
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {process.status}
+                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Process
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Process
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Upcoming Processes */}
               {processStatusFilter === "upcoming" && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="h-4 w-4 text-blue-500" />
-                  <h4 className="font-semibold text-foreground">Upcoming ({leaseProspectProcesses.upcoming.length})</h4>
-                </div>
-                <div className="space-y-2">
-                  {leaseProspectProcesses.upcoming.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
-                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium text-foreground">{process.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                {process.leaseProspectStage}
-                              </Badge>
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="h-4 w-4 text-blue-500" />
+                    <h4 className="font-semibold text-foreground">Upcoming ({leaseProspectProcesses.upcoming.length})</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {leaseProspectProcesses.upcoming.map((process) => (
+                      <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
+                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-4 flex-1 text-left">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium text-foreground">{process.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                  {process.leaseProspectStage}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-blue-100 text-blue-700 border-blue-200">
-                            {process.status}
-                          </Badge>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess({ ...process, startedOn: undefined }) }}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Process
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Process
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-blue-100 text-blue-700 border-blue-200">
+                              {process.status}
+                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess({ ...process, startedOn: undefined }) }}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Process
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Process
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* Completed Processes */}
               {processStatusFilter === "completed" && (
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle2 className="h-4 w-4 text-success" />
-                  <h4 className="font-semibold text-foreground">Completed ({leaseProspectProcesses.completed.length})</h4>
-                </div>
-                <div className="space-y-2">
-                  {leaseProspectProcesses.completed.map((process) => (
-                    <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
-                      <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-4 flex-1 text-left">
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                          <div>
-                            <p className="font-medium text-foreground">{process.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
-                                {process.leaseProspectStage}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
-                              <span className="text-xs text-muted-foreground">Completed: {process.completedOn}</span>
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <CheckCircle2 className="h-4 w-4 text-success" />
+                    <h4 className="font-semibold text-foreground">Completed ({leaseProspectProcesses.completed.length})</h4>
+                  </div>
+                  <div className="space-y-2">
+                    {leaseProspectProcesses.completed.map((process) => (
+                      <div key={process.id} className="border rounded-lg overflow-hidden cursor-pointer" onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" })}>
+                        <div className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-4 flex-1 text-left">
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <p className="font-medium text-foreground">{process.name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
+                                  {process.leaseProspectStage}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Started: {process.startedOn}</span>
+                                <span className="text-xs text-muted-foreground">Completed: {process.completedOn}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-success/10 text-success border-success/30">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            {process.status}
-                          </Badge>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                Edit Process
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Process
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-success/10 text-success border-success/30">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              {process.status}
+                            </Badge>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleEditProcess(process) }}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Process
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Process
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
               )}
             </div>
           </div>
@@ -3751,7 +2797,7 @@ export function TenantApplicationDetailView({
                     prospectAuditLogs.map((log) => {
                       const isDeletedNote = log.actionType === "Deleted" && log.entity === "Notes" && "deletedNoteContent" in log
                       return (
-                        <TableRow 
+                        <TableRow
                           key={log.id}
                           className={isDeletedNote ? "cursor-pointer hover:bg-muted/50" : ""}
                           onClick={() => {
@@ -3863,11 +2909,10 @@ export function TenantApplicationDetailView({
                       type="button"
                       disabled={alreadyStarted}
                       onClick={() => handleStartNewProcess(processType)}
-                      className={`flex items-center gap-4 w-full text-left py-3.5 px-4 transition-colors ${
-                        alreadyStarted
-                          ? "opacity-50 cursor-not-allowed bg-gray-50"
-                          : "hover:bg-teal-50 cursor-pointer"
-                      }`}
+                      className={`flex items-center gap-4 w-full text-left py-3.5 px-4 transition-colors ${alreadyStarted
+                        ? "opacity-50 cursor-not-allowed bg-gray-50"
+                        : "hover:bg-teal-50 cursor-pointer"
+                        }`}
                     >
                       <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
                         <FolderOpen className="h-5 w-5 text-white" />
@@ -3913,9 +2958,9 @@ export function TenantApplicationDetailView({
             <div>
               <Label>Message</Label>
               <div className="mt-1 border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
-                <Textarea 
-                  placeholder="Type your message..." 
-                  className="border-0 focus-visible:ring-0 resize-none min-h-[120px]" 
+                <Textarea
+                  placeholder="Type your message..."
+                  className="border-0 focus-visible:ring-0 resize-none min-h-[120px]"
                 />
                 {/* Attachment Toolbar */}
                 <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">
@@ -3956,9 +3001,9 @@ export function TenantApplicationDetailView({
             <div>
               <Label>Message</Label>
               <div className="mt-1 border rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-info/20 focus-within:border-info">
-                <Textarea 
-                  placeholder="Type your message..." 
-                  className="border-0 focus-visible:ring-0 resize-none min-h-[100px]" 
+                <Textarea
+                  placeholder="Type your message..."
+                  className="border-0 focus-visible:ring-0 resize-none min-h-[100px]"
                 />
                 {/* Attachment Toolbar */}
                 <div className="flex items-center justify-between px-3 py-2 border-t bg-muted/30">
@@ -4106,7 +3151,7 @@ export function TenantApplicationDetailView({
           </div>
         </DialogContent>
       </Dialog>
-\
+      \
       <Dialog open={showAddNoteModal} onOpenChange={setShowAddNoteModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -4213,13 +3258,12 @@ export function TenantApplicationDetailView({
                 Document Upload <span className="text-destructive">*</span>
               </Label>
               <div
-                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
-                  dragActive
-                    ? "border-primary bg-primary/5"
-                    : uploadDocData.file
-                      ? "border-primary bg-primary/5/50"
-                      : "border-primary/40 hover:border-primary hover:bg-muted/50"
-                }`}
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${dragActive
+                  ? "border-primary bg-primary/5"
+                  : uploadDocData.file
+                    ? "border-primary bg-primary/5/50"
+                    : "border-primary/40 hover:border-primary hover:bg-muted/50"
+                  }`}
                 onDragOver={(e) => {
                   e.preventDefault()
                   setDragActive(true)
@@ -4334,8 +3378,8 @@ export function TenantApplicationDetailView({
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setShowUploadModal(false)
                 setUploadDocData({ file: null, type: "", comments: "", assignTo: "" })
@@ -4343,8 +3387,8 @@ export function TenantApplicationDetailView({
             >
               Cancel
             </Button>
-            <Button 
-              className="bg-primary hover:bg-primary/90" 
+            <Button
+              className="bg-primary hover:bg-primary/90"
               onClick={() => {
                 setShowUploadModal(false)
                 setUploadDocData({ file: null, type: "", comments: "", assignTo: "" })
@@ -4648,8 +3692,8 @@ export function TenantApplicationDetailView({
                             variant="outline"
                             className={
                               property.status === "Available"
-? "bg-success/10 text-success border-success/20"
-                              : "bg-warning/10 text-warning border-warning/20"
+                                ? "bg-success/10 text-success border-success/20"
+                                : "bg-warning/10 text-warning border-warning/20"
                             }
                           >
                             {property.status}
@@ -4773,7 +3817,7 @@ export function TenantApplicationDetailView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* SMS Popup Modal */}
       <SMSPopupModal
         isOpen={showSMSModal}
@@ -4786,7 +3830,7 @@ export function TenantApplicationDetailView({
         currentMessage={selectedSMSActivity?.fullMessage || selectedSMSActivity?.message || ""}
         currentTimestamp={selectedSMSActivity?.timestamp || ""}
       />
-      
+
       {/* Email Popup Modal */}
       <EmailPopupModal
         isOpen={showEmailModal}
@@ -4796,7 +3840,7 @@ export function TenantApplicationDetailView({
         }}
         contactName={selectedEmailActivity?.target || lead?.name || ""}
         contactEmail={lead?.email || "contact@example.com"}
-        currentSubject={selectedEmailActivity?.emailSubject || "Property Inquiry"}
+        currentSubject={(selectedEmailActivity as { emailSubject?: string } | null)?.emailSubject ?? "Property Inquiry"}
         currentBody={selectedEmailActivity?.fullMessage || selectedEmailActivity?.message || ""}
         currentTimestamp={selectedEmailActivity?.timestamp || ""}
       />
@@ -4813,7 +3857,7 @@ export function TenantApplicationDetailView({
               Complete communication history including emails, SMS, and calls
             </DialogDescription>
           </DialogHeader>
-          
+
           {/* Thread Content */}
           <div ref={(el) => { if (el) { requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; }); } }} className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             {getCommunicationThread().map((item) => {
@@ -4821,18 +3865,17 @@ export function TenantApplicationDetailView({
               const isSMS = item.type === "sms"
               const isCall = item.type === "call"
               const isFromProspect = item.user === lead?.name
-              
+
               return (
                 <div key={item.id} className="space-y-2">
                   {/* SMS Item */}
                   {isSMS && (
                     <div className={`flex ${isFromProspect ? "justify-start" : "justify-end"}`}>
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          isFromProspect
-                            ? "bg-slate-100 border border-slate-200"
-                            : "bg-teal-50 border border-teal-200"
-                        }`}
+                        className={`max-w-[80%] rounded-lg p-3 ${isFromProspect
+                          ? "bg-slate-100 border border-slate-200"
+                          : "bg-teal-50 border border-teal-200"
+                          }`}
                       >
                         <div className="flex items-center gap-2 mb-1">
                           <MessageSquare className="h-3.5 w-3.5 text-teal-600" />
@@ -4846,7 +3889,7 @@ export function TenantApplicationDetailView({
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Call Item */}
                   {isCall && (
                     <div className="flex justify-center">
@@ -4881,16 +3924,15 @@ export function TenantApplicationDetailView({
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Email Item - Collapsed by Default */}
                   {isEmail && (
                     <div className={`flex ${isFromProspect ? "justify-start" : "justify-end"}`}>
                       <div
-                        className={`max-w-[90%] rounded-lg border ${
-                          isFromProspect
-                            ? "bg-blue-50 border-blue-200"
-                            : "bg-indigo-50 border-indigo-200"
-                        }`}
+                        className={`max-w-[90%] rounded-lg border ${isFromProspect
+                          ? "bg-blue-50 border-blue-200"
+                          : "bg-indigo-50 border-indigo-200"
+                          }`}
                       >
                         {/* Email Header - Always Visible */}
                         <div
@@ -4912,13 +3954,13 @@ export function TenantApplicationDetailView({
                             )}
                           </div>
                           <p className="text-sm font-medium mt-1">
-                            {item.emailThread?.[0]?.subject || item.emailSubject || "No Subject"}
+                            {item.emailThread?.[0]?.subject || (item as { emailSubject?: string }).emailSubject || "No Subject"}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             From: {item.user} • {item.timestamp}
                           </p>
                         </div>
-                        
+
                         {/* Email Body - Expanded */}
                         {expandedEmails.includes(`thread-${item.id}`) && (
                           <div className="border-t border-blue-200 p-3 space-y-3">
@@ -4930,21 +3972,25 @@ export function TenantApplicationDetailView({
                                     <span>{email.timestamp}</span>
                                   </div>
                                   <p className="text-sm whitespace-pre-wrap">{email.content}</p>
-                                  
+
                                   {/* Email Opens (only for sent emails) */}
-                                  {email.emailOpens && email.emailOpens.length > 0 && (
-                                    <div className="mt-2 pt-2 border-t border-blue-100">
-                                      <p className="text-xs text-amber-600 flex items-center gap-1">
-                                        <Eye className="h-3 w-3" />
-                                        Opened: {email.emailOpens.map((o, i) => (
-                                          <span key={i}>
-                                            {o.openedAt}{i < email.emailOpens.length - 1 ? ", " : ""}
-                                          </span>
-                                        ))}
-                                      </p>
-                                    </div>
-                                  )}
-                                  
+                                  {(() => {
+                                    const opens = (email as unknown as { emailOpens?: { openedAt: string }[] }).emailOpens
+                                    if (!opens?.length) return null
+                                    return (
+                                      <div className="mt-2 pt-2 border-t border-blue-100">
+                                        <p className="text-xs text-amber-600 flex items-center gap-1">
+                                          <Eye className="h-3 w-3" />
+                                          Opened: {opens.map((o, i) => (
+                                            <span key={i}>
+                                              {o.openedAt}{i < opens.length - 1 ? ", " : ""}
+                                            </span>
+                                          ))}
+                                        </p>
+                                      </div>
+                                    )
+                                  })()}
+
                                   {/* Attachments */}
                                   {idx === 0 && (
                                     <div className="mt-2 pt-2 border-t border-blue-100">
@@ -4980,7 +4026,7 @@ export function TenantApplicationDetailView({
               )
             })}
           </div>
-          
+
           {/* Reply Area */}
           <div className="border-t px-6 py-4 space-y-3">
             {/* Channel Selector */}
@@ -4990,11 +4036,10 @@ export function TenantApplicationDetailView({
                 <button
                   type="button"
                   onClick={() => setThreadReplyChannel("email")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    threadReplyChannel === "email"
-                      ? "bg-blue-100 text-blue-700 border border-blue-300"
-                      : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${threadReplyChannel === "email"
+                    ? "bg-blue-100 text-blue-700 border border-blue-300"
+                    : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                    }`}
                 >
                   <Mail className="h-3.5 w-3.5" />
                   Email
@@ -5002,11 +4047,10 @@ export function TenantApplicationDetailView({
                 <button
                   type="button"
                   onClick={() => setThreadReplyChannel("sms")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${
-                    threadReplyChannel === "sms"
-                      ? "bg-teal-100 text-teal-700 border border-teal-300"
-                      : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors ${threadReplyChannel === "sms"
+                    ? "bg-teal-100 text-teal-700 border border-teal-300"
+                    : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                    }`}
                 >
                   <MessageSquare className="h-3.5 w-3.5" />
                   SMS
@@ -5020,7 +4064,7 @@ export function TenantApplicationDetailView({
                 </button>
               </div>
             </div>
-            
+
             {/* Email Composer UI */}
             {threadReplyChannel === "email" && (
               <div className="border rounded-lg overflow-hidden bg-white">
@@ -5094,6 +4138,322 @@ export function TenantApplicationDetailView({
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Generate New Code Dialog (ShowMojo) */}
+      <Dialog open={showGenerateCodeDialog} onOpenChange={setShowGenerateCodeDialog}>
+        <DialogContent className="sm:max-w-[400px] p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-4 pb-3 border-b border-border">
+            <DialogTitle className="text-base font-semibold">Access Information</DialogTitle>
+            <DialogDescription className="sr-only">Generate a new ShowMojo access code</DialogDescription>
+          </DialogHeader>
+
+          <div className="px-5 py-5 space-y-5">
+            {/* ShowMojo Code Selected */}
+            <div className="flex items-center gap-2.5">
+              <div className="h-4 w-4 rounded-full border-2 border-green-600 flex items-center justify-center">
+                <div className="h-2 w-2 rounded-full bg-green-600" />
+              </div>
+              <span className="text-sm font-medium text-foreground">ShowMojo Code</span>
+            </div>
+
+            <div className="pl-6 space-y-4">
+              {/* One-time-use code link */}
+              <button
+                type="button"
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                Get a one-time-use code (in EST)
+              </button>
+
+              {/* Other access options */}
+              <div className="space-y-1.5">
+                <label className="text-sm text-muted-foreground">Other access options</label>
+                <select
+                  value={showmojoAccessOption}
+                  onChange={(e) => setShowmojoAccessOption(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {showmojoAccessOptions.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Get a code for date */}
+              <div className="space-y-1.5">
+                <label className="text-sm text-muted-foreground">Get a code (in EST) for</label>
+                <div className="relative">
+                  <Input
+                    type="text"
+                    value={showmojoCodeDate}
+                    onChange={(e) => setShowmojoCodeDate(e.target.value)}
+                    className="text-sm h-10 pr-10"
+                  />
+                  <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                </div>
+              </div>
+
+              {/* Clear All Access Codes link */}
+              <button
+                type="button"
+                className="text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
+              >
+                Clear All Access Codes
+              </button>
+            </div>
+          </div>
+
+          {/* Footer Buttons */}
+          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGenerateCodeDialog(false)}
+              className="bg-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={() => setShowGenerateCodeDialog(false)}
+            >
+              Generate
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Access Information Share Links Dialog */}
+      <Dialog open={showShareLinksDialog} onOpenChange={setShowShareLinksDialog}>
+        <DialogContent className="sm:max-w-[520px] p-0 gap-0 overflow-hidden">
+          <DialogHeader className="px-5 pt-5 pb-4 border-b border-border">
+            <DialogTitle className="text-base font-semibold">Share Links</DialogTitle>
+            <DialogDescription className="sr-only">
+              Select recipients and method to share {shareLinksType === "lockbox" ? "Lockbox Code" : "ShowMojo Code"}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="px-5 py-4 space-y-5 max-h-[70vh] overflow-y-auto">
+            {/* Email To Section */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5">
+                Email To:
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {shareRecipientOptions.map(({ id, label, color }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => handleShareLinkRecipientToggle(id)}
+                    className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md border transition-all text-left ${shareLinkRecipients[id]
+                        ? "border-green-500/40 bg-green-50 shadow-sm"
+                        : "border-border bg-white hover:border-muted-foreground/20 hover:bg-muted/30"
+                      }`}
+                  >
+                    <div className={`h-7 w-7 rounded-full ${color} flex items-center justify-center shrink-0`}>
+                      <User className="h-3.5 w-3.5 text-white" />
+                    </div>
+                    <span className="text-sm text-foreground truncate flex-1">{label}</span>
+                    <Checkbox
+                      checked={shareLinkRecipients[id]}
+                      onCheckedChange={() => handleShareLinkRecipientToggle(id)}
+                      className="shrink-0 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Email/SMS Toggle Section */}
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="share-email"
+                checked={shareLinkMethod.email}
+                onCheckedChange={() => handleShareLinkMethodToggle("email")}
+                className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+              />
+              <button
+                type="button"
+                onClick={() => handleShareLinkMethodToggle("email")}
+                className="text-sm text-foreground"
+              >
+                Email
+              </button>
+
+              <Checkbox
+                id="share-sms"
+                checked={shareLinkMethod.sms}
+                onCheckedChange={() => handleShareLinkMethodToggle("sms")}
+                className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+              />
+              <button
+                type="button"
+                onClick={() => handleShareLinkMethodToggle("sms")}
+                className="text-sm text-foreground"
+              >
+                SMS
+              </button>
+            </div>
+
+            {/* Message Box */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2.5">
+                Message
+              </p>
+              <Textarea
+                value={shareLinkMessage}
+                onChange={(e) => setShareLinkMessage(e.target.value)}
+                placeholder={`Include a short message with the ${shareLinksType === "lockbox" ? "lockbox code" : "ShowMojo link"}...`}
+                className="min-h-[100px] text-sm"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowShareLinksDialog(false)}
+              className="bg-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={handleSendShareLink}
+            >
+              <Share2 className="h-3.5 w-3.5 mr-1.5" />
+              Send
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Custom Field Modal */}
+      <Dialog open={showAddCustomFieldModal} onOpenChange={setShowAddCustomFieldModal}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-foreground">
+              <Plus className="h-5 w-5 text-teal-600" />
+              Add Custom Field
+            </DialogTitle>
+            <DialogDescription>
+              Add a new custom field to the {customFieldData.section} section. All custom fields are available for
+              reporting.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {/* Section */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Section</Label>
+              <Select
+                value={customFieldData.section}
+                onValueChange={(value) => setCustomFieldData({ ...customFieldData, section: value })}
+              >
+                <SelectTrigger className="w-auto">
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Federal Tax">Federal Tax</SelectItem>
+                  <SelectItem value="Property Info">Property Info</SelectItem>
+                  <SelectItem value="Tenant Info">Tenant Info</SelectItem>
+                  <SelectItem value="Contact Info">Contact Info</SelectItem>
+                  <SelectItem value="Financial">Financial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Field Name */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Field Name</Label>
+              <Input
+                placeholder="Enter field name..."
+                value={customFieldData.fieldName}
+                onChange={(e) => setCustomFieldData({ ...customFieldData, fieldName: e.target.value })}
+              />
+            </div>
+
+            {/* Field Type */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Field Type</Label>
+              <Select
+                value={customFieldData.fieldType}
+                onValueChange={(value) => setCustomFieldData({ ...customFieldData, fieldType: value })}
+              >
+                <SelectTrigger className="w-auto">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Text">Text</SelectItem>
+                  <SelectItem value="Number">Number</SelectItem>
+                  <SelectItem value="Date">Date</SelectItem>
+                  <SelectItem value="Dropdown">Dropdown</SelectItem>
+                  <SelectItem value="Checkbox">Checkbox</SelectItem>
+                  <SelectItem value="Currency">Currency</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Required Field Toggle */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div>
+                <div className="font-medium text-sm">Required Field</div>
+                <div className="text-xs text-muted-foreground">Mark this field as mandatory</div>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setCustomFieldData({ ...customFieldData, isRequired: !customFieldData.isRequired })
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  customFieldData.isRequired ? "bg-teal-600" : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    customFieldData.isRequired ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Info Banner */}
+            <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+              <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+              <span className="text-sm text-blue-700">
+                This field will be available in Owner Directory reports
+              </span>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddCustomFieldModal(false)
+                setCustomFieldData({ section: "Federal Tax", fieldName: "", fieldType: "Text", isRequired: false })
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-teal-600 hover:bg-teal-700"
+              onClick={() => {
+                // Handle adding the custom field (UI-only for now)
+                setShowAddCustomFieldModal(false)
+                setCustomFieldData({ section: "Federal Tax", fieldName: "", fieldType: "Text", isRequired: false })
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Field
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

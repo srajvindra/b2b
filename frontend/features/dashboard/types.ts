@@ -95,6 +95,8 @@ export interface TaskSummary {
   dueThisWeek: number
 }
 
+export type KPIViewMode = "table" | "chart"
+
 // Key Performance Metrics
 export interface KPITableRow {
   label: string

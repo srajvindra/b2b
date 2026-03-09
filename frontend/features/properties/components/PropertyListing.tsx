@@ -34,7 +34,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
 import type { Property } from "../types"
-import { MOCK_PROPERTIES, FILTER_FIELDS, FIELDS_WITH_SELECT_ALL, getFilterOptions } from "../data/propertyListing"
+import { MOCK_PROPERTIES, FILTER_FIELDS, FIELDS_WITH_SELECT_ALL, getFilterOptions, propertyColumns, unitColumns } from "../data/propertyListing"
 import { useNav } from "@/components/dashboard-app"
 import { PropertyMetricsSummary } from "@/features/properties/components/property-matrix"
 import { useQuickActions } from "@/context/QuickActionsContext"
@@ -44,54 +44,20 @@ import { useRouter } from "next/navigation"
 export default function AllPropertiesPage() {
   const nav = useNav()
   const router = useRouter()
-  useQuickActions(propertyListQuickActions, { subtitle: "Properties" })
+  useQuickActions(propertyListQuickActions, {
+    subtitle: "Properties",
+    aiSuggestedPrompts: [
+      "How do I add a new property?",
+      "Which properties have vacancies?",
+      "Show me properties by portfolio",
+    ],
+    aiPlaceholder: "Ask about properties...",
+  })
   const [visibleCount, setVisibleCount] = useState(20)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list">("list")
   const [columnSettingsOpen, setColumnSettingsOpen] = useState(false)
-  
-  // Property view columns
-  const propertyColumns = [
-    { id: "propertyName", label: "Property Name" },
-    { id: "propertyAddress", label: "Property Address" },
-    { id: "unitCount", label: "Unit Count" },
-    { id: "ownerName", label: "Owner Name" },
-    { id: "occupancy", label: "Occupancy" },
-    { id: "csr", label: "CSR" },
-    { id: "csm", label: "CSM" },
-    { id: "agm", label: "AGM" },
-    { id: "lc", label: "LC" },
-    { id: "fc", label: "FC" },
-    { id: "mrs", label: "MRS" },
-    { id: "type", label: "Type" },
-    { id: "tags", label: "Tags" },
-    { id: "portfolioGroup", label: "Portfolio Group" },
-    { id: "propertyGroup", label: "Property Group" },
-    { id: "dateAdded", label: "Date Added" },
-    { id: "propertyStatus", label: "Property Status" },
-  ]
-  
-  // Unit view columns
-  const unitColumns = [
-    { id: "unitAddress", label: "Unit Address" },
-    { id: "propertyName", label: "Property Name" },
-    { id: "ownerName", label: "Owner Name" },
-    { id: "tenantName", label: "Tenant Name" },
-    { id: "occupancy", label: "Occupancy" },
-    { id: "csr", label: "CSR" },
-    { id: "csm", label: "CSM" },
-    { id: "agm", label: "AGM" },
-    { id: "lc", label: "LC" },
-    { id: "fc", label: "FC" },
-    { id: "mrs", label: "MRS" },
-    { id: "type", label: "Type" },
-    { id: "tags", label: "Tags" },
-    { id: "portfolioGroup", label: "Portfolio Group" },
-    { id: "propertyGroup", label: "Property Group" },
-    { id: "dateAdded", label: "Date Added" },
-    { id: "propertyStatus", label: "Property Status" },
-  ]
-  
+
   const [visiblePropertyColumns, setVisiblePropertyColumns] = useState<string[]>(propertyColumns.map(c => c.id))
   const [visibleUnitColumns, setVisibleUnitColumns] = useState<string[]>(unitColumns.map(c => c.id))
   const [viewToggle, setViewToggle] = useState<"properties" | "units">("properties")
@@ -266,7 +232,29 @@ export default function AllPropertiesPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-4 shrink-0">
+              {/* Properties View / Units View toggle */}
+              {/* <div className="flex items-center gap-2">
+                <span className={`text-sm font-medium ${viewToggle === "properties" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Properties View
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setViewToggle(viewToggle === "properties" ? "units" : "properties"); setCurrentPage(1) }}
+                  className="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0 bg-muted"
+                  aria-label="Toggle Properties or Units view"
+                >
+                  <span
+                    className={`absolute top-0.5 w-5 h-5 rounded-full shadow bg-primary transition-transform duration-200 ${
+                      viewToggle === "units" ? "left-6" : "left-0.5"
+                    }`}
+                  />
+                </button>
+                <span className={`text-sm font-medium ${viewToggle === "units" ? "text-foreground" : "text-muted-foreground"}`}>
+                  Units View
+                </span>
+              </div> */}
+
               <div className="flex items-center border rounded-md">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
@@ -285,8 +273,8 @@ export default function AllPropertiesPage() {
                   <List className="h-4 w-4" />
                 </Button>
               </div>
-              
-              {/* Column Settings Popover */}
+
+              {/* Column Settings */}
               <Popover open={columnSettingsOpen} onOpenChange={setColumnSettingsOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="outline" size="sm" className="gap-1.5">
@@ -416,20 +404,20 @@ export default function AllPropertiesPage() {
                           {FILTER_FIELDS
                             .filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
                             .map((field) => (
-                            <div
-                              key={field}
-                              className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
-                              onClick={() => {
-                                setModalFilterField(field)
-                                setModalFilterValues([])
-                                setModalOptionSearch("")
-                                setModalFieldSearch("")
-                                setShowFieldDropdown(false)
-                              }}
-                            >
-                              <span className="truncate">{field}</span>
-                            </div>
-                          ))}
+                              <div
+                                key={field}
+                                className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 border-b border-slate-100 last:border-b-0"
+                                onClick={() => {
+                                  setModalFilterField(field)
+                                  setModalFilterValues([])
+                                  setModalOptionSearch("")
+                                  setModalFieldSearch("")
+                                  setShowFieldDropdown(false)
+                                }}
+                              >
+                                <span className="truncate">{field}</span>
+                              </div>
+                            ))}
                           {FILTER_FIELDS.filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase())).length === 0 && (
                             <div className="px-3 py-2 text-sm text-slate-400">No matching fields</div>
                           )}
@@ -507,372 +495,370 @@ export default function AllPropertiesPage() {
           </div>
         )}
 
+        <div className="flex items-center gap-2.5 mb-3 px-6 py-4 pb-0">
+          <span className={`text-sm font-medium transition-colors ${viewToggle === "properties" ? "text-slate-900" : "text-slate-400"}`}>Properties View</span>
+          <button
+            type="button"
+            onClick={() => { setViewToggle(viewToggle === "properties" ? "units" : "properties"); setCurrentPage(1) }}
+            className="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0"
+            style={{ backgroundColor: viewToggle === "units" ? "#1e40af" : "#93c5fd" }}
+            aria-label="Toggle between Properties and Units view"
+          >
+            <span
+              className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full shadow-sm transition-transform duration-200 bg-white border border-slate-200"
+              style={{
+                transform: viewToggle === "units" ? "translateX(20px)" : "translateX(0px)",
+              }}
+            />
+          </button>
+          <span className={`text-sm font-medium transition-colors ${viewToggle === "units" ? "text-slate-900" : "text-slate-400"}`}>Units View</span>
+        </div>
+
         <div className="p-6 bg-muted/20">
-        {viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {visibleProperties.map((property) => (
-              <Card
-                key={property.id}
-                onClick={() => handlePropertyClick(property.id)}
-                className="flex flex-col overflow-hidden border transition-all duration-200 hover:shadow-xl group cursor-pointer bg-white border-gray-200 hover:border-gray-400"
-              >
-                <div className="p-5 border-b relative overflow-hidden bg-gray-50 border-gray-200">
-                  <div className="flex justify-between items-start gap-3 mb-3">
-                    <div className="space-y-2 flex-1">
-                      <h3 className="font-bold text-lg leading-tight transition-colors text-gray-900 group-hover:text-gray-700">
-                        {property.name}
-                      </h3>
-                      <div className="flex items-start text-sm gap-1.5 text-gray-600">
-                        <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
-                        <span className="line-clamp-2">{property.address}</span>
+
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {visibleProperties.map((property) => (
+                <Card
+                  key={property.id}
+                  onClick={() => handlePropertyClick(property.id)}
+                  className="flex flex-col overflow-hidden border transition-all duration-200 hover:shadow-xl group cursor-pointer bg-white border-gray-200 hover:border-gray-400"
+                >
+                  <div className="p-5 border-b relative overflow-hidden bg-gray-50 border-gray-200">
+                    <div className="flex justify-between items-start gap-3 mb-3">
+                      <div className="space-y-2 flex-1">
+                        <h3 className="font-bold text-lg leading-tight transition-colors text-gray-900 group-hover:text-gray-700">
+                          {property.name}
+                        </h3>
+                        <div className="flex items-start text-sm gap-1.5 text-gray-600">
+                          <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
+                          <span className="line-clamp-2">{property.address}</span>
+                        </div>
+                      </div>
+                      {property.hasVacancy ? (
+                        <div className="p-2 rounded-full bg-gray-200">
+                          <CheckCircle className="h-5 w-5 text-gray-700" />
+                        </div>
+                      ) : (
+                        <div className="p-2 rounded-full bg-gray-100">
+                          <XCircle className="h-5 w-5 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <Badge className="text-xs font-semibold bg-gray-800 hover:bg-gray-900 text-white">
+                      {property.type}
+                    </Badge>
+                  </div>
+
+                  <CardContent className="p-5 space-y-4 flex-1">
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 rounded-lg border bg-gray-50 border-gray-200">
+                        <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-gray-700">
+                          <div className="p-1.5 rounded bg-gray-800">
+                            <Building2 className="h-4 w-4 text-white" />
+                          </div>
+                          Total Units
+                        </span>
+                        <span className="text-2xl font-bold text-gray-900">{property.units}</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-lg border bg-gray-50 border-gray-200">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-gray-600">
+                            Occupied
+                          </div>
+                          <div className="text-xl font-bold text-gray-900">
+                            {property.units - (property.hasVacancy ? 1 : 0)}
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-lg border bg-gray-50 border-gray-200">
+                          <div className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-gray-600">
+                            Vacant
+                          </div>
+                          <div className="text-xl font-bold text-gray-900">{property.hasVacancy ? 1 : 0}</div>
+                        </div>
                       </div>
                     </div>
-                    {property.hasVacancy ? (
+
+                    <div className="flex items-center gap-2.5 pt-2 border-t border-gray-200">
                       <div className="p-2 rounded-full bg-gray-200">
-                        <CheckCircle className="h-5 w-5 text-gray-700" />
+                        <Users className="w-4 h-4 text-gray-600" />
                       </div>
-                    ) : (
-                      <div className="p-2 rounded-full bg-gray-100">
-                        <XCircle className="h-5 w-5 text-gray-400" />
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500">Owner</span>
+                        <span className="text-sm font-semibold text-gray-900">{property.ownerName}</span>
                       </div>
-                    )}
-                  </div>
-                  <Badge className="text-xs font-semibold bg-gray-800 hover:bg-gray-900 text-white">
-                    {property.type}
-                  </Badge>
-                </div>
-
-                <CardContent className="p-5 space-y-4 flex-1">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 rounded-lg border bg-gray-50 border-gray-200">
-                      <span className="text-xs font-semibold uppercase tracking-wider flex items-center gap-2 text-gray-700">
-                        <div className="p-1.5 rounded bg-gray-800">
-                          <Building2 className="h-4 w-4 text-white" />
-                        </div>
-                        Total Units
-                      </span>
-                      <span className="text-2xl font-bold text-gray-900">{property.units}</span>
                     </div>
+                  </CardContent>
 
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3 rounded-lg border bg-gray-50 border-gray-200">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-gray-600">
-                          Occupied
-                        </div>
-                        <div className="text-xl font-bold text-gray-900">
-                          {property.units - (property.hasVacancy ? 1 : 0)}
-                        </div>
+                  <div className="px-5 py-4 border-t mt-auto bg-gray-100 border-gray-200">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-full bg-gray-800">
+                        <UserCircle className="w-4 h-4 text-white" />
                       </div>
-                      <div className="p-3 rounded-lg border bg-gray-50 border-gray-200">
-                        <div className="text-[10px] font-semibold uppercase tracking-wider mb-1 text-gray-600">
-                          Vacant
-                        </div>
-                        <div className="text-xl font-bold text-gray-900">{property.hasVacancy ? 1 : 0}</div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
+                          Handling Staff
+                        </span>
+                        <span className="text-sm font-bold text-gray-900">{property.staffName}</span>
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-2.5 pt-2 border-t border-gray-200">
-                    <div className="p-2 rounded-full bg-gray-200">
-                      <Users className="w-4 h-4 text-gray-600" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500">Owner</span>
-                      <span className="text-sm font-semibold text-gray-900">{property.ownerName}</span>
-                    </div>
-                  </div>
-                </CardContent>
-
-                <div className="px-5 py-4 border-t mt-auto bg-gray-100 border-gray-200">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-full bg-gray-800">
-                      <UserCircle className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-medium uppercase tracking-wide text-gray-500">
-                        Handling Staff
-                      </span>
-                      <span className="text-sm font-bold text-gray-900">{property.staffName}</span>
-                    </div>
-                  </div>
-                </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <>
+              <Card className="overflow-x-auto overflow-y-auto max-h-[600px]">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10">
+                    <TableRow className="bg-muted/50 shadow-sm">
+                      {viewToggle === "properties" ? (
+                        <>
+                          {visiblePropertyColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>}
+                          {visiblePropertyColumns.includes("propertyAddress") && <TableHead className="font-semibold">Property Address</TableHead>}
+                          {visiblePropertyColumns.includes("unitCount") && <TableHead className="font-semibold text-center">Unit Count</TableHead>}
+                          {visiblePropertyColumns.includes("ownerName") && <TableHead className="font-semibold">Owner Name</TableHead>}
+                          {visiblePropertyColumns.includes("occupancy") && <TableHead className="font-semibold text-center">Occupancy</TableHead>}
+                          {visiblePropertyColumns.includes("csr") && <TableHead className="font-semibold">CSR</TableHead>}
+                          {visiblePropertyColumns.includes("csm") && <TableHead className="font-semibold">CSM</TableHead>}
+                          {visiblePropertyColumns.includes("agm") && <TableHead className="font-semibold">AGM</TableHead>}
+                          {visiblePropertyColumns.includes("lc") && <TableHead className="font-semibold">LC</TableHead>}
+                          {visiblePropertyColumns.includes("fc") && <TableHead className="font-semibold">FC</TableHead>}
+                          {visiblePropertyColumns.includes("mrs") && <TableHead className="font-semibold">MRS</TableHead>}
+                          {visiblePropertyColumns.includes("type") && <TableHead className="font-semibold">Type</TableHead>}
+                          {visiblePropertyColumns.includes("tags") && <TableHead className="font-semibold">Tags</TableHead>}
+                          {visiblePropertyColumns.includes("portfolioGroup") && <TableHead className="font-semibold">Portfolio Group</TableHead>}
+                          {visiblePropertyColumns.includes("propertyGroup") && <TableHead className="font-semibold">Property Group</TableHead>}
+                          {visiblePropertyColumns.includes("dateAdded") && <TableHead className="font-semibold">Date Added</TableHead>}
+                          {visiblePropertyColumns.includes("propertyStatus") && <TableHead className="font-semibold">Property Status</TableHead>}
+                        </>
+                      ) : (
+                        <>
+                          {visibleUnitColumns.includes("unitAddress") && <TableHead className="font-semibold">Unit Address</TableHead>}
+                          {visibleUnitColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>}
+                          {visibleUnitColumns.includes("ownerName") && <TableHead className="font-semibold">Owner Name</TableHead>}
+                          {visibleUnitColumns.includes("tenantName") && <TableHead className="font-semibold">Tenant Name</TableHead>}
+                          {visibleUnitColumns.includes("occupancy") && <TableHead className="font-semibold text-center">Occupancy</TableHead>}
+                          {visibleUnitColumns.includes("csr") && <TableHead className="font-semibold">CSR</TableHead>}
+                          {visibleUnitColumns.includes("csm") && <TableHead className="font-semibold">CSM</TableHead>}
+                          {visibleUnitColumns.includes("agm") && <TableHead className="font-semibold">AGM</TableHead>}
+                          {visibleUnitColumns.includes("lc") && <TableHead className="font-semibold">LC</TableHead>}
+                          {visibleUnitColumns.includes("fc") && <TableHead className="font-semibold">FC</TableHead>}
+                          {visibleUnitColumns.includes("mrs") && <TableHead className="font-semibold">MRS</TableHead>}
+                          {visibleUnitColumns.includes("type") && <TableHead className="font-semibold">Type</TableHead>}
+                          {visibleUnitColumns.includes("tags") && <TableHead className="font-semibold">Tags</TableHead>}
+                          {visibleUnitColumns.includes("portfolioGroup") && <TableHead className="font-semibold">Portfolio Group</TableHead>}
+                          {visibleUnitColumns.includes("propertyGroup") && <TableHead className="font-semibold">Property Group</TableHead>}
+                          {visibleUnitColumns.includes("dateAdded") && <TableHead className="font-semibold">Date Added</TableHead>}
+                          {visibleUnitColumns.includes("propertyStatus") && <TableHead className="font-semibold">Property Status</TableHead>}
+                        </>
+                      )}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {visibleProperties.map((property) => (
+                      <TableRow
+                        key={property.id}
+                        onClick={() => handlePropertyClick(property.id)}
+                        className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
+                        {viewToggle === "properties" ? (
+                          <>
+                            {visiblePropertyColumns.includes("propertyName") && (
+                              <TableCell className="font-medium">
+                                <div className="flex items-center gap-2 text-[rgba(1,96,209,1)]">
+                                  <div className="p-1.5 rounded bg-gray-100">
+                                    <Building2 className="h-4 w-4 text-[rgba(1,96,209,1)]" />
+                                  </div>
+                                  <span className="whitespace-nowrap">{property.name}</span>
+                                </div>
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("propertyAddress") && (
+                              <TableCell>
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="max-w-[200px] truncate">{property.address}</span>
+                                </div>
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("unitCount") && (
+                              <TableCell className="text-center">
+                                <span className="font-semibold text-gray-900">{property.units}</span>
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("ownerName") && (
+                              <TableCell>
+                                <span className="max-w-[120px] truncate block">{property.ownerName}</span>
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("occupancy") && (
+                              <TableCell className="text-center">
+                                {property.occupancyStatus === "Vacant" ? (
+                                  <Badge className="bg-[#E46A5D]/15 text-[#E46A5D] hover:bg-[#E46A5D]/25"><XCircle className="h-3 w-3 mr-1" />Vacant</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Occupied</Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("csr") && <TableCell><span className="text-xs whitespace-nowrap">{property.csr}</span></TableCell>}
+                            {visiblePropertyColumns.includes("csm") && <TableCell><span className="text-xs whitespace-nowrap">{property.csm}</span></TableCell>}
+                            {visiblePropertyColumns.includes("agm") && <TableCell><span className="text-xs whitespace-nowrap">{property.agm}</span></TableCell>}
+                            {visiblePropertyColumns.includes("lc") && <TableCell><span className="text-xs whitespace-nowrap">{property.lc}</span></TableCell>}
+                            {visiblePropertyColumns.includes("fc") && <TableCell><span className="text-xs whitespace-nowrap">{property.fc}</span></TableCell>}
+                            {visiblePropertyColumns.includes("mrs") && <TableCell><span className="text-xs whitespace-nowrap">{property.mrs}</span></TableCell>}
+                            {visiblePropertyColumns.includes("type") && (
+                              <TableCell>
+                                <Badge className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200">{property.type}</Badge>
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("tags") && (
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {(property.tags ?? []).map((t) => (
+                                    <Badge key={t} variant="outline" className="text-[10px]">
+                                      {t}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("portfolioGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.portfolioGroup}</span></TableCell>}
+                            {visiblePropertyColumns.includes("propertyGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.propertyGroup}</span></TableCell>}
+                            {visiblePropertyColumns.includes("dateAdded") && (
+                              <TableCell>
+                                <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
+                                  <CalendarDays className="h-3.5 w-3.5" />
+                                  {new Date(property.dateAdded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visiblePropertyColumns.includes("propertyStatus") && (
+                              <TableCell>
+                                <Badge className={`text-xs whitespace-nowrap ${property.propertyStatus === "Active" ? "bg-green-100 text-green-700" :
+                                    property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
+                                      property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
+                                        "bg-amber-100 text-amber-700"
+                                  }`}>{property.propertyStatus}</Badge>
+                              </TableCell>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {visibleUnitColumns.includes("unitAddress") && (
+                              <TableCell>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); nav.go("unitDetail", { id: `${100 + (Number(property.id) % Math.max(property.units, 1))}`, propertyId: property.id }) }}
+                                  className="flex items-center gap-1.5 text-[rgba(1,96,209,1)] hover:underline"
+                                >
+                                  <MapPin className="h-3.5 w-3.5 shrink-0" />
+                                  <span className="max-w-[200px] truncate">{property.unitAddress}</span>
+                                </button>
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("propertyName") && (
+                              <TableCell className="font-medium">
+                                <span className="text-[rgba(1,96,209,1)] whitespace-nowrap">{property.name}</span>
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("ownerName") && (
+                              <TableCell>
+                                <span className="max-w-[120px] truncate block">{property.ownerName}</span>
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("tenantName") && (
+                              <TableCell>
+                                <span className="max-w-[120px] truncate block">{property.tenantName}</span>
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("occupancy") && (
+                              <TableCell className="text-center">
+                                {property.occupancyStatus === "Vacant" ? (
+                                  <Badge className="bg-[#E46A5D]/15 text-[#E46A5D] hover:bg-[#E46A5D]/25"><XCircle className="h-3 w-3 mr-1" />Vacant</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Occupied</Badge>
+                                )}
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("csr") && <TableCell><span className="text-xs whitespace-nowrap">{property.csr}</span></TableCell>}
+                            {visibleUnitColumns.includes("csm") && <TableCell><span className="text-xs whitespace-nowrap">{property.csm}</span></TableCell>}
+                            {visibleUnitColumns.includes("agm") && <TableCell><span className="text-xs whitespace-nowrap">{property.agm}</span></TableCell>}
+                            {visibleUnitColumns.includes("lc") && <TableCell><span className="text-xs whitespace-nowrap">{property.lc}</span></TableCell>}
+                            {visibleUnitColumns.includes("fc") && <TableCell><span className="text-xs whitespace-nowrap">{property.fc}</span></TableCell>}
+                            {visibleUnitColumns.includes("mrs") && <TableCell><span className="text-xs whitespace-nowrap">{property.mrs}</span></TableCell>}
+                            {visibleUnitColumns.includes("type") && (
+                              <TableCell>
+                                <Badge className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200">{property.type}</Badge>
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("tags") && (
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {(property.tags ?? []).map((t) => (
+                                    <Badge key={t} variant="outline" className="text-[10px]">
+                                      {t}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("portfolioGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.portfolioGroup}</span></TableCell>}
+                            {visibleUnitColumns.includes("propertyGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.propertyGroup}</span></TableCell>}
+                            {visibleUnitColumns.includes("dateAdded") && (
+                              <TableCell>
+                                <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
+                                  <CalendarDays className="h-3.5 w-3.5" />
+                                  {new Date(property.dateAdded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                                </div>
+                              </TableCell>
+                            )}
+                            {visibleUnitColumns.includes("propertyStatus") && (
+                              <TableCell>
+                                <Badge className={`text-xs whitespace-nowrap ${property.propertyStatus === "Active" ? "bg-green-100 text-green-700" :
+                                    property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
+                                      property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
+                                        "bg-amber-100 text-amber-700"
+                                  }`}>{property.propertyStatus}</Badge>
+                              </TableCell>
+                            )}
+                          </>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </Card>
-            ))}
-          </div>
-        ) : (
-          <>
-          {/* Properties / Units Toggle */}
-          <div className="flex items-center gap-2.5 mb-3">
-            <span className={`text-sm font-medium transition-colors ${viewToggle === "properties" ? "text-slate-900" : "text-slate-400"}`}>Properties View</span>
-            <button
-              type="button"
-              onClick={() => { setViewToggle(viewToggle === "properties" ? "units" : "properties"); setCurrentPage(1) }}
-              className="relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0"
-              style={{ backgroundColor: viewToggle === "units" ? "#1e40af" : "#93c5fd" }}
-              aria-label="Toggle between Properties and Units view"
-            >
-              <span
-                className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full shadow-sm transition-transform duration-200 bg-white border border-slate-200"
-                style={{
-                  transform: viewToggle === "units" ? "translateX(20px)" : "translateX(0px)",
-                }}
-              />
-            </button>
-            <span className={`text-sm font-medium transition-colors ${viewToggle === "units" ? "text-slate-900" : "text-slate-400"}`}>Units View</span>
-          </div>
+            </>
+          )}
 
-          <Card className="overflow-x-auto overflow-y-auto max-h-[600px]">
-            <Table>
-              <TableHeader className="sticky top-0 z-10">
-                <TableRow className="bg-muted/50 shadow-sm">
-                  {viewToggle === "properties" ? (
-                    <>
-                      {visiblePropertyColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>}
-                      {visiblePropertyColumns.includes("propertyAddress") && <TableHead className="font-semibold">Property Address</TableHead>}
-                      {visiblePropertyColumns.includes("unitCount") && <TableHead className="font-semibold text-center">Unit Count</TableHead>}
-                      {visiblePropertyColumns.includes("ownerName") && <TableHead className="font-semibold">Owner Name</TableHead>}
-                      {visiblePropertyColumns.includes("occupancy") && <TableHead className="font-semibold text-center">Occupancy</TableHead>}
-                      {visiblePropertyColumns.includes("csr") && <TableHead className="font-semibold">CSR</TableHead>}
-                      {visiblePropertyColumns.includes("csm") && <TableHead className="font-semibold">CSM</TableHead>}
-                      {visiblePropertyColumns.includes("agm") && <TableHead className="font-semibold">AGM</TableHead>}
-                      {visiblePropertyColumns.includes("lc") && <TableHead className="font-semibold">LC</TableHead>}
-                      {visiblePropertyColumns.includes("fc") && <TableHead className="font-semibold">FC</TableHead>}
-                      {visiblePropertyColumns.includes("mrs") && <TableHead className="font-semibold">MRS</TableHead>}
-                      {visiblePropertyColumns.includes("type") && <TableHead className="font-semibold">Type</TableHead>}
-                      {visiblePropertyColumns.includes("tags") && <TableHead className="font-semibold">Tags</TableHead>}
-                      {visiblePropertyColumns.includes("portfolioGroup") && <TableHead className="font-semibold">Portfolio Group</TableHead>}
-                      {visiblePropertyColumns.includes("propertyGroup") && <TableHead className="font-semibold">Property Group</TableHead>}
-                      {visiblePropertyColumns.includes("dateAdded") && <TableHead className="font-semibold">Date Added</TableHead>}
-                      {visiblePropertyColumns.includes("propertyStatus") && <TableHead className="font-semibold">Property Status</TableHead>}
-                    </>
-                  ) : (
-                    <>
-                      {visibleUnitColumns.includes("unitAddress") && <TableHead className="font-semibold">Unit Address</TableHead>}
-                      {visibleUnitColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>}
-                      {visibleUnitColumns.includes("ownerName") && <TableHead className="font-semibold">Owner Name</TableHead>}
-                      {visibleUnitColumns.includes("tenantName") && <TableHead className="font-semibold">Tenant Name</TableHead>}
-                      {visibleUnitColumns.includes("occupancy") && <TableHead className="font-semibold text-center">Occupancy</TableHead>}
-                      {visibleUnitColumns.includes("csr") && <TableHead className="font-semibold">CSR</TableHead>}
-                      {visibleUnitColumns.includes("csm") && <TableHead className="font-semibold">CSM</TableHead>}
-                      {visibleUnitColumns.includes("agm") && <TableHead className="font-semibold">AGM</TableHead>}
-                      {visibleUnitColumns.includes("lc") && <TableHead className="font-semibold">LC</TableHead>}
-                      {visibleUnitColumns.includes("fc") && <TableHead className="font-semibold">FC</TableHead>}
-                      {visibleUnitColumns.includes("mrs") && <TableHead className="font-semibold">MRS</TableHead>}
-                      {visibleUnitColumns.includes("type") && <TableHead className="font-semibold">Type</TableHead>}
-                      {visibleUnitColumns.includes("tags") && <TableHead className="font-semibold">Tags</TableHead>}
-                      {visibleUnitColumns.includes("portfolioGroup") && <TableHead className="font-semibold">Portfolio Group</TableHead>}
-                      {visibleUnitColumns.includes("propertyGroup") && <TableHead className="font-semibold">Property Group</TableHead>}
-                      {visibleUnitColumns.includes("dateAdded") && <TableHead className="font-semibold">Date Added</TableHead>}
-                      {visibleUnitColumns.includes("propertyStatus") && <TableHead className="font-semibold">Property Status</TableHead>}
-                    </>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {visibleProperties.map((property) => (
-                  <TableRow
-                    key={property.id}
-                    onClick={() => handlePropertyClick(property.id)}
-                    className="cursor-pointer hover:bg-muted/50 transition-colors"
-                  >
-                    {viewToggle === "properties" ? (
-                      <>
-                        {visiblePropertyColumns.includes("propertyName") && (
-                          <TableCell className="font-medium">
-                            <div className="flex items-center gap-2 text-[rgba(1,96,209,1)]">
-                              <div className="p-1.5 rounded bg-gray-100">
-                                <Building2 className="h-4 w-4 text-[rgba(1,96,209,1)]" />
-                              </div>
-                              <span className="whitespace-nowrap">{property.name}</span>
-                            </div>
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("propertyAddress") && (
-                          <TableCell>
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <MapPin className="h-3.5 w-3.5 shrink-0" />
-                              <span className="max-w-[200px] truncate">{property.address}</span>
-                            </div>
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("unitCount") && (
-                          <TableCell className="text-center">
-                            <span className="font-semibold text-gray-900">{property.units}</span>
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("ownerName") && (
-                          <TableCell>
-                            <span className="max-w-[120px] truncate block">{property.ownerName}</span>
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("occupancy") && (
-                          <TableCell className="text-center">
-                            {property.occupancyStatus === "Vacant" ? (
-                              <Badge className="bg-[#E46A5D]/15 text-[#E46A5D] hover:bg-[#E46A5D]/25"><XCircle className="h-3 w-3 mr-1" />Vacant</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Occupied</Badge>
-                            )}
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("csr") && <TableCell><span className="text-xs whitespace-nowrap">{property.csr}</span></TableCell>}
-                        {visiblePropertyColumns.includes("csm") && <TableCell><span className="text-xs whitespace-nowrap">{property.csm}</span></TableCell>}
-                        {visiblePropertyColumns.includes("agm") && <TableCell><span className="text-xs whitespace-nowrap">{property.agm}</span></TableCell>}
-                        {visiblePropertyColumns.includes("lc") && <TableCell><span className="text-xs whitespace-nowrap">{property.lc}</span></TableCell>}
-                        {visiblePropertyColumns.includes("fc") && <TableCell><span className="text-xs whitespace-nowrap">{property.fc}</span></TableCell>}
-                        {visiblePropertyColumns.includes("mrs") && <TableCell><span className="text-xs whitespace-nowrap">{property.mrs}</span></TableCell>}
-                        {visiblePropertyColumns.includes("type") && (
-                          <TableCell>
-                            <Badge className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200">{property.type}</Badge>
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("tags") && (
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {(property.tags ?? []).map((t) => (
-                                <Badge key={t} variant="outline" className="text-[10px]">
-                                  {t}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("portfolioGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.portfolioGroup}</span></TableCell>}
-                        {visiblePropertyColumns.includes("propertyGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.propertyGroup}</span></TableCell>}
-                        {visiblePropertyColumns.includes("dateAdded") && (
-                          <TableCell>
-                            <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              {new Date(property.dateAdded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                            </div>
-                          </TableCell>
-                        )}
-                        {visiblePropertyColumns.includes("propertyStatus") && (
-                          <TableCell>
-                            <Badge className={`text-xs whitespace-nowrap ${
-                              property.propertyStatus === "Active" ? "bg-green-100 text-green-700" :
-                              property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
-                              property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
-                              "bg-amber-100 text-amber-700"
-                            }`}>{property.propertyStatus}</Badge>
-                          </TableCell>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {visibleUnitColumns.includes("unitAddress") && (
-                          <TableCell>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); nav.go("unitDetail", { id: `${100 + (Number(property.id) % Math.max(property.units, 1))}`, propertyId: property.id }) }}
-                              className="flex items-center gap-1.5 text-[rgba(1,96,209,1)] hover:underline"
-                            >
-                              <MapPin className="h-3.5 w-3.5 shrink-0" />
-                              <span className="max-w-[200px] truncate">{property.unitAddress}</span>
-                            </button>
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("propertyName") && (
-                          <TableCell className="font-medium">
-                            <span className="text-[rgba(1,96,209,1)] whitespace-nowrap">{property.name}</span>
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("ownerName") && (
-                          <TableCell>
-                            <span className="max-w-[120px] truncate block">{property.ownerName}</span>
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("tenantName") && (
-                          <TableCell>
-                            <span className="max-w-[120px] truncate block">{property.tenantName}</span>
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("occupancy") && (
-                          <TableCell className="text-center">
-                            {property.occupancyStatus === "Vacant" ? (
-                              <Badge className="bg-[#E46A5D]/15 text-[#E46A5D] hover:bg-[#E46A5D]/25"><XCircle className="h-3 w-3 mr-1" />Vacant</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="bg-green-100 text-green-700"><CheckCircle className="h-3 w-3 mr-1" />Occupied</Badge>
-                            )}
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("csr") && <TableCell><span className="text-xs whitespace-nowrap">{property.csr}</span></TableCell>}
-                        {visibleUnitColumns.includes("csm") && <TableCell><span className="text-xs whitespace-nowrap">{property.csm}</span></TableCell>}
-                        {visibleUnitColumns.includes("agm") && <TableCell><span className="text-xs whitespace-nowrap">{property.agm}</span></TableCell>}
-                        {visibleUnitColumns.includes("lc") && <TableCell><span className="text-xs whitespace-nowrap">{property.lc}</span></TableCell>}
-                        {visibleUnitColumns.includes("fc") && <TableCell><span className="text-xs whitespace-nowrap">{property.fc}</span></TableCell>}
-                        {visibleUnitColumns.includes("mrs") && <TableCell><span className="text-xs whitespace-nowrap">{property.mrs}</span></TableCell>}
-                        {visibleUnitColumns.includes("type") && (
-                          <TableCell>
-                            <Badge className="text-xs bg-gray-100 text-gray-700 hover:bg-gray-200">{property.type}</Badge>
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("tags") && (
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {(property.tags ?? []).map((t) => (
-                                <Badge key={t} variant="outline" className="text-[10px]">
-                                  {t}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("portfolioGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.portfolioGroup}</span></TableCell>}
-                        {visibleUnitColumns.includes("propertyGroup") && <TableCell><span className="text-xs whitespace-nowrap">{property.propertyGroup}</span></TableCell>}
-                        {visibleUnitColumns.includes("dateAdded") && (
-                          <TableCell>
-                            <div className="flex items-center gap-1.5 text-muted-foreground whitespace-nowrap">
-                              <CalendarDays className="h-3.5 w-3.5" />
-                              {new Date(property.dateAdded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                            </div>
-                          </TableCell>
-                        )}
-                        {visibleUnitColumns.includes("propertyStatus") && (
-                          <TableCell>
-                            <Badge className={`text-xs whitespace-nowrap ${
-                              property.propertyStatus === "Active" ? "bg-green-100 text-green-700" :
-                              property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
-                              property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
-                              "bg-amber-100 text-amber-700"
-                            }`}>{property.propertyStatus}</Badge>
-                          </TableCell>
-                        )}
-                      </>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-          </>
-        )}
+          {filteredProperties.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <Building2 className="h-16 w-16 text-muted-foreground/40 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No properties found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm">
+                Try adjusting your search or filters to find what you're looking for.
+              </p>
+            </div>
+          )}
 
-        {filteredProperties.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Building2 className="h-16 w-16 text-muted-foreground/40 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No properties found</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Try adjusting your search or filters to find what you're looking for.
-            </p>
-          </div>
-        )}
-
-        {filteredProperties.length > 0 && hasMoreProperties && (
-          <div className="flex flex-col items-center gap-2 mt-8 pb-4">
-            <p className="text-sm text-muted-foreground">
-              Showing {Math.min(visibleCount, totalProperties)} of {totalProperties} {viewToggle === "units" ? "units" : "properties"}
-            </p>
-            <Button
-              variant="outline"
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-              className="min-w-[120px] bg-transparent"
-            >
-              {isLoadingMore ? "Loading..." : "View More"}
-            </Button>
-          </div>
-        )}
-      </div>
+          {filteredProperties.length > 0 && hasMoreProperties && (
+            <div className="flex flex-col items-center gap-2 mt-8 pb-4">
+              <p className="text-sm text-muted-foreground">
+                Showing {Math.min(visibleCount, totalProperties)} of {totalProperties} {viewToggle === "units" ? "units" : "properties"}
+              </p>
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="min-w-[120px] bg-transparent"
+              >
+                {isLoadingMore ? "Loading..." : "View More"}
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

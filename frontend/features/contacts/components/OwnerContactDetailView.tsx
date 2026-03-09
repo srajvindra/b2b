@@ -122,6 +122,7 @@ import {
   contactAuditLogs,
   OWNER_PROCESSES,
 } from "@/features/contacts/data/ownerDetailData"
+import { ownerMissingFields, ownerMissingDocuments } from "@/features/contacts/data/contactDetailMock"
 import {
   OwnerOverview,
   OwnerDetailsTab,
@@ -381,20 +382,6 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
   const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
   const [missingInfoTab, setMissingInfoTab] = useState<"fields" | "documents">("fields")
 
-  // Owner-specific missing information data
-  const ownerMissingFields = [
-    { id: 1, fieldName: "Banking Details", section: "Financials", tab: "details" },
-    { id: 2, fieldName: "Tax ID / EIN", section: "Tax Information", tab: "details" },
-    { id: 3, fieldName: "Mailing Address", section: "Contact Information", tab: "overview" },
-    { id: 4, fieldName: "Preferred Contact Method", section: "Contact Information", tab: "overview" },
-  ]
-
-  const ownerMissingDocuments = [
-    { id: 1, documentName: "W-9 Form", status: "Not uploaded", section: "Documents" },
-    { id: 2, documentName: "Property Management Agreement", status: "Not uploaded", section: "Documents" },
-    { id: 3, documentName: "Insurance Certificate", status: "Not uploaded", section: "Documents" },
-  ]
-
   // Custom Fields Management
   const [showCustomFieldModal, setShowCustomFieldModal] = useState(false)
   const [customFieldSection, setCustomFieldSection] = useState("")
@@ -473,7 +460,15 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
       }),
     []
   )
-  useQuickActions(ownerQuickActions, { subtitle: "Owner" })
+  useQuickActions(ownerQuickActions, {
+    subtitle: "Owner",
+    aiSuggestedPrompts: [
+      "Summarize this owner",
+      "Properties owned by this owner",
+      "Open tasks for this owner",
+    ],
+    aiPlaceholder: "Ask about this owner...",
+  })
 
   const [showProcessPanel, setShowProcessPanel] = useState(false)
   const [editingProcess, setEditingProcess] = useState<{

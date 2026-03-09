@@ -7,9 +7,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Button } from "@/components/ui/button"
 import { useQuickActions } from "@/context/QuickActionsContext"
 import { dashboardQuickActions } from "@/lib/quickActions"
-import { useTasks } from "@/features/dashboard/hooks/useTasks"
-import { useCommunications } from "@/features/dashboard/hooks/useCommunications"
-import { useKPIs } from "@/features/dashboard/hooks/useKPIs"
 import { CommunicationsCard } from "@/features/dashboard/components/CommunicationsCard"
 import { TasksCard } from "@/features/dashboard/components/TasksCard"
 import { KPIsCard } from "@/features/dashboard/components/KPIsCard"
@@ -20,6 +17,10 @@ import { CommunicationModal } from "@/features/dashboard/components/Communicatio
 import type { Communication } from "@/features/dashboard/types"
 import { Wrench, FileText, LogOut, DollarSign, ShieldAlert, OctagonAlert } from "lucide-react"
 import { Filter } from "lucide-react"
+import { mockTasks } from "@/features/dashboard/data/mockTasks"
+import { mockCommunications } from "@/features/dashboard/data/mockCommunications"
+import { getMockKPIData } from "@/features/dashboard/data/mockKPIs"
+import type { CommSummary, KPIData, KPIViewMode, TaskSummary } from "@/features/dashboard/types"
 
 // Simple stubs for legacy hooks used by older components (e.g. leads pages).
 // Currently we always treat the user as an admin view and do not navigate via this nav object.
@@ -37,42 +38,114 @@ export function useNav() {
 }
 
 export default function Page() {
-  useQuickActions(dashboardQuickActions, { subtitle: "Dashboard" })
-  const {
-    filteredTasks,
-    taskSummary,
-    selectedStaff,
-    setSelectedStaff,
-    searchQuery: tasksSearchQuery,
-    setSearchQuery: setTasksSearchQuery,
-    staffMembers,
-    filteredStaffMembers,
-  } = useTasks()
+  useQuickActions(dashboardQuickActions, {
+    subtitle: "Dashboard",
+    aiSuggestedPrompts: [
+      "What's my current occupancy rate?",
+      "Show me delinquent accounts",
+      "Upcoming tasks this week",
+    ],
+    aiPlaceholder: "Ask about your dashboard...",
+  })
+  // ----- Tasks (inlined from features/dashboard/hooks/useTasks.ts) -----
+  const STAFF_MEMBERS = useMemo(
+    () => [
+      { id: 1, name: "Nina Patel", role: "Leasing Manager" },
+      { id: 2, name: "Richard Surovi", role: "Property Manager" },
+      { id: 3, name: "Mike Johnson", role: "Maintenance Tech" },
+      { id: 4, name: "Sarah Chen", role: "Leasing Agent" },
+      { id: 5, name: "David Wilson", role: "Operations Manager" },
+    ],
+    [],
+  )
+  const [selectedStaff, setSelectedStaff] = useState<string | null>(null)
+  const [tasksSearchQuery, setTasksSearchQuery] = useState("")
 
-  const {
-    filteredCommunications,
-    selectedTile,
-    setSelectedTile,
-    subFilter,
-    setSubFilter,
-    commSummary,
-    emailComms,
-    smsComms,
-    callComms,
-    isUnresponded,
-    isPending,
-  } = useCommunications(selectedStaff)
+  const filteredStaffMembers = useMemo(
+    () => STAFF_MEMBERS.filter((s) => s.name.toLowerCase().includes(tasksSearchQuery.toLowerCase())),
+    [STAFF_MEMBERS, tasksSearchQuery],
+  )
 
-  const {
-    kpiData,
-    kpiView,
-    setKpiView,
-    expandedSection,
-    setExpandedSection,
-    kpisSearchQuery,
-    setKpisSearchQuery,
-    userRole,
-  } = useKPIs()
+  const filteredTasks = useMemo(() => {
+    return mockTasks.filter((t) => {
+      const matchesStaff = selectedStaff ? t.assignedTo === selectedStaff : true
+      const matchesSearch = tasksSearchQuery ? t.assignedTo.toLowerCase().includes(tasksSearchQuery.toLowerCase()) : true
+      return matchesStaff && matchesSearch
+    })
+  }, [selectedStaff, tasksSearchQuery])
+
+  const taskSummary = useMemo(
+    (): TaskSummary => ({
+      total: filteredTasks.length,
+      overdue: filteredTasks.filter((t) => t.overdue).length,
+      dueToday: filteredTasks.filter((t) => t.dueDate === "2025-12-23").length,
+      dueThisWeek: filteredTasks.filter((t) => !t.overdue && t.dueDate <= "2025-12-29").length,
+    }),
+    [filteredTasks],
+  )
+
+  // ----- Communications (inlined from features/dashboard/hooks/useCommunications.ts) -----
+  function isUnresponded(c: Communication): boolean {
+    if (!c.read || c.responded) return false
+    const now = new Date()
+    const hoursSinceReceived = (now.getTime() - c.receivedAt.getTime()) / (1000 * 60 * 60)
+    return hoursSinceReceived >= 24
+  }
+
+  function isPending(c: Communication): boolean {
+    return !c.read || isUnresponded(c)
+  }
+
+  const [selectedTile, setSelectedTile] = useState<"emails" | "sms" | "calls" | null>(null)
+  const [subFilter, setSubFilter] = useState<"all" | "unread" | "unresponded">("all")
+
+  const baseFilteredCommunications = useMemo(() => {
+    return mockCommunications.filter((c) => {
+      const matchesStaff = selectedStaff ? c.assignedTo === selectedStaff : true
+      return matchesStaff
+    })
+  }, [selectedStaff])
+
+  const emailComms = useMemo(() => baseFilteredCommunications.filter((c) => c.type === "email"), [baseFilteredCommunications])
+  const smsComms = useMemo(() => baseFilteredCommunications.filter((c) => c.type === "text"), [baseFilteredCommunications])
+  const callComms = useMemo(() => baseFilteredCommunications.filter((c) => c.type === "call"), [baseFilteredCommunications])
+
+  const commSummary = useMemo(
+    (): CommSummary => ({
+      pending: emailComms.filter(isPending).length + smsComms.filter(isPending).length + callComms.filter(isUnresponded).length,
+      emails: emailComms.filter(isPending).length,
+      emailsUnread: emailComms.filter((c) => !c.read).length,
+      emailsUnresponded: emailComms.filter(isUnresponded).length,
+      sms: smsComms.filter(isPending).length,
+      smsUnread: smsComms.filter((c) => !c.read).length,
+      smsUnresponded: smsComms.filter(isUnresponded).length,
+      calls: callComms.filter(isUnresponded).length,
+    }),
+    [callComms, emailComms, smsComms],
+  )
+
+  const filteredCommunications = useMemo(() => {
+    return baseFilteredCommunications.filter((c) => {
+      if (selectedTile === "emails" && c.type !== "email") return false
+      if (selectedTile === "sms" && c.type !== "text") return false
+      if (selectedTile === "calls" && c.type !== "call") return false
+      if (subFilter === "unread") return !c.read
+      if (subFilter === "unresponded") return isUnresponded(c)
+      if (!selectedTile) {
+        if (c.type === "call") return isUnresponded(c) || !c.read
+        return isPending(c)
+      }
+      if (selectedTile === "calls") return isUnresponded(c) || !c.read
+      return isPending(c)
+    })
+  }, [baseFilteredCommunications, selectedTile, subFilter])
+
+  // ----- KPIs (inlined from features/dashboard/hooks/useKPIs.ts) -----
+  const [userRole] = useState<"associate" | "manager" | "leader">("manager")
+  const [kpiView, setKpiView] = useState<KPIViewMode>("table")
+  const [expandedSection, setExpandedSection] = useState<string | null>("sales")
+  const [kpisSearchQuery, setKpisSearchQuery] = useState("")
+  const kpiData = useMemo<KPIData>(() => getMockKPIData(userRole), [userRole])
 
   const [dashboardTab, setDashboardTab] = useState<"tasks" | "communications" | "combined">("tasks")
   const [showCommModal, setShowCommModal] = useState(false)

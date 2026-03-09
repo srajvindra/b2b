@@ -1,9 +1,18 @@
 // Processes
+export interface ProcessStageItem {
+  id: string
+  name: string
+  steps: number
+  days: number
+  processes: number
+}
+
 export interface ProcessType {
   id: string
   name: string
   isDraft: boolean
   stages: number
+  stagesList: ProcessStageItem[]
   folder?: string
   team?: string
 }

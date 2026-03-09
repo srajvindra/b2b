@@ -135,7 +135,7 @@ export interface OwnerDocument {
 export interface OwnerTask {
   id: string
   title: string
-  processName?: string
+  processName?: string | null
   relatedEntityType?: "Tenant" | "Property" | "Lease Prospect" | "Owner" | "Prospect Owner"
   relatedEntityName?: string
   assignee: string
@@ -243,4 +243,60 @@ export interface ContactAuditLogEntry {
   deletedNoteContent?: string
   deletedBy?: string
   deletedOn?: string
+}
+
+// Contact process detail (ContactProcessDetailView)
+export interface ProcessTask {
+  id: string
+  name: string
+  startDate: string | null
+  completedDate: string | null
+  staffName: string
+  staffEmail: string
+}
+
+export interface ProcessData {
+  id: string
+  name: string
+  prospectingStage?: string
+  leaseProspectStage?: string
+  startedOn?: string
+  completedOn?: string
+  status: string
+  tasks: ProcessTask[]
+}
+
+export interface ActivityItem {
+  id: string
+  type: "email" | "task_completed" | "process_assigned" | "email_opened" | "note"
+  actor: string
+  actorInitials: string
+  target?: string
+  subject?: string
+  preview?: string
+  detail?: string
+  timestamp: string
+  address?: string
+  noteText?: string
+}
+
+export interface ContactProcessDetailViewProps {
+  process: ProcessData
+  contactName: string
+  onBack: () => void
+}
+
+// Missing info modal data shapes
+export interface MissingFieldItem {
+  id: number
+  fieldName: string
+  section: string
+  tab: string
+}
+
+export interface MissingDocumentItem {
+  id: number
+  documentName: string
+  status: string
+  section: string
 }

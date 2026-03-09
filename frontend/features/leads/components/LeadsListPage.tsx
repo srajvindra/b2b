@@ -2,6 +2,10 @@
 
 import { useParams, useRouter } from "next/navigation"
 import LeadsPageContent from "@/features/leads/components/LeadsPageContent"
+import { useQuickActions } from "@/context/QuickActionsContext"
+import { ownerProspectsCategoryQuickActions } from "@/lib/quickActions"
+
+const EMPTY_QUICK_ACTIONS: [] = []
 
 export interface LeadsListPageProps {
   mode: "owner-prospects" | "lease-prospects"
@@ -17,6 +21,8 @@ export function LeadsListPage({ mode, categoryId: categoryIdProp }: LeadsListPag
   const router = useRouter()
   const categoryId = categoryIdProp ?? (params?.categoryId as string | undefined)
   const view = mode === "owner-prospects" ? "owners" : "lease-prospects"
+
+  useQuickActions(mode === "owner-prospects" ? ownerProspectsCategoryQuickActions : EMPTY_QUICK_ACTIONS)
 
   return (
     <LeadsPageContent

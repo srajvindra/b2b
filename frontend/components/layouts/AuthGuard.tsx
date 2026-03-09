@@ -1,26 +1,36 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
-const AUTH_KEY = "isAuthenticated"
+const PUBLIC_PATHS = ["/login", "/register"];
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
-  const [status, setStatus] = useState<"loading" | "authenticated" | "unauthenticated">("loading")
+  const pathname = usePathname();
+  const router = useRouter();
+  const [ready, setReady] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  // Show login/register immediately — no auth check needed
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname?.startsWith(p + "/"))) {
+    return <>{children}</>;
+  }
 
   useEffect(() => {
-    const isAuthenticated = typeof window !== "undefined" && localStorage.getItem(AUTH_KEY) === "true"
-    setStatus(isAuthenticated ? "authenticated" : "unauthenticated")
-  }, [])
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.replace("/")
+    // Must match what login sets: localStorage.setItem("isAuthenticated", "true")
+    const isAuthenticated =
+      typeof window !== "undefined" &&
+      localStorage.getItem("isAuthenticated") === "true";
+    if (isAuthenticated) {
+      setAuthenticated(true);
+    } else {
+      router.replace("/login");
     }
-  }, [status, router])
+    setReady(true);
+  }, [router]);
 
-  if (status === "loading" || status === "unauthenticated") {
+  if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -31,5 +41,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     )
   }
 
-  return <>{children}</>
+  if (!authenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
 }

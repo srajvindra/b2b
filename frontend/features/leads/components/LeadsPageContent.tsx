@@ -27,12 +27,49 @@ import { BulkActionBar } from "@/components/bulk-action-bar"
 import { TenantApplicationDetailView } from "@/features/leads/components/TenantApplicationDetailView"
 import { CategoryListView } from "@/features/leads/components/CategoryListView"
 import OwnerDetailPage from "@/components/owner-detail-page"
-import { getStageCardStyle, getStageBadgeStyle, SOURCES, EMAIL_SENT_RANGES, UNITS_VALUES, LAST_TOUCH_RANGES, CREATED_RANGES, OWNER_CATEGORIES, OWNER_PROSPECT_CATEGORIES } from "@/features/leads/data/mockLeads"
+import {
+  ASSIGNEES,
+  CATEGORY_LEADS,
+  CREATED_RANGES,
+  EMAIL_SENT_RANGES,
+  getCategoryStages,
+  getOwnerStagesByType,
+  getProspectStagesByType,
+  getStageBadgeStyle,
+  getStageCardStyle,
+  initialLeadsData,
+  LAST_TOUCH_RANGES,
+  ownerStages,
+  OWNER_CATEGORIES,
+  OWNER_PROSPECT_CATEGORIES,
+  PROSPECT_CATEGORY_LEADS,
+  SOURCES,
+  UNITS_VALUES,
+} from "@/features/leads/data/mockLeads"
 import type { Lead } from "@/features/leads/types"
-import { useLeads } from "@/features/leads/hooks/useLeads"
+import {
+  LEASE_PROSPECT_FIELDS_WITH_SELECT_ALL,
+  LEASE_PROSPECT_FILTER_FIELDS,
+  OWNER_PROSPECT_FIELDS_WITH_SELECT_ALL,
+  OWNER_PROSPECT_FILTER_FIELDS,
+  getLeaseProspectFilterOptions,
+  getOwnerProspectFilterOptions,
+} from "@/features/leads/data/leadFilters"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
+const LEAD_TABLE_COLUMNS = [
+  { id: "name", label: "Name" },
+  { id: "emailsSent", label: "Emails Sent" },
+  { id: "units", label: "Units" },
+  { id: "nextAction", label: "Next Action" },
+  { id: "stage", label: "Stage" },
+  { id: "assignee", label: "Assignee" },
+  { id: "source", label: "Source" },
+  { id: "lastTouch", label: "Last Touch" },
+  { id: "createdAt", label: "Created At" },
+] as const
 
+const PAGE_SIZE = 10
 
 export interface LeadsPageContentProps {
   params?: { view?: string }
@@ -56,107 +93,291 @@ export default function LeadsPageContent({
   const { view } = useView()
   const nav = useNav()
   const initialCategoryId = categoryIdFromUrl ?? null
-  const {
-    leads,
-    setLeads,
-    searchQuery,
-    setSearchQuery,
-    selectedCategory,
-    setSelectedCategory,
-    selectedProspectCategory,
-    setSelectedProspectCategory,
-    categorySearchQuery,
-    setCategorySearchQuery,
-    ownerType,
-    setOwnerType,
-    prospectType,
-    setProspectType,
-    selectedAssignees,
-    setSelectedAssignees,
-    selectedAssignee,
-    setSelectedAssignee,
-    assigneeSearchQuery,
-    setAssigneeSearchQuery,
-    tileStaffFilter,
-    setTileStaffFilter,
-    tileStaffSearch,
-    setTileStaffSearch,
-    tileStaffOpen,
-    setTileStaffOpen,
-    selectedLeadIds,
-    setSelectedLeadIds,
-    stageSearchQuery,
-    setStageSearchQuery,
-    sourceSearchQuery,
-    setSourceSearchQuery,
-    unitsSearchQuery,
-    setUnitsSearchQuery,
-    dateFilter,
-    setDateFilter,
-    showCustomDatePicker,
-    setShowCustomDatePicker,
-    customDateFrom,
-    setCustomDateFrom,
-    customDateTo,
-    setCustomDateTo,
-    selectedType,
-    setSelectedType,
-    selectedStage,
-    setSelectedStage,
-    filterUnitType,
-    setFilterUnitType,
-    filterNumUnits,
-    setFilterNumUnits,
-    filterCallStatus,
-    setFilterCallStatus,
-    sortBy,
-    setSortBy,
-    selectedStages,
-    setSelectedStages,
-    selectedSources,
-    setSelectedSources,
-    selectedEmailsSent,
-    setSelectedEmailsSent,
-    selectedUnits,
-    setSelectedUnits,
-    selectedLastTouch,
-    setSelectedLastTouch,
-    selectedCreated,
-    setSelectedCreated,
-    lastTouchDateFilter,
-    setLastTouchDateFilter,
-    createdDateFilter,
-    setCreatedDateFilter,
-    dragOverStage,
-    setDragOverStage,
-    visibleCount,
-    setVisibleCount,
-    isLoadingMore,
-    page,
-    setPage,
-    pageSize,
-    filteredSortedLeads,
-    totalItems,
-    totalPages,
-    pagedLeads,
-    visibleLeads,
-    hasMoreLeads,
-    handleLoadMore,
-    kanbanStages,
-    leadsByStage,
-    handleStageChange: hookHandleStageChange,
-    filteredCategories,
-    filteredProspectCategories,
-    resetAllFilters,
-    hasActiveFilters,
-    ASSIGNEES,
-  } = useLeads({ params, view, initialCategoryId })
 
-  const [showFilters, setShowFilters] = useState(false)
+  // ----- Inlined from features/leads/hooks/useLeads.ts (duplicated by request) -----
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(() =>
+    params?.view === "owners" ? (initialCategoryId ?? null) : null,
+  )
+  const [selectedProspectCategory, setSelectedProspectCategory] = useState<string | null>(() =>
+    params?.view === "lease-prospects" || params?.view === "tenants" ? (initialCategoryId ?? null) : null,
+  )
+  const [categorySearchQuery, setCategorySearchQuery] = useState("")
+  const [ownerType, setOwnerType] = useState<string>("type1")
+  const [prospectType, setProspectType] = useState<string>("type1")
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([])
+  const [selectedAssignee, setSelectedAssignee] = useState<string>("all")
+  const [assigneeSearchQuery, setAssigneeSearchQuery] = useState<string>("")
+  const [tileStaffFilter, setTileStaffFilter] = useState<string>("all")
+  const [tileStaffSearch, setTileStaffSearch] = useState<string>("")
+  const [tileStaffOpen, setTileStaffOpen] = useState(false)
+  const [selectedLeadIds, setSelectedLeadIds] = useState<number[]>([])
+  const [stageSearchQuery, setStageSearchQuery] = useState<string>("")
+  const [sourceSearchQuery, setSourceSearchQuery] = useState<string>("")
+  const [unitsSearchQuery, setUnitsSearchQuery] = useState<string>("")
+  const [dateFilter, setDateFilter] = useState<string>("all")
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false)
+  const [customDateFrom, setCustomDateFrom] = useState<string>("")
+  const [customDateTo, setCustomDateTo] = useState<string>("")
+  const getInitialType = (): "all" | "owner" | "tenant" => {
+    if (params?.view === "owners") return "owner"
+    if (params?.view === "lease-prospects" || params?.view === "tenants") return "tenant"
+    return "all"
+  }
+  const [selectedType, setSelectedType] = useState<"all" | "owner" | "tenant">(getInitialType)
+  const [selectedStage, setSelectedStage] = useState<string>("all")
+  const [filterUnitType, setFilterUnitType] = useState<string>("all")
+  const [filterNumUnits, setFilterNumUnits] = useState<string>("all")
+  const [filterCallStatus, setFilterCallStatus] = useState<string>("all")
+  const [sortBy, setSortBy] = useState<string>("newest")
+  const [selectedStages, setSelectedStages] = useState<string[]>([])
+  const [selectedSources, setSelectedSources] = useState<string[]>([])
+  const [selectedEmailsSent, setSelectedEmailsSent] = useState<string[]>([])
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([])
+  const [selectedLastTouch, setSelectedLastTouch] = useState<string[]>([])
+  const [selectedCreated, setSelectedCreated] = useState<string[]>([])
+  const [lastTouchDateFilter, setLastTouchDateFilter] = useState<string>("all")
+  const [createdDateFilter, setCreatedDateFilter] = useState<string>("all")
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null)
+  const [visibleCount, setVisibleCount] = useState<number>(20)
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
+  const [leads, setLeads] = useState<Lead[]>(initialLeadsData)
+  const [page, setPage] = useState<number>(1)
+  const pageSize = PAGE_SIZE
+
+  const isProspectView = params?.view === "lease-prospects" || params?.view === "tenants"
+
+  useEffect(() => {
+    if (initialCategoryId == null) return
+    if (params?.view === "owners") {
+      setSelectedCategory(initialCategoryId)
+      setSelectedProspectCategory(null)
+    } else if (isProspectView) {
+      setSelectedProspectCategory(initialCategoryId)
+      setSelectedCategory(null)
+    }
+  }, [initialCategoryId, params?.view, isProspectView])
+
+  useEffect(() => {
+    if (params?.view === "owners" && selectedCategory) {
+      setLeads(CATEGORY_LEADS[selectedCategory] ?? [])
+    } else if (isProspectView && selectedProspectCategory) {
+      setLeads(PROSPECT_CATEGORY_LEADS[selectedProspectCategory] ?? [])
+    } else {
+      setLeads(initialLeadsData)
+    }
+    setPage(1)
+    setSelectedStage("all")
+    setSearchQuery("")
+  }, [selectedCategory, selectedProspectCategory, params?.view, isProspectView])
+
+  const filteredSortedLeads = leads
+    .filter((lead) => {
+      const q = searchQuery.trim().toLowerCase()
+      const matchesSearch =
+        !q ||
+        lead.name.toLowerCase().includes(q) ||
+        (lead.property && lead.property.toLowerCase().includes(q)) ||
+        lead.assignedTo.toLowerCase().includes(q) ||
+        (lead.email && lead.email.toLowerCase().includes(q)) ||
+        (lead.phone && lead.phone.toLowerCase().includes(q)) ||
+        (lead.interestedUnits &&
+          lead.interestedUnits.some(
+            (u: { address: string; unit: string }) =>
+              u.address.toLowerCase().includes(q) || u.unit.toLowerCase().includes(q),
+          ))
+
+      const matchesType =
+        selectedType === "all" ||
+        selectedCategory ||
+        selectedProspectCategory ||
+        lead.userType.toLowerCase() === selectedType.toLowerCase()
+      const matchesStage = selectedStage === "all" || lead.stage.toLowerCase() === selectedStage.toLowerCase()
+      const matchesUnitType = filterUnitType === "all" || (lead.unitDetails && lead.unitDetails === filterUnitType)
+      const matchesNumUnits =
+        filterNumUnits === "all" ||
+        (lead.numberOfUnits !== undefined && lead.numberOfUnits === Number(filterNumUnits))
+      const matchesCallStatus = filterCallStatus === "all" || (lead.lastCallStatus && lead.lastCallStatus === filterCallStatus)
+      const matchesOwnerType =
+        params?.view !== "owners" || selectedCategory || !lead.ownerType || lead.ownerType === ownerType
+      const matchesProspectType =
+        !isProspectView || selectedProspectCategory || !lead.prospectType || lead.prospectType === prospectType
+      const matchesAssignee =
+        selectedAssignee === "all" ||
+        (lead.assignedTo && lead.assignedTo.toLowerCase().replace(/\s+/g, "-") === selectedAssignee)
+      const matchesTileStaff =
+        tileStaffFilter === "all" ||
+        (lead.assignedTo && lead.assignedTo.toLowerCase().replace(/\s+/g, "-") === tileStaffFilter)
+      const matchesUnitsFilter =
+        selectedUnits.length === 0 ||
+        (lead.numberOfUnits !== undefined && selectedUnits.includes(String(lead.numberOfUnits)))
+
+      if (view === "staff" && lead.assignedTo !== "Nina") return false
+
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesStage &&
+        matchesUnitType &&
+        matchesNumUnits &&
+        matchesCallStatus &&
+        matchesOwnerType &&
+        matchesProspectType &&
+        matchesAssignee &&
+        matchesUnitsFilter &&
+        matchesTileStaff
+      )
+    })
+    .sort((a, b) => {
+      if (sortBy === "newest") return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      if (sortBy === "oldest") return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      if (sortBy === "az") return a.name.localeCompare(b.name)
+      return 0
+    })
+
+  const totalItems = filteredSortedLeads.length
+  const totalPages = Math.ceil(totalItems / PAGE_SIZE)
+  const pagedLeads = filteredSortedLeads.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const visibleLeads = filteredSortedLeads.slice(0, visibleCount)
+  const hasMoreLeads = visibleCount < totalItems
+
+  useEffect(() => {
+    setPage(1)
+  }, [searchQuery, selectedType, selectedStage, filterUnitType, filterNumUnits, filterCallStatus, sortBy, selectedCategory])
+
+  const resetAllFilters = () => {
+    setSelectedAssignee("all")
+    setSelectedAssignees([])
+    setSelectedStages([])
+    setSelectedSources([])
+    setSelectedEmailsSent([])
+    setSelectedUnits([])
+    setSelectedLastTouch([])
+    setSelectedCreated([])
+    setLastTouchDateFilter("all")
+    setCreatedDateFilter("all")
+    setSelectedStage("all")
+    setFilterUnitType("all")
+    setFilterNumUnits("all")
+    setFilterCallStatus("all")
+    setAssigneeSearchQuery("")
+    setStageSearchQuery("")
+    setSourceSearchQuery("")
+    setUnitsSearchQuery("")
+    setTileStaffFilter("all")
+    setTileStaffSearch("")
+    setPage(1)
+  }
+
+  const hasActiveFilters =
+    tileStaffFilter !== "all" ||
+    selectedAssignee !== "all" ||
+    selectedAssignees.length > 0 ||
+    selectedStages.length > 0 ||
+    selectedSources.length > 0 ||
+    selectedEmailsSent.length > 0 ||
+    selectedUnits.length > 0 ||
+    selectedLastTouch.length > 0 ||
+    selectedCreated.length > 0 ||
+    lastTouchDateFilter !== "all" ||
+    createdDateFilter !== "all" ||
+    selectedStage !== "all" ||
+    filterUnitType !== "all" ||
+    filterNumUnits !== "all" ||
+    filterCallStatus !== "all"
+
+  const handleLoadMore = () => {
+    setIsLoadingMore(true)
+    setTimeout(() => {
+      setVisibleCount((prev) => Math.min(prev + 20, totalItems))
+      setIsLoadingMore(false)
+    }, 300)
+  }
+
+  const kanbanStages =
+    params?.view === "owners" && selectedCategory
+      ? getCategoryStages(selectedCategory)
+      : isProspectView
+        ? getProspectStagesByType(prospectType)
+        : params?.view === "owners"
+          ? getOwnerStagesByType(ownerType)
+          : ownerStages
+
+  const leadsByStage = kanbanStages.reduce(
+    (acc, stage) => {
+      acc[stage] = filteredSortedLeads.filter((lead) => lead.stage === stage)
+      return acc
+    },
+    {} as Record<string, Lead[]>,
+  )
+
+  const handleStageChangeInternal = (leadId: number, newStage: string) => {
+    const lead = leads.find((l) => l.id === leadId)
+    if (!lead) return null
+    const isOwner = lead.userType === "Owner" || lead.userType.includes("Owner")
+    const stages = isOwner ? getOwnerStagesByType(lead.ownerType ?? "type1") : getProspectStagesByType(lead.prospectType ?? "type1")
+    const currentStageIndex = stages.indexOf(lead.stage)
+    const newStageIndex = stages.indexOf(newStage)
+    if (newStageIndex > currentStageIndex + 1) {
+      const skippedStages = stages.slice(currentStageIndex + 1, newStageIndex)
+      return { skippedStages, newStage, lead }
+    }
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l)))
+    return null
+  }
+
+  const filteredCategories = OWNER_CATEGORIES.filter((cat) => cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+  const filteredProspectCategories = OWNER_PROSPECT_CATEGORIES.filter((cat) => cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+
   const [viewMode, setViewMode] = useState<"table" | "kanban">("table")
   const [selectedLead, setSelectedLead] = useState<number | null>(null)
   const [selectedLeadDefaultTab, setSelectedLeadDefaultTab] = useState<string | undefined>(undefined)
   const [draggedLead, setDraggedLead] = useState<number | null>(null)
+  const [showColumnSettingsDialog, setShowColumnSettingsDialog] = useState(false)
+
+  const showAdvancedFilterButton =
+    (params?.view === "owners" && !!selectedCategory) ||
+    ((params?.view === "lease-prospects" || params?.view === "tenants") && !!selectedProspectCategory)
+
+  const isOwnerAdvancedFilter = params?.view === "owners" && !!selectedCategory
+  const advancedFilterFields = isOwnerAdvancedFilter ? OWNER_PROSPECT_FILTER_FIELDS : LEASE_PROSPECT_FILTER_FIELDS
+  const advancedFieldsWithSelectAll = isOwnerAdvancedFilter
+    ? OWNER_PROSPECT_FIELDS_WITH_SELECT_ALL
+    : LEASE_PROSPECT_FIELDS_WITH_SELECT_ALL
+  const getAdvancedFilterOptions = isOwnerAdvancedFilter ? getOwnerProspectFilterOptions : getLeaseProspectFilterOptions
+
+  // Advanced filter modal (UI-only, matches legacy leads-page behavior)
+  const [showAdvancedFilterModal, setShowAdvancedFilterModal] = useState(false)
+  const [modalFilterField, setModalFilterField] = useState("")
+  const [modalFilterValues, setModalFilterValues] = useState<string[]>([])
+  const [modalOptionSearch, setModalOptionSearch] = useState("")
+  const [modalFieldSearch, setModalFieldSearch] = useState("")
+  const [showFieldDropdown, setShowFieldDropdown] = useState(false)
+  const [appliedAdvancedFilters, setAppliedAdvancedFilters] = useState<{ field: string; values: string[] }[]>([])
+
+  const closeAdvancedFilterModal = () => {
+    setShowAdvancedFilterModal(false)
+    setModalFilterField("")
+    setModalFilterValues([])
+    setModalOptionSearch("")
+    setModalFieldSearch("")
+    setShowFieldDropdown(false)
+  }
+
+  const applyAdvancedFilter = () => {
+    if (!modalFilterField || modalFilterValues.length === 0) return
+    setAppliedAdvancedFilters((prev) => [...prev, { field: modalFilterField, values: modalFilterValues }])
+    setModalFilterField("")
+    setModalFilterValues([])
+    setModalOptionSearch("")
+    setShowAdvancedFilterModal(false)
+    setPage(1)
+  }
+
+  const removeAdvancedFilter = (index: number) => {
+    setAppliedAdvancedFilters((prev) => prev.filter((_, i) => i !== index))
+    setPage(1)
+  }
   const skipStepDialogInitialState = {
     open: false,
     leadId: null,
@@ -175,9 +396,13 @@ export default function LeadsPageContent({
   }>(skipStepDialogInitialState)
   const [skipReason, setSkipReason] = useState<string>("")
   const [skipComments, setSkipComments] = useState<string>("")
-
+  const [visibleLeadColumns, setVisibleLeadColumns] = useState<string[]>(() =>
+    LEAD_TABLE_COLUMNS.map((c) => c.id)
+  )
+  const isColumnVisible = (id: string) =>
+    visibleLeadColumns.length === 0 || visibleLeadColumns.includes(id)
   const handleStageChange = (leadId: number, newStage: string) => {
-    const result = hookHandleStageChange(leadId, newStage)
+    const result = handleStageChangeInternal(leadId, newStage)
     if (result) {
       setSkipStepDialog({
         open: true,
@@ -500,6 +725,18 @@ export default function LeadsPageContent({
 
         {/* View Toggle and Settings */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* Filter Button (single category pages) */}
+          {showAdvancedFilterButton && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAdvancedFilterModal(true)}
+              className="h-9 px-3"
+            >
+              <Filter className="h-4 w-4 mr-1.5" />
+              Filter
+            </Button>
+          )}
           {/* View Toggle */}
           <div className="flex items-center border rounded-md">
             <Button
@@ -524,6 +761,14 @@ export default function LeadsPageContent({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setShowColumnSettingsDialog(true)}
+            className="flex items-center gap-1"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          {/* <Button
+            variant="outline"
+            size="sm"
             onClick={() => {
               if (params?.view === "owners") {
                 nav.go("stages-owners")
@@ -534,9 +779,38 @@ export default function LeadsPageContent({
             className="flex items-center gap-1"
           >
             <Settings className="h-4 w-4" />
-          </Button>
+          </Button> */}
         </div>
       </div>
+
+      {/* Applied Filters Display (single category pages) */}
+      {showAdvancedFilterButton && appliedAdvancedFilters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <span className="text-xs text-muted-foreground">Active filters:</span>
+          {appliedAdvancedFilters.map((filter, index) => (
+            <div
+              key={`${filter.field}-${index}`}
+              className="flex items-center gap-1 h-7 px-2.5 rounded-md border border-primary/30 bg-primary/5 text-primary text-xs font-medium"
+            >
+              <span>{filter.field}:</span>
+              <span className="max-w-[150px] truncate">{filter.values.join(", ")}</span>
+              <button type="button" onClick={() => removeAdvancedFilter(index)} className="ml-1 hover:text-destructive">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => {
+              setAppliedAdvancedFilters([])
+              setPage(1)
+            }}
+            className="text-xs text-muted-foreground hover:text-foreground underline"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
       {/* Bulk Action Bar */}
       <BulkActionBar
@@ -571,9 +845,12 @@ export default function LeadsPageContent({
                       />
                     </th>
                     {/* Name Column - Plain Header */}
+                    {isColumnVisible("name") && (
                     <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
+                    )}
 
                     {/* Emails Sent Column Filter */}
+                    {isColumnVisible("emailsSent") && (
                     <th className="text-left p-3">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -621,9 +898,10 @@ export default function LeadsPageContent({
                         </PopoverContent>
                       </Popover>
                     </th>
+                    )}
 
                     {/* Units Column Filter - For Owners and Tenants (Lease Prospects) views */}
-                    {(params?.view === "owners" || params?.view === "lease-prospects") && (
+                    {(params?.view === "owners" || params?.view === "lease-prospects") && isColumnVisible("units") && (
                       <th className="text-left p-3">
                         <Popover>
                           <PopoverTrigger asChild>
@@ -681,9 +959,12 @@ export default function LeadsPageContent({
                     )}
 
                     {/* Next Action Column - Plain Header */}
+                    {isColumnVisible("nextAction") && (
                     <th className="text-left p-3 font-medium text-muted-foreground">Next Action</th>
+                    )}
 
                     {/* Stage Column Filter */}
+                    {isColumnVisible("stage") && (
                     <th className="text-left p-3">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -739,8 +1020,10 @@ export default function LeadsPageContent({
                         </PopoverContent>
                       </Popover>
                     </th>
+                    )}
 
                     {/* Assignee Column Filter */}
+                    {isColumnVisible("assignee") && (
                     <th className="text-left p-3">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -796,8 +1079,10 @@ export default function LeadsPageContent({
                         </PopoverContent>
                       </Popover>
                     </th>
+                    )}
 
                     {/* Source Column Filter */}
+                    {isColumnVisible("source") && (
                     <th className="text-left p-3">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -853,8 +1138,10 @@ export default function LeadsPageContent({
                         </PopoverContent>
                       </Popover>
                     </th>
+                    )}
 
                     {/* Last Touch Column Filter */}
+                    {isColumnVisible("lastTouch") && (
                     <th className="text-left p-3">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -902,8 +1189,10 @@ export default function LeadsPageContent({
                         </PopoverContent>
                       </Popover>
                     </th>
+                    )}
 
                     {/* Created At Column Filter */}
+                    {isColumnVisible("createdAt") && (
                     <th className="text-left p-3">
                       <Popover>
                         <PopoverTrigger asChild>
@@ -921,11 +1210,11 @@ export default function LeadsPageContent({
                           <div className="p-2 border-b">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium">Created</span>
-                              {selectedCreated.length > 0 && (
+                              {selectedCreated.length > 0 ? (
                                 <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedCreated([])}>
                                   Clear
                                 </Button>
-                              )}
+                              ) : "N/A"}
                             </div>
                           </div>
                           <div className="max-h-[200px] overflow-y-auto p-2">
@@ -951,6 +1240,7 @@ export default function LeadsPageContent({
                         </PopoverContent>
                       </Popover>
                     </th>
+                    )}
 
                     {/* Actions Column with Reset Button */}
                     <th className="text-left p-3">
@@ -990,6 +1280,7 @@ export default function LeadsPageContent({
                           }}
                         />
                       </td>
+                      {isColumnVisible("name") && (
                       <td className="p-4">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
@@ -1006,12 +1297,15 @@ export default function LeadsPageContent({
                           </div>
                         </div>
                       </td>
+                      )}
+                      {isColumnVisible("emailsSent") && (
                       <td className="p-4">
                         <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
                           {lead.emailsSent || 0}
                         </Badge>
                       </td>
-                      {(params?.view === "owners" || params?.view === "tenants") && (
+                      )}
+                      {(params?.view === "owners" || params?.view === "tenants") && isColumnVisible("units") && (
                         <td className="p-4">
                           {params?.view === "tenants" && lead.interestedUnits && lead.interestedUnits.length > 0 ? (
                             <button
@@ -1046,12 +1340,17 @@ export default function LeadsPageContent({
                           )}
                         </td>
                       )}
+                      {isColumnVisible("nextAction") && (
                       <td className="p-4 text-sm text-muted-foreground">{lead.nextAction || lead.nextFollowUp}</td>
+                      )}
+                      {isColumnVisible("stage") && (
                       <td className="p-4">
                         <Badge variant="outline" className={getStageBadgeStyle(lead.stage)}>
                           {lead.stage}
                         </Badge>
                       </td>
+                      )}
+                      {isColumnVisible("assignee") && (
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
@@ -1065,13 +1364,20 @@ export default function LeadsPageContent({
                           <span className="text-sm text-muted-foreground">{lead.assignedTo}</span>
                         </div>
                       </td>
+                      )}
+                      {isColumnVisible("source") && (
                       <td className="p-4">
                         <Badge variant="secondary" className="text-xs">
                           {lead.source || "N/A"}
                         </Badge>
                       </td>
+                      )}
+                      {isColumnVisible("lastTouch") && (
                       <td className="p-4 text-sm text-muted-foreground">{lead.lastTouch || "N/A"}</td>
+                      )}
+                      {isColumnVisible("createdAt") && (
                       <td className="p-4 text-sm text-muted-foreground">{lead.createdAt}</td>
+                      )}
                       <td className="p-4">
                         <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
                           <Settings className="h-4 w-4" />
@@ -1156,6 +1462,48 @@ export default function LeadsPageContent({
         </div>
       )}
 
+      {/* Column Settings Dialog */}
+      <Dialog open={showColumnSettingsDialog} onOpenChange={setShowColumnSettingsDialog}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle>Column Settings</DialogTitle>
+            <DialogDescription>
+              Select which columns to display in the table
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3 py-4">
+            {LEAD_TABLE_COLUMNS.map((column) => (
+              <div
+                key={column.id}
+                className="flex items-center gap-3 p-3 border border-border rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+              >
+                <Checkbox
+                  id={`col-${column.id}`}
+                  checked={visibleLeadColumns.includes(column.id)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      setVisibleLeadColumns([...visibleLeadColumns, column.id])
+                    } else {
+                      setVisibleLeadColumns(visibleLeadColumns.filter((c) => c !== column.id))
+                    }
+                  }}
+                />
+                <label
+                  htmlFor={`col-${column.id}`}
+                  className="text-sm font-medium cursor-pointer flex-1"
+                >
+                  {column.label}
+                </label>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowColumnSettingsDialog(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       {/* Skip Step Dialog */}
       <Dialog
         open={skipStepDialog.open}
@@ -1207,6 +1555,159 @@ export default function LeadsPageContent({
             </Button>
             <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={handleConfirmSkip}>
               Confirm Skip
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Advanced Filter Dialog (single category pages) */}
+      <Dialog
+        open={showAdvancedFilterButton && showAdvancedFilterModal}
+        onOpenChange={(open) => {
+          if (!open) closeAdvancedFilterModal()
+          else setShowAdvancedFilterModal(true)
+        }}
+      >
+        <DialogContent className="w-[480px] max-w-[90vw]">
+          <DialogHeader>
+            <DialogTitle>Add Filter</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-4">
+            {/* Filter Field Dropdown - Searchable */}
+            <div className="relative">
+              <Label className="text-xs font-medium text-primary mb-1 block">
+                What do you want to filter by?
+              </Label>
+              <div className="border rounded-md w-full">
+                <div
+                  className="flex items-center gap-2 h-10 px-3 cursor-pointer"
+                  onClick={() => setShowFieldDropdown(!showFieldDropdown)}
+                >
+                  <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span
+                    className={`text-sm flex-1 truncate ${modalFilterField ? "text-foreground" : "text-muted-foreground"}`}
+                  >
+                    {modalFilterField || "Select a filter field"}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform ${showFieldDropdown ? "rotate-180" : ""}`}
+                  />
+                </div>
+                {showFieldDropdown && (
+                  <>
+                    <div className="border-t px-2 py-1.5">
+                      <Input
+                        placeholder="Search fields..."
+                        value={modalFieldSearch}
+                        onChange={(e) => setModalFieldSearch(e.target.value)}
+                        className="h-8 text-sm"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-[200px] overflow-y-auto border-t">
+                      {advancedFilterFields
+                        .filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
+                        .map((field) => (
+                          <div
+                            key={field}
+                            className="flex items-center px-3 py-2 text-sm cursor-pointer hover:bg-muted/50 border-b border-border last:border-b-0"
+                            onClick={() => {
+                              setModalFilterField(field)
+                              setModalFilterValues([])
+                              setModalOptionSearch("")
+                              setModalFieldSearch("")
+                              setShowFieldDropdown(false)
+                            }}
+                          >
+                            <span className="truncate">{field}</span>
+                          </div>
+                        ))}
+                      {advancedFilterFields.filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
+                        .length === 0 && (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Filter Options Dropdown - Searchable */}
+            <div>
+              <div className="border rounded-md w-full">
+                <Input
+                  placeholder="Select filter option(s)"
+                  value={modalOptionSearch}
+                  onChange={(e) => setModalOptionSearch(e.target.value)}
+                  className="border-0 border-b rounded-b-none h-10 focus-visible:ring-0 w-full"
+                />
+                {modalFilterField && (() => {
+                  const allOptions = getAdvancedFilterOptions(modalFilterField)
+                  const filtered = allOptions.filter((opt) =>
+                    opt.toLowerCase().includes(modalOptionSearch.toLowerCase()),
+                  )
+                  const allSelected = filtered.length > 0 && filtered.every((opt) => modalFilterValues.includes(opt))
+                  const showSelectAll = advancedFieldsWithSelectAll.includes(modalFilterField) && !modalOptionSearch
+                  return (
+                    <div className="max-h-[180px] overflow-y-auto">
+                      {showSelectAll && (
+                        <div className="flex items-center space-x-2 py-2 px-3 border-b border-border hover:bg-muted/50">
+                          <Checkbox
+                            id="advanced-filter-modal-opt-select-all"
+                            checked={allSelected}
+                            onCheckedChange={(checked) => {
+                              if (checked) setModalFilterValues([...new Set([...modalFilterValues, ...allOptions])])
+                              else setModalFilterValues(modalFilterValues.filter((v) => !allOptions.includes(v)))
+                            }}
+                          />
+                          <label
+                            htmlFor="advanced-filter-modal-opt-select-all"
+                            className="text-sm leading-none cursor-pointer flex-1 font-medium"
+                          >
+                            Select All
+                          </label>
+                        </div>
+                      )}
+                      {filtered.map((option) => (
+                        <div
+                          key={option}
+                          className="flex items-center space-x-2 py-2 px-3 border-b border-border last:border-b-0 hover:bg-muted/50"
+                        >
+                          <Checkbox
+                            id={`advanced-filter-modal-opt-${option}`}
+                            checked={modalFilterValues.includes(option)}
+                            onCheckedChange={(checked) => {
+                              if (checked) setModalFilterValues([...modalFilterValues, option])
+                              else setModalFilterValues(modalFilterValues.filter((v) => v !== option))
+                            }}
+                          />
+                          <label
+                            htmlFor={`advanced-filter-modal-opt-${option}`}
+                            className="text-sm leading-none cursor-pointer flex-1 truncate"
+                          >
+                            {option}
+                          </label>
+                        </div>
+                      ))}
+                      {filtered.length === 0 && (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching options</div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={closeAdvancedFilterModal} className="h-9 px-4">
+              Cancel <span className="text-xs text-muted-foreground ml-1.5">(esc)</span>
+            </Button>
+            <Button
+              onClick={applyAdvancedFilter}
+              disabled={!modalFilterField || modalFilterValues.length === 0}
+              className="h-9 px-4"
+            >
+              Apply
             </Button>
           </DialogFooter>
         </DialogContent>

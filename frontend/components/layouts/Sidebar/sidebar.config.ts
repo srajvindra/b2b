@@ -50,6 +50,8 @@ export const ROUTE_KEY_TO_PATH: Record<string, string> = {
   "template-management": "/settings/templates",
   "property-tags": "/settings/property-tags",
   "custom-fields": "/settings/custom-fields",
+  "contact-directory": "/settings/contact-directory",
+  "property-directory": "/settings/property-directory",
 };
 
 function href(key: string): string {
@@ -186,7 +188,17 @@ export const ROUTES: RouteItem[] = [
         key: "custom-fields",
         label: "Custom Fields",
         href: href("custom-fields"),
-      },
+      }
+      // {
+      //   key:"contact-directory",
+      //   label: "Contact Directory",
+      //   href: href("contact-directory"),
+      // },
+      // {
+      //   key:"property-directory",
+      //   label: "Property Directory",
+      //   href: href("property-directory"),
+      // },
     ],
   },
 ];

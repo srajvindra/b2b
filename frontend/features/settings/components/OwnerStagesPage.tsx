@@ -15,11 +15,7 @@ export function OwnerStagesPage() {
       initialCategories={initialOwnerCategories}
       leadCountLabel="leads"
       onOpenStageEdit={(categoryId, categoryName, status) => {
-        const search = new URLSearchParams({
-          categoryName,
-          stageName: status.name,
-        }).toString()
-        router.push(`/settings/stages/owners/${categoryId}/${status.id}?${search}`)
+        router.push(`/settings/stages/owners/${categoryId}/${status.id}`)
       }}
     />
   )

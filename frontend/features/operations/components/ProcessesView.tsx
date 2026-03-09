@@ -1,18 +1,17 @@
 "use client"
 
-import { Fragment, useState } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   MoreHorizontal,
   Plus,
   Pencil,
   ChevronDown,
+  ChevronUp,
   FolderPlus,
   Copy,
   Users,
   Trash2,
-  FolderOpen,
-  ChevronRight,
   GripVertical,
   MoreVertical,
   Check,
@@ -55,13 +54,15 @@ import {
   availableProperties,
 } from "../data/processes"
 import { ProcessesDashboardView } from "./ProcessesDashboardView"
-
+import { StageWorkflowPage } from "@/components/stack-workflow-page"
+import { useRouter } from "next/navigation"
 export function ProcessesView() {
+  const router = useRouter()
   // Listing page state
   const [processTypes, setProcessTypes] = useState<ProcessType[]>(initialProcessTypes)
   const [selectedProcess, setSelectedProcess] = useState<string | null>(null)
   const [showDashboard, setShowDashboard] = useState(false)
-  
+
   // Dashboard state
   const [activeTeamTab, setActiveTeamTab] = useState("assigned")
   const [selectedRows, setSelectedRows] = useState<string[]>([])
@@ -78,10 +79,24 @@ export function ProcessesView() {
     { id: "completed", label: "# Completed", value: 0, visible: true },
     { id: "timeToComplete", label: "Time To Complete", value: "n/a", visible: true },
   ])
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([])
-  const [editingProcessId, setEditingProcessId] = useState<string | null>(null)
-  const [editingProcessName, setEditingProcessName] = useState("")
-  
+  const [expandedProcesses, setExpandedProcesses] = useState<string[]>([])
+  const [showAddStageModal, setShowAddStageModal] = useState(false)
+  const [showRenameStageModal, setShowRenameStageModal] = useState(false)
+  const [newStageName, setNewStageName] = useState("")
+  const [selectedStageForRename, setSelectedStageForRename] = useState<{
+    processId: string
+    stageId: string
+    stageName: string
+  } | null>(null)
+  const [processForNewStage, setProcessForNewStage] = useState<string | null>(null)
+  const [draggedStage, setDraggedStage] = useState<{ processId: string; stageIndex: number } | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [showStageWorkflow, setShowStageWorkflow] = useState(false)
+  const [selectedStageForWorkflow, setSelectedStageForWorkflow] = useState<{
+    stageName: string
+    processName: string
+  } | null>(null)
+
   // Modal states
   const [showNewProcessModal, setShowNewProcessModal] = useState(false)
   const [showStartProcessModal, setShowStartProcessModal] = useState(false)
@@ -91,7 +106,7 @@ export function ProcessesView() {
   const [showAddFilterModal, setShowAddFilterModal] = useState(false)
   const [showNewFolderModal, setShowNewFolderModal] = useState(false)
   const [showSaveViewModal, setShowSaveViewModal] = useState(false)
-  
+
   // Form states
   const [newProcessName, setNewProcessName] = useState("")
   const [selectedFolder, setSelectedFolder] = useState("")
@@ -102,7 +117,7 @@ export function ProcessesView() {
   const [newFilterStage, setNewFilterStage] = useState("") // For processes filter
   const [newFolderName, setNewFolderName] = useState("")
   const [newViewName, setNewViewName] = useState("")
-  
+
   // Saved views state
   const [savedViews, setSavedViews] = useState<SavedView[]>(initialSavedViews)
   const [activeView, setActiveView] = useState<string | null>(null)
@@ -118,7 +133,7 @@ export function ProcessesView() {
   }
 
   const toggleRowSelection = (id: string) => {
-    setSelectedRows(prev => 
+    setSelectedRows(prev =>
       prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
     )
   }
@@ -141,7 +156,7 @@ export function ProcessesView() {
   }
 
   const handleRemoveSummaryCard = (cardId: string) => {
-    setSummaryCards(prev => prev.map(card => 
+    setSummaryCards(prev => prev.map(card =>
       card.id === cardId ? { ...card, visible: false } : card
     ))
   }
@@ -182,6 +197,101 @@ export function ProcessesView() {
     setActiveFilters([])
   }
 
+  const toggleProcessExpand = (processId: string) => {
+    setExpandedProcesses(prev =>
+      prev.includes(processId) ? prev.filter(id => id !== processId) : [...prev, processId],
+    )
+  }
+
+  const handleAddStage = () => {
+    if (newStageName.trim() && processForNewStage) {
+      setProcessTypes(prev =>
+        prev.map(p => {
+          if (p.id === processForNewStage) {
+            const newStage = {
+              id: `${p.id}-${Date.now()}`,
+              name: newStageName.trim(),
+              steps: 0,
+              days: 0,
+              processes: 0,
+            }
+            return {
+              ...p,
+              stages: p.stages + 1,
+              stagesList: [...p.stagesList, newStage],
+            }
+          }
+          return p
+        }),
+      )
+      setNewStageName("")
+      setShowAddStageModal(false)
+      setProcessForNewStage(null)
+    }
+  }
+
+  const handleRenameStage = () => {
+    if (newStageName.trim() && selectedStageForRename) {
+      setProcessTypes(prev =>
+        prev.map(p => {
+          if (p.id === selectedStageForRename.processId) {
+            return {
+              ...p,
+              stagesList: p.stagesList.map(s =>
+                s.id === selectedStageForRename.stageId
+                  ? { ...s, name: newStageName.trim() }
+                  : s,
+              ),
+            }
+          }
+          return p
+        }),
+      )
+      setNewStageName("")
+      setShowRenameStageModal(false)
+      setSelectedStageForRename(null)
+    }
+  }
+
+  const handleDragStart = (processId: string, stageIndex: number) => {
+    setDraggedStage({ processId, stageIndex })
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    setDragOverIndex(index)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null)
+  }
+
+  const handleDrop = (processId: string, dropIndex: number) => {
+    if (draggedStage && draggedStage.processId === processId) {
+      const fromIndex = draggedStage.stageIndex
+      if (fromIndex !== dropIndex) {
+        setProcessTypes(prev =>
+          prev.map(p => {
+            if (p.id === processId) {
+              const newStagesList = [...p.stagesList]
+              const [movedStage] = newStagesList.splice(fromIndex, 1)
+              newStagesList.splice(dropIndex, 0, movedStage)
+              return { ...p, stagesList: newStagesList }
+            }
+            return p
+          }),
+        )
+      }
+    }
+    setDraggedStage(null)
+    setDragOverIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedStage(null)
+    setDragOverIndex(null)
+  }
+
   const handleCreateProcessType = () => {
     if (newProcessName.trim()) {
       const newProcess: ProcessType = {
@@ -189,6 +299,7 @@ export function ProcessesView() {
         name: newProcessName,
         isDraft: true,
         stages: 0,
+        stagesList: [],
       }
       setProcessTypes(prev => [...prev, newProcess])
       setNewProcessName("")
@@ -201,13 +312,17 @@ export function ProcessesView() {
       ...process,
       id: `dup-${Date.now()}`,
       name: `${process.name} (Copy)`,
+      stagesList: process.stagesList.map(s => ({
+        ...s,
+        id: `dup-${s.id}-${Date.now()}`,
+      })),
     }
     setProcessTypes(prev => [...prev, duplicate])
   }
 
   const handleMoveToFolder = () => {
     if (selectedProcessForAction && selectedFolder) {
-      setProcessTypes(prev => prev.map(p => 
+      setProcessTypes(prev => prev.map(p =>
         p.id === selectedProcessForAction.id ? { ...p, folder: selectedFolder } : p
       ))
       setShowMoveToFolderModal(false)
@@ -218,7 +333,7 @@ export function ProcessesView() {
 
   const handleAssignToTeam = () => {
     if (selectedProcessForAction && selectedTeam) {
-      setProcessTypes(prev => prev.map(p => 
+      setProcessTypes(prev => prev.map(p =>
         p.id === selectedProcessForAction.id ? { ...p, team: selectedTeam } : p
       ))
       setShowAssignToTeamModal(false)
@@ -235,45 +350,14 @@ export function ProcessesView() {
     }
   }
 
-  const startInlineEditProcess = (process: ProcessType) => {
-    setEditingProcessId(process.id)
-    setEditingProcessName(process.name)
-  }
-
-  const saveInlineEditProcess = () => {
-    if (!editingProcessId || !editingProcessName.trim()) {
-      setEditingProcessId(null)
-      setEditingProcessName("")
-      return
-    }
-    setProcessTypes(prev =>
-      prev.map(p => (p.id === editingProcessId ? { ...p, name: editingProcessName.trim() } : p)),
-    )
-    setEditingProcessId(null)
-    setEditingProcessName("")
-  }
-
-  const cancelInlineEditProcess = () => {
-    setEditingProcessId(null)
-    setEditingProcessName("")
-  }
-
-  const deleteInlineProcess = (processId: string) => {
-    setProcessTypes(prev => prev.filter(p => p.id !== processId))
-    if (editingProcessId === processId) {
-      setEditingProcessId(null)
-      setEditingProcessName("")
-    }
-  }
-
   const handleStageChange = (instanceId: string, newStage: string) => {
-    setProcessInstances(prev => prev.map(p => 
+    setProcessInstances(prev => prev.map(p =>
       p.id === instanceId ? { ...p, stage: newStage } : p
     ))
   }
 
   const handleAssigneeChange = (instanceId: string, newAssignee: string) => {
-    setProcessInstances(prev => prev.map(p => 
+    setProcessInstances(prev => prev.map(p =>
       p.id === instanceId ? { ...p, assignee: newAssignee } : p
     ))
   }
@@ -298,12 +382,6 @@ export function ProcessesView() {
     }
   }
 
-  const toggleCategory = (categoryId: string) => {
-    setExpandedCategories((prev) =>
-      prev.includes(categoryId) ? prev.filter((id) => id !== categoryId) : [...prev, categoryId],
-    )
-  }
-
   // Filter instances based on active filters
   const filteredInstances = processInstances.filter((instance) => {
     return activeFilters.every((filter) => {
@@ -316,7 +394,7 @@ export function ProcessesView() {
         case "stage":
           return instance.stage === filter.value
         case "onTrack":
-          return instance.onTrack === filter.value || 
+          return instance.onTrack === filter.value ||
             (filter.value === "tasks_overdue" && (instance.onTrack === "tasks_overdue" || instance.onTrack === "overdue_date"))
         case "processes":
           // Filter by process type name
@@ -366,55 +444,19 @@ export function ProcessesView() {
     return bVal.localeCompare(aVal)
   })
 
-  // Derive high-level process categories (for collapsible view like lead stages)
-  const processCategories = [
-    {
-      id: "onboarding",
-      name: "Onboarding Processes",
-      matcher: (p: ProcessType) => p.name.toLowerCase().includes("onboarding"),
-    },
-    {
-      id: "lease-renewal",
-      name: "Lease Renewal Processes",
-      matcher: (p: ProcessType) => p.name.toLowerCase().includes("lease renewal"),
-    },
-    {
-      id: "termination",
-      name: "Termination / Offboarding",
-      matcher: (p: ProcessType) =>
-        p.name.toLowerCase().includes("termination") || p.name.toLowerCase().includes("termination process"),
-    },
-    {
-      id: "eviction",
-      name: "Eviction / Delinquency",
-      matcher: (p: ProcessType) =>
-        p.name.toLowerCase().includes("eviction") || p.name.toLowerCase().includes("delinquency"),
-    },
-    {
-      id: "accounting",
-      name: "Accounting / Month End",
-      matcher: (p: ProcessType) => p.name.toLowerCase().includes("accounting"),
-    },
-    {
-      id: "people",
-      name: "People / HR Processes",
-      matcher: (p: ProcessType) =>
-        p.name.toLowerCase().includes("employee") || p.name.toLowerCase().includes("hiring"),
-    },
-    {
-      id: "make-ready",
-      name: "Make Ready / Turns",
-      matcher: (p: ProcessType) => p.name.toLowerCase().includes("make ready"),
-    },
-  ]
-    .map((cat) => ({
-      id: cat.id,
-      name: cat.name,
-      processes: processTypes.filter(cat.matcher),
-    }))
-    .filter((cat) => cat.processes.length > 0)
-
-    
+  // Stage Workflow View
+  if (showStageWorkflow && selectedStageForWorkflow) {
+    return (
+      <StageWorkflowPage
+        stageName={selectedStageForWorkflow.stageName}
+        processName={selectedStageForWorkflow.processName}
+        onBack={() => {
+          setShowStageWorkflow(false)
+          setSelectedStageForWorkflow(null)
+        }}
+      />
+    )
+  }
 
   // All Processes Dashboard View
   if (showDashboard) {
@@ -484,8 +526,8 @@ export function ProcessesView() {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
               onClick={() => setShowNewProcessModal(true)}
             >
@@ -501,28 +543,28 @@ export function ProcessesView() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold text-gray-900">Processes</h1>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               className="text-sm bg-white border-blue-300 text-blue-600 hover:bg-blue-50"
               onClick={handleViewDashboard}
             >
               All Processes Dashboard
             </Button>
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               className="text-sm bg-blue-600 text-white hover:bg-blue-700"
               onClick={() => setShowNewProcessModal(true)}
             >
               New Process Type
             </Button>
           </div>
-          <button 
-            type="button" 
+          <button
+            type="button"
             className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
             onClick={() => setShowNewFolderModal(true)}
           >
-            New Filter 
+            New Filter
           </button>
         </div>
         <p className="text-sm text-gray-500 mt-2">
@@ -530,192 +572,250 @@ export function ProcessesView() {
         </p>
       </div>
 
-      {/* Process Categories - collapsible groups (like lead stages view) */}
-      <div className="px-6 py-4 bg-white border-b border-gray-200">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold text-gray-900">Process Categories</h2>
-          <span className="text-sm text-gray-500">
-            {processCategories.reduce((sum, cat) => sum + cat.processes.length, 0)} process types
-          </span>
+      {/* Unassigned Processes Section */}
+      <div className="px-6 py-4 bg-white">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-semibold text-gray-900">Unassigned Processes</h2>
+          <span className="text-sm text-gray-500">{processTypes.length} processes</span>
         </div>
-        <div className="border rounded-lg overflow-hidden bg-white">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/30">
-                <th className="text-left p-3 text-xs font-medium text-gray-500">Category Name</th>
-                <th className="text-left p-3 text-xs font-medium text-gray-500">Process Count</th>
-                <th className="text-left p-3 text-xs font-medium text-gray-500">Status</th>
-                <th className="text-right p-3 text-xs font-medium text-gray-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {processCategories.map((category) => (
-                <Fragment key={category.id}>
-                  <tr
-                    className="border-b hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => toggleCategory(category.id)}
-                  >
-                    <td className="p-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-teal-600">
-                          <FolderOpen className="h-4 w-4 text-white" />
-                        </div>
-                        <span className="font-medium text-gray-900">{category.name}</span>
-                      </div>
-                    </td>
-                    <td className="p-3">
-                      <span className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700">
-                        {category.processes.length} processes
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">
-                        Active
-                      </span>
-                    </td>
-                    <td className="p-3 text-right">
+
+        <div className="divide-y divide-gray-200 border-t border-gray-200">
+          {processTypes.map((process) => {
+            const isExpanded = expandedProcesses.includes(process.id)
+            return (
+              <div key={process.id}>
+                <div
+                  className={`group flex items-center justify-between py-4 px-3 hover:bg-gray-50 transition-colors cursor-pointer ${selectedProcess === process.id ? "bg-teal-50/40" : ""
+                    }`}
+                  onClick={() => setSelectedProcess(process.id)}
+                >
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleProcessExpand(process.id)
+                      }}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="h-5 w-5" />
+                      ) : (
+                        <ChevronUp className="h-5 w-5 rotate-90" />
+                      )}
+                    </button>
+
+                    <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
+                      <FolderPlus className="h-5 w-5 text-white" />
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
                       <button
                         type="button"
-                        className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 hover:text-teal-800"
                         onClick={(e) => {
                           e.stopPropagation()
-                          toggleCategory(category.id)
+                          toggleProcessExpand(process.id)
                         }}
+                        className="text-[15px] font-semibold text-gray-900 hover:text-teal-700 text-left transition-colors"
                       >
-                        View Processes
-                        <ChevronRight className="h-3.5 w-3.5" />
+                        {process.name}
                       </button>
-                    </td>
-                  </tr>
+                      {process.isDraft && (
+                        <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">
+                          Draft
+                        </span>
+                      )}
+                      {process.team && (
+                        <span className="px-2 py-0.5 text-xs text-teal-600 bg-teal-50 rounded">
+                          {teams.find(t => t.id === process.team)?.name}
+                        </span>
+                      )}
+                      {process.folder && (
+                        <span className="px-2 py-0.5 text-xs text-purple-600 bg-purple-50 rounded">
+                          {folders.find(f => f.id === process.folder)?.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
 
-                  {expandedCategories.includes(category.id) &&
-                    category.processes.map((process, index) => (
-                      <tr
-                        key={`${category.id}-${process.id}`}
-                        className="border-b bg-card hover:bg-muted/40 transition-colors"
-                      >
-                        <td colSpan={4} className="p-0">
-                          <div className="flex items-center gap-4 px-8 py-3">
-                            <div className="text-muted-foreground hover:text-foreground cursor-grab">
-                              <GripVertical className="h-4 w-4" />
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-400">{process.stages} stages</span>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            router.push(`/operations/processes/${process.id}`)
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit Process
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDuplicateProcess(process)
+                          }}
+                        >
+                          <Copy className="h-4 w-4 mr-2" />
+                          Duplicate
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedProcessForAction(process)
+                            setShowMoveToFolderModal(true)
+                          }}
+                        >
+                          <FolderPlus className="h-4 w-4 mr-2" />
+                          Move to Folder
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedProcessForAction(process)
+                            setShowAssignToTeamModal(true)
+                          }}
+                        >
+                          <Users className="h-4 w-4 mr-2" />
+                          Assign to Team
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedProcessForAction(process)
+                            setShowDeleteConfirmModal(true)
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div className="bg-white border-t border-gray-200">
+                    <div className="py-2">
+                      <div className="flex items-center justify-end px-4 py-2 border-b border-gray-100">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs bg-white border-teal-500 text-teal-600 hover:bg-teal-50"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setProcessForNewStage(process.id)
+                            setNewStageName("")
+                            setShowAddStageModal(true)
+                          }}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Stage
+                        </Button>
+                      </div>
+                      <div className="divide-y divide-gray-100">
+                        {process.stagesList.map((stage, index) => (
+                          <div
+                            key={stage.id}
+                            draggable
+                            onDragStart={() => handleDragStart(process.id, index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDragLeave={handleDragLeave}
+                            onDrop={() => handleDrop(process.id, index)}
+                            onDragEnd={handleDragEnd}
+                            className={`flex items-center justify-between py-3 px-4 transition-all ${draggedStage?.processId === process.id && draggedStage?.stageIndex === index
+                                ? "opacity-50 bg-blue-50"
+                                : dragOverIndex === index && draggedStage?.processId === process.id
+                                  ? "bg-blue-50 border-l-2 border-l-blue-500"
+                                  : "hover:bg-gray-50"
+                              }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <GripVertical className="h-5 w-5 text-gray-300 cursor-grab active:cursor-grabbing" />
+                              <div className="h-7 w-7 rounded-full bg-gray-900 flex items-center justify-center">
+                                <span className="text-xs font-medium text-white">{index + 1}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setSelectedStageForWorkflow({ stageName: stage.name, processName: process.name })
+                                  setShowStageWorkflow(true)
+                                }}
+                                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
+                              >
+                                {stage.name}
+                              </button>
                             </div>
-                            <div className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-semibold shrink-0">
-                              {index + 1}
-                            </div>
-                            <div className="flex-1 min-w-0 flex items-center gap-3">
-                              {editingProcessId === process.id ? (
-                                <>
-                                  <Input
-                                    value={editingProcessName}
-                                    onChange={(e) => setEditingProcessName(e.target.value)}
-                                    className="flex-1 h-8 text-sm"
-                                    autoFocus
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") saveInlineEditProcess()
-                                      if (e.key === "Escape") cancelInlineEditProcess()
-                                    }}
-                                  />
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-6 text-sm text-gray-500">
+                                <span>
+                                  <span className="text-gray-700">{stage.steps}</span> Steps
+                                </span>
+                                <span>
+                                  <span className="text-gray-700">{stage.days}</span> Days
+                                </span>
+                                <span>
+                                  <span className="text-gray-700">{stage.processes}</span> Processes
+                                </span>
+                              </div>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
                                   <Button
-                                    size="icon"
-                                    className="h-7 w-7 bg-foreground text-background hover:bg-foreground/90"
-                                    onClick={saveInlineEditProcess}
-                                  >
-                                    <Check className="h-3.5 w-3.5" />
-                                  </Button>
-                                  <Button
-                                    size="icon"
                                     variant="ghost"
-                                    className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    onClick={() => deleteInlineProcess(process.id)}
+                                    size="icon"
+                                    className="h-8 w-8 text-gray-400 hover:text-gray-600"
+                                    onClick={(e) => e.stopPropagation()}
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <MoreVertical className="h-4 w-4" />
                                   </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    type="button"
-                                    className="text-sm font-medium text-foreground hover:text-teal-700 hover:underline text-left truncate"
-                                    onClick={() => handleViewDashboard()}
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedStageForRename({
+                                        processId: process.id,
+                                        stageId: stage.id,
+                                        stageName: stage.name,
+                                      })
+                                      setNewStageName(stage.name)
+                                      setShowRenameStageModal(true)
+                                    }}
                                   >
-                                    {process.name}
-                                  </button>
-                                  <div className="ml-auto flex items-center gap-6 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="font-medium text-foreground/80">{process.stages}</span>
-                                      <span>Steps</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="font-medium text-foreground/80">7</span>
-                                      <span>Days</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <span className="font-medium text-foreground/80">2</span>
-                                      <span>Processes</span>
-                                    </div>
-                                    {/* {process.isDraft && (
-                                      <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                                        Draft
-                                      </span>
-                                    )} */}
-                                  </div>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end" className="w-44">
-                                      <DropdownMenuItem
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          startInlineEditProcess(process)
-                                        }}
-                                      >
-                                        <Pencil className="h-4 w-4 mr-2" />
-                                        Edit Name
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          handleViewDashboard()
-                                        }}
-                                      >
-                                        <ChevronRight className="h-4 w-4 mr-2" />
-                                        Open Process
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem
-                                        className="text-destructive focus:text-destructive"
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          deleteInlineProcess(process.id)
-                                        }}
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete Process
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </>
-                              )}
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                    Rename Stage
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </div>
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
-  
+
 
       {/* New Process Type Modal */}
       <Dialog open={showNewProcessModal} onOpenChange={setShowNewProcessModal}>
@@ -726,7 +826,7 @@ export function ProcessesView() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Process Name</Label>
-              <Input 
+              <Input
                 value={newProcessName}
                 onChange={(e) => setNewProcessName(e.target.value)}
                 placeholder="Enter process name..."
@@ -829,7 +929,7 @@ export function ProcessesView() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label>Folder Name</Label>
-              <Input 
+              <Input
                 value={newFolderName}
                 onChange={(e) => setNewFolderName(e.target.value)}
                 placeholder="Enter folder name..."
@@ -842,6 +942,79 @@ export function ProcessesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>  
+
+      {/* Add Stage Modal */}
+      <Dialog open={showAddStageModal} onOpenChange={setShowAddStageModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Stage</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Stage Name</Label>
+              <Input
+                value={newStageName}
+                onChange={(e) => setNewStageName(e.target.value)}
+                placeholder="Enter stage name..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowAddStageModal(false)
+                setNewStageName("")
+                setProcessForNewStage(null)
+              }}
+              className="bg-transparent"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleAddStage} className="bg-blue-600 hover:bg-blue-700">
+              Add Stage
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Stage Modal */}
+      <Dialog open={showRenameStageModal} onOpenChange={setShowRenameStageModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Stage</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-gray-500">
+              Renaming stage: {selectedStageForRename?.stageName}
+            </p>
+            <div className="space-y-2">
+              <Label>New Stage Name</Label>
+              <Input
+                value={newStageName}
+                onChange={(e) => setNewStageName(e.target.value)}
+                placeholder="Enter new stage name..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRenameStageModal(false)
+                setNewStageName("")
+                setSelectedStageForRename(null)
+              }}
+              className="bg-transparent"
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleRenameStage} className="bg-blue-600 hover:bg-blue-700">
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }
