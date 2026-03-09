@@ -51,6 +51,7 @@ import {
   HelpCircle,
   Workflow,
   FolderOpen,
+  Move,
 } from "lucide-react"
 
 // ----- Dashboard -----
@@ -59,21 +60,30 @@ export const dashboardQuickActions: QuickActionGroup[] = [
     id: "dashboard-main",
     actions: [
       { icon: Building2, label: "New Property" },
+      { icon: UserPlus, label: "New Owner" },
+      { icon: Workflow, label: "New Process" },
+      { icon: CheckSquare, label: "New Task" },
       { icon: UserPlus, label: "Move In Tenant" },
       { icon: Receipt, label: "Enter Bill" },
-      { icon: Key, label: "New Owner" },
-      { icon: Users, label: "New Vendor" },
-      { icon: TrendingUp, label: "Rent Increase" },
+      { icon: Wrench, label: "New Work Order" },
       { icon: AlertTriangle, label: "Delinquency Report" },
-      { icon: FileText, label: "Tenant Ledger" },
-      { icon: DollarSign, label: "Income Statement" },
-      { icon: Home, label: "Unit Vacancy Detail" },
-      { icon: ClipboardList, label: "Rent Roll" },
-      { icon: Wallet, label: "Cash Flow" },
-      { icon: CalendarDays, label: "Lease Expiration" },
-      { icon: FileWarning, label: "3-Day Notices" },
-      { icon: Layers, label: "Property Groups" },
-      { icon: Shield, label: "Auditing Center" },
+      { icon: FileText, label: "Vacancy Report" },
+      { icon: Users, label: "Owner Statement" }
+    //   { icon: UserPlus, label: "Move In Tenant" },
+    //   { icon: Receipt, label: "Enter Bill" },
+    //   { icon: Key, label: "New Owner" },
+    //   { icon: Users, label: "New Vendor" },
+    //   { icon: TrendingUp, label: "Rent Increase" },
+    //   { icon: AlertTriangle, label: "Delinquency Report" },
+    //   { icon: FileText, label: "Tenant Ledger" },
+    //   { icon: DollarSign, label: "Income Statement" },
+    //   { icon: Home, label: "Unit Vacancy Detail" },
+    //   { icon: ClipboardList, label: "Rent Roll" },
+    //   { icon: Wallet, label: "Cash Flow" },
+    //   { icon: CalendarDays, label: "Lease Expiration" },
+    //   { icon: FileWarning, label: "3-Day Notices" },
+    //   { icon: Layers, label: "Property Groups" },
+    //   { icon: Shield, label: "Auditing Center" },
     ],
   },
 ]
@@ -198,7 +208,7 @@ export const propertyDetailQuickActions: QuickActionGroup[] = [
 ]
 
 // ----- Lead / tenant application detail -----
-export function getLeadQuickActions(handlers: {
+export function getLeadProspectQuickActions(handlers: {
   onSendEmail?: () => void
   onSendSMS?: () => void
   onLogCall?: () => void
@@ -218,7 +228,34 @@ export function getLeadQuickActions(handlers: {
     },
     { icon: Users, label: "Reassign Lead", onClick: handlers.onReassign ? () => handlers.onReassign!() : undefined },
   ]
-  return [{ id: "lead", actions }]
+  return [{ id: "lead-prospect", actions }]
+}
+
+export function getOwnerProspectQuickActions(handlers: {
+  onSendEmail?: () => void
+  onSendSMS?: () => void
+  onLogCall?: () => void
+  onAddNote?: () => void
+  onScheduleMeeting?: () => void
+  onReassign?: () => void
+  onAddTask?: () => void
+  onAddProcess?: () => void
+  onAddProperty?: () => void
+  onSendManagementAgreement?: () => void
+}): QuickActionGroup[] {
+  const actions: QuickActionItem[] = [
+    { icon: Mail, label: "Send Email", onClick: handlers.onSendEmail ? () => handlers.onSendEmail!() : undefined },
+    { icon: MessageSquare, label: "Send SMS", onClick: handlers.onSendSMS ? () => handlers.onSendSMS!() : undefined },
+    { icon: Phone, label: "Make a Call", onClick: handlers.onLogCall ? () => handlers.onLogCall!() : undefined },
+    { icon: StickyNote, label: "Add Note", onClick: handlers.onAddNote ? () => handlers.onAddNote!() : undefined },
+    { icon: CheckSquare, label: "Add Task", onClick: handlers.onAddTask ? () => handlers.onAddTask!() : undefined },
+    { icon: Workflow, label: "Add to a Process", onClick: handlers.onAddProcess ? () => handlers.onAddProcess!() : undefined },
+    { icon: Users, label: "Reassign Lead", onClick: handlers.onReassign ? () => handlers.onReassign!() : undefined },
+    { icon: Calendar, label: "Schedule Meeting", onClick: handlers.onScheduleMeeting ? () => handlers.onScheduleMeeting!() : undefined },
+    { icon: Building2, label: "Add Property", onClick: handlers.onAddProperty ? () => handlers.onAddProperty!() : undefined },
+    { icon: FileText, label: "Send Management Agreement", onClick: handlers.onSendManagementAgreement ? () => handlers.onSendManagementAgreement!() : undefined },
+  ]
+  return [{ id: "owner-prospects", actions }]
 }
 
 // ----- Leads: Owner Prospects categories (screen 1) -----

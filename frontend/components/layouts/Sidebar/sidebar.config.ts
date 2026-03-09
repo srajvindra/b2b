@@ -45,6 +45,7 @@ export const ROUTE_KEY_TO_PATH: Record<string, string> = {
   messages: "/messages",
   reports: "/reports",
   "user-roles": "/settings/staff",
+  "role-permissions": "/settings/staff/role-permissions",
   "stages-owners": "/settings/stages/owners",
   "stages-tenants": "/settings/stages/tenants",
   "template-management": "/settings/templates",
@@ -154,13 +155,24 @@ export const ROUTES: RouteItem[] = [
     icon: Settings2,
     children: [
       {
-        key: "user-roles",
+        key: "staff-management",
         label: "Staff Management",
-        href: href("user-roles"),
+        children: [
+          {
+            key: "user-roles",
+            label: "User Roles & Assignments",
+            href: href("user-roles"),
+          },
+          {
+            key: "role-permissions",
+            label: "Role & Permission",
+            href: href("role-permissions"),
+          },
+        ],
       },
       {
         key: "stages",
-        label: "Stages",
+        label: "Pipeline/Process",
         children: [
           {
             key: "stages-owners",
@@ -188,17 +200,17 @@ export const ROUTES: RouteItem[] = [
         key: "custom-fields",
         label: "Custom Fields",
         href: href("custom-fields"),
-      }
-      // {
-      //   key:"contact-directory",
-      //   label: "Contact Directory",
-      //   href: href("contact-directory"),
-      // },
-      // {
-      //   key:"property-directory",
-      //   label: "Property Directory",
-      //   href: href("property-directory"),
-      // },
+      },
+      {
+        key:"contact-directory",
+        label: "Contact Directory",
+        href: href("contact-directory"),
+      },
+      {
+        key:"property-directory",
+        label: "Property Directory",
+        href: href("property-directory"),
+      },
     ],
   },
 ];

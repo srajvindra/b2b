@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Building2, Users, ClipboardList, Home, Mail, Phone, Calendar } from "lucide-react"
 import type { StaffMember } from "../types"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Shield } from "lucide-react"
+import { Table, TableHead, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/table"
 
 function getRoleBadgeColor(role: string): string {
   const roleColors: Record<string, string> = {
@@ -206,9 +209,9 @@ export function StaffMemberDetailPage({ staff }: StaffMemberDetailPageProps) {
                       variant="outline"
                       className={
                         task.status === "Completed" ? "border-green-500 text-green-600" :
-                        task.status === "In Progress" ? "border-blue-500 text-blue-600" :
-                        task.status === "Urgent" ? "border-red-500 text-red-600" :
-                        "border-amber-500 text-amber-600"
+                          task.status === "In Progress" ? "border-blue-500 text-blue-600" :
+                            task.status === "Urgent" ? "border-red-500 text-red-600" :
+                              "border-amber-500 text-amber-600"
                       }
                     >
                       {task.status}
@@ -222,6 +225,56 @@ export function StaffMemberDetailPage({ staff }: StaffMemberDetailPageProps) {
           </CardContent>
         </Card>
       </div>
+        {/* Permissions Section */}
+        <Card className="border border-border">
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" />
+              Permissions
+            </h3>
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold">Module</TableHead>
+                  <TableHead className="font-semibold text-center">View</TableHead>
+                  <TableHead className="font-semibold text-center">Read</TableHead>
+                  <TableHead className="font-semibold text-center">Write</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(["Leads", "Properties", "Messages", "Settings"] as const).map((mod) => (
+                  <TableRow key={mod} className="hover:bg-muted/50">
+                    <TableCell className="font-medium text-foreground">{mod}</TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        <Checkbox
+                          id={`${staff.id}-${mod}-view`}
+                          defaultChecked={mod === "Leads" || mod === "Properties"}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        <Checkbox
+                          id={`${staff.id}-${mod}-read`}
+                          defaultChecked={mod === "Leads"}
+                        />
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex justify-center">
+                        <Checkbox
+                          id={`${staff.id}-${mod}-write`}
+                          defaultChecked={false}
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
     </div>
   )
 }

@@ -97,7 +97,7 @@ import { SMSPopupModal } from "@/components/sms-popup-modal"
 import { EmailPopupModal } from "@/components/email-popup-modal"
 import { useNav } from "@/app/dashboard/page"
 import { useQuickActions } from "@/context/QuickActionsContext"
-import { getLeadQuickActions } from "@/lib/quickActions"
+import { getLeadProspectQuickActions, getOwnerProspectQuickActions } from "@/lib/quickActions"
 import { useRouter } from "next/navigation"
 import {
   STAGES,
@@ -688,7 +688,7 @@ export function TenantApplicationDetailView({
 
   const leadQuickActions = useMemo(
     () =>
-      getLeadQuickActions({
+      getLeadProspectQuickActions({
         onSendEmail: () => setShowEmailModal(true),
         onSendSMS: () => setShowSMSModal(true),
         onLogCall: () => setShowCallModal(true),

@@ -25,7 +25,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Plus, GripVertical, Pencil, Check, X, Trash2, ChevronDown, ChevronRight, FolderOpen, AlertTriangle, ArrowLeft, Flag, Mail, Phone, MessageSquare, CheckSquare, Video, Settings, Clock, User, Users, Asterisk, Hand, Search, Eye, Link2, Zap, FileText, Download, Play, Timer, Network, Bold, Italic, Underline, Code, List, ListOrdered, MoreVertical, AtSign } from "lucide-react"
+import { Plus, GripVertical, Pencil, Check, X, Trash2, ChevronDown, ChevronRight, FolderOpen, AlertTriangle, ArrowLeft, Flag, Mail, Phone, MessageSquare, CheckSquare, Video, Settings, Clock, User, Users, Asterisk, Hand, Search, Eye, Link2, Zap, FileText, Download, Play, Timer, Network, Bold, Italic, Underline, Code, List, ListOrdered, MoreVertical, AtSign, Building2 } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import {
   Dialog,
@@ -427,7 +427,7 @@ function StagesOwnersPage() {
   const [newStatusName, setNewStatusName] = useState("")
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
-
+  
   // Stage Edit View state
   const [selectedStageForEdit, setSelectedStageForEdit] = useState<{
     categoryId: string
@@ -446,7 +446,7 @@ function StagesOwnersPage() {
     { id: "5", name: "Onboarding Meeting", timing: "1 day after previous step", day: 2, completed: false, type: "meet", assignee: "Sarah Johnson" },
     { id: "6", name: "Document Review", timing: "2 hours after previous step", day: 2, completed: false, type: "process", processName: "Document Verification" },
   ])
-
+  
   // Available processes for linking
   const availableProcesses = [
     { id: "proc-1", name: "Document Verification" },
@@ -484,28 +484,28 @@ function StagesOwnersPage() {
 
   // Staff assignment state
   const [selectedAssignee, setSelectedAssignee] = useState<string>("")
-
+  
   // Auto-send toggle for email/text
   const [autoSendEnabled, setAutoSendEnabled] = useState(false)
-
+  
   // Process selection for Create Process
   const [selectedProcessForStep, setSelectedProcessForStep] = useState<string>("")
-
+  
   // Linking dialog state
   const [linkingDialogOpen, setLinkingDialogOpen] = useState(false)
   const [linkingStepId, setLinkingStepId] = useState<string | null>(null)
   const [linkedSteps, setLinkedSteps] = useState<{ [stepId: string]: string[] }>({})
   const [selectedLinkedSteps, setSelectedLinkedSteps] = useState<string[]>([])
-
+  
   // Custom fields for Todo tasks (Owner-related processes only)
   const [selectedTodoCustomFields, setSelectedTodoCustomFields] = useState<string[]>([])
-
+  
   // Instructions dialog state
   const [instructionsDialogOpen, setInstructionsDialogOpen] = useState(false)
   const [instructionsStepId, setInstructionsStepId] = useState<string | null>(null)
   const [instructionsText, setInstructionsText] = useState("")
   const [stepInstructions, setStepInstructions] = useState<{ [stepId: string]: string }>({})
-
+  
   // Step Conditions dialog state
   const [conditionsDialogOpen, setConditionsDialogOpen] = useState(false)
   const [conditionsStepId, setConditionsStepId] = useState<string | null>(null)
@@ -514,7 +514,7 @@ function StagesOwnersPage() {
     { field: "", operator: "is", value: "" }
   ])
   const [savedStepConditions, setSavedStepConditions] = useState<{ [stepId: string]: { type: string; conditions: Array<{ field: string; operator: string; value: string }> } }>({})
-
+  
   // Available condition fields (from Custom Fields)
   const conditionFields = [
     { value: "any_occupied_units", label: "Any Occupied Units", options: ["Yes", "No"] },
@@ -524,14 +524,14 @@ function StagesOwnersPage() {
     { value: "any_information_missing", label: "Any Information Missing?", options: ["Yes", "No"] },
     { value: "property_condition_rating", label: "Property Condition Rating", options: ["Excellent", "Good", "Fair", "Poor"] },
   ]
-
+  
   const conditionOperators = [
     { value: "is", label: "is" },
     { value: "is_not", label: "is not" },
     { value: "contains", label: "contains" },
     { value: "does_not_contain", label: "does not contain" },
   ]
-
+  
   // Available field tags for instructions
   const availableFieldTags = [
     { tag: "process.no_of_units", label: "No of Units" },
@@ -545,7 +545,7 @@ function StagesOwnersPage() {
     { tag: "process.any_information_missing", label: "Any Information Missing?" },
     { tag: "process.property_condition_rating", label: "Property Condition Rating" },
   ]
-
+  
   const ownerCustomFields = [
     { id: "cf-1", label: "Existing Tenant Moving Out?", dataType: "Multiple Choice", processTypes: ["2 Property Onboarding Process"] },
     { id: "cf-2", label: "Existing Owner or New Owner?", dataType: "Multiple Choice", processTypes: ["2 Property Onboarding Process"] },
@@ -643,21 +643,21 @@ function StagesOwnersPage() {
 
   const handleSimpleActionConfirm = () => {
     if (simpleActionName.trim()) {
-      const processName = simpleActionType === "process" && selectedProcessForStep
-        ? availableProcesses.find(p => p.id === selectedProcessForStep)?.name
+      const processName = simpleActionType === "process" && selectedProcessForStep 
+        ? availableProcesses.find(p => p.id === selectedProcessForStep)?.name 
         : undefined
       handleAddWorkflowStep(simpleActionType, simpleActionName.trim(), undefined, processName)
     }
     setSimpleActionDialogOpen(false)
   }
-
+  
   // Linking handlers
   const openLinkingDialog = (stepId: string) => {
     setLinkingStepId(stepId)
     setSelectedLinkedSteps(linkedSteps[stepId] || [])
     setLinkingDialogOpen(true)
   }
-
+  
   const handleLinkingConfirm = () => {
     if (linkingStepId) {
       setLinkedSteps(prev => ({ ...prev, [linkingStepId]: selectedLinkedSteps }))
@@ -665,13 +665,13 @@ function StagesOwnersPage() {
     setLinkingDialogOpen(false)
     setLinkingStepId(null)
   }
-
+  
   const toggleLinkedStep = (stepId: string) => {
-    setSelectedLinkedSteps(prev =>
+    setSelectedLinkedSteps(prev => 
       prev.includes(stepId) ? prev.filter(id => id !== stepId) : [...prev, stepId]
     )
   }
-
+  
   // Get type icon for workflow step
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -876,98 +876,98 @@ function StagesOwnersPage() {
                 {index < stageWorkflowSteps.length - 1 && <div className="w-0.5 h-12 bg-border" />}
               </div>
 
-              {/* Step content */}
-              <div className="flex-1 ml-4">
-                <div className="bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group">
-                  <div className="flex items-center gap-2">
-                    {/* Type Icon */}
-                    <span title={step.type.charAt(0).toUpperCase() + step.type.slice(1)}>
-                      {getTypeIcon(step.type)}
-                    </span>
-                    {/* Auto-send lightning icon for email/text */}
-                    {(step.type === "email" || step.type === "text") && step.autoSend && (
-                      <span title="Auto-send enabled" className="text-chart-4">
-                        <Zap className="h-3.5 w-3.5" />
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left"
-                      onClick={() => {
-                        alert(`Edit step: ${step.name}`)
-                      }}
-                    >
-                      {step.name}
-                    </button>
-                    {/* Process name badge aligned to the right of step name */}
-                    {step.processName && (
-                      <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full border border-primary/20">
-                        {step.processName}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-primary hover:bg-primary/10"
-                      title="Instructions"
-                      onClick={() => {
-                        setInstructionsStepId(step.id)
-                        setInstructionsText(stepInstructions[step.id] || "")
-                        setInstructionsDialogOpen(true)
-                      }}
-                    >
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Manual Action">
-                      <Hand className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Required">
-                      <Asterisk className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" title="Run Process">
-                      <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/5">
-                        <span className="text-xs font-semibold text-primary">P</span>
+{/* Step content */}
+                  <div className="flex-1 ml-4">
+                    <div className="bg-card border border-border rounded-lg p-3 flex items-center justify-between shadow-sm hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group">
+                      <div className="flex items-center gap-2">
+                        {/* Type Icon */}
+                        <span title={step.type.charAt(0).toUpperCase() + step.type.slice(1)}>
+                          {getTypeIcon(step.type)}
+                        </span>
+                        {/* Auto-send lightning icon for email/text */}
+                        {(step.type === "email" || step.type === "text") && step.autoSend && (
+                          <span title="Auto-send enabled" className="text-chart-4">
+                            <Zap className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          className="text-sm font-medium text-foreground hover:text-primary transition-colors text-left"
+                          onClick={() => {
+                            alert(`Edit step: ${step.name}`)
+                          }}
+                        >
+                          {step.name}
+                        </button>
+                        {/* Process name badge aligned to the right of step name */}
+                        {step.processName && (
+                          <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full border border-primary/20">
+                            {step.processName}
+                          </span>
+                        )}
                       </div>
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Set Timer">
-                      <Timer className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
-                      title="Step Conditions"
-                      onClick={() => {
-                        setConditionsStepId(step.id)
-                        const saved = savedStepConditions[step.id]
-                        if (saved) {
-                          setDisplayConditionType(saved.type)
-                          setStepConditions(saved.conditions)
-                        } else {
-                          setDisplayConditionType("any")
-                          setStepConditions([{ field: "", operator: "is", value: "" }])
-                        }
-                        setConditionsDialogOpen(true)
-                      }}
-                    >
-                      <Network className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                      title="Delete Step"
-                      onClick={() => {
-                        setStageWorkflowSteps((prev) => prev.filter((s) => s.id !== step.id))
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-primary hover:bg-primary/10" 
+                          title="Instructions"
+                          onClick={() => {
+                            setInstructionsStepId(step.id)
+                            setInstructionsText(stepInstructions[step.id] || "")
+                            setInstructionsDialogOpen(true)
+                          }}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Manual Action">
+                          <Hand className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Required">
+                          <Asterisk className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-primary/10" title="Run Process">
+                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center ring-4 ring-primary/5">
+                            <span className="text-xs font-semibold text-primary">P</span>
+                          </div>
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" title="Set Timer">
+                          <Timer className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10" 
+                          title="Step Conditions"
+                          onClick={() => {
+                            setConditionsStepId(step.id)
+                            const saved = savedStepConditions[step.id]
+                            if (saved) {
+                              setDisplayConditionType(saved.type)
+                              setStepConditions(saved.conditions)
+                            } else {
+                              setDisplayConditionType("any")
+                              setStepConditions([{ field: "", operator: "is", value: "" }])
+                            }
+                            setConditionsDialogOpen(true)
+                          }}
+                        >
+                          <Network className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          title="Delete Step"
+                          onClick={() => {
+                            setStageWorkflowSteps((prev) => prev.filter((s) => s.id !== step.id))
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
             </div>
           ))}
         </div>
@@ -1117,10 +1117,10 @@ function StagesOwnersPage() {
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
+<span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
                 </div>
               </div>
 
@@ -1175,7 +1175,7 @@ function StagesOwnersPage() {
                   </SelectContent>
                 </Select>
               </div>
-
+              
               {/* Auto-send Toggle */}
               <div className="flex items-center justify-between p-3 bg-chart-4/10 border border-chart-4/30 rounded-lg">
                 <div className="flex items-center gap-2">
@@ -1238,7 +1238,7 @@ function StagesOwnersPage() {
                   autoFocus
                 />
               </div>
-
+              
               {/* Process Selection - only shown for Create Process */}
               {simpleActionType === "process" && (
                 <div className="space-y-2">
@@ -1262,10 +1262,10 @@ function StagesOwnersPage() {
               {/* Divider */}
               <div className="relative">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
+<span className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Set Delay</span>
                 </div>
               </div>
 
@@ -1387,7 +1387,7 @@ function StagesOwnersPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-
+        
         {/* Linking Dialog */}
         <Dialog open={linkingDialogOpen} onOpenChange={setLinkingDialogOpen}>
           <DialogContent className="sm:max-w-lg">
@@ -1400,7 +1400,7 @@ function StagesOwnersPage() {
                 Select which steps this action should be linked to. Linked steps will be triggered or depend on this step.
               </DialogDescription>
             </DialogHeader>
-
+            
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-foreground/80">Available Steps to Link</Label>
@@ -1408,16 +1408,18 @@ function StagesOwnersPage() {
                   {stageWorkflowSteps
                     .filter(step => step.id !== linkingStepId)
                     .map((step) => (
-                      <div
+                      <div 
                         key={step.id}
-                        className={`flex items-center gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted transition-colors ${selectedLinkedSteps.includes(step.id) ? "bg-primary/10 border-l-2 border-l-primary" : ""
-                          }`}
+                        className={`flex items-center gap-3 p-3 border-b last:border-b-0 cursor-pointer hover:bg-muted transition-colors ${
+                          selectedLinkedSteps.includes(step.id) ? "bg-primary/10 border-l-2 border-l-primary" : ""
+                        }`}
                         onClick={() => toggleLinkedStep(step.id)}
                       >
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${selectedLinkedSteps.includes(step.id)
-                            ? "bg-primary border-primary"
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          selectedLinkedSteps.includes(step.id) 
+                            ? "bg-primary border-primary" 
                             : "border-border"
-                          }`}>
+                        }`}>
                           {selectedLinkedSteps.includes(step.id) && (
                             <Check className="h-3 w-3 text-primary-foreground" />
                           )}
@@ -1441,14 +1443,14 @@ function StagesOwnersPage() {
                   )}
                 </div>
               </div>
-
+              
               {selectedLinkedSteps.length > 0 && (
                 <div className="text-sm text-muted-foreground">
                   <strong className="text-foreground">{selectedLinkedSteps.length}</strong> step(s) selected for linking
                 </div>
               )}
             </div>
-
+            
             <DialogFooter>
               <Button variant="outline" onClick={() => setLinkingDialogOpen(false)} className="bg-transparent">
                 Cancel
@@ -1592,8 +1594,8 @@ function StagesOwnersPage() {
                   <div key={index} className="flex items-end gap-2">
                     <div className="flex-1 space-y-1">
                       <Label className="text-xs text-muted-foreground">Field</Label>
-                      <Select
-                        value={condition.field}
+                      <Select 
+                        value={condition.field} 
                         onValueChange={(value) => {
                           const updated = [...stepConditions]
                           updated[index].field = value
@@ -1615,8 +1617,8 @@ function StagesOwnersPage() {
                     </div>
                     <div className="w-28 space-y-1">
                       <Label className="text-xs text-muted-foreground">Operator</Label>
-                      <Select
-                        value={condition.operator}
+                      <Select 
+                        value={condition.operator} 
                         onValueChange={(value) => {
                           const updated = [...stepConditions]
                           updated[index].operator = value
@@ -1637,8 +1639,8 @@ function StagesOwnersPage() {
                     </div>
                     <div className="w-28 space-y-1">
                       <Label className="text-xs text-muted-foreground">Value</Label>
-                      <Select
-                        value={condition.value}
+                      <Select 
+                        value={condition.value} 
                         onValueChange={(value) => {
                           const updated = [...stepConditions]
                           updated[index].value = value
@@ -1779,7 +1781,7 @@ function StagesOwnersPage() {
             <Input
               placeholder="Search categories..."
               value={editingCategoryName && editingCategoryId === null ? editingCategoryName : ""}
-              onChange={() => { }}
+              onChange={() => {}}
               className="pl-10"
             />
           </div>
@@ -1909,8 +1911,9 @@ function StagesOwnersPage() {
                         {category.statuses.map((status, index) => (
                           <tr
                             key={status.id}
-                            className={`border-b transition-all duration-150 ${editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
-                              }`}
+                            className={`border-b transition-all duration-150 ${
+                              editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
+                            }`}
                           >
                             <td colSpan={4} className="p-0">
                               <div className="p-4 pl-16 flex items-center gap-4">
@@ -2231,14 +2234,14 @@ function StagesTenantsPage() {
   const [newStatusName, setNewStatusName] = useState("")
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
-
+  
   // Workflow view state
   const [selectedStageForEdit, setSelectedStageForEdit] = useState<{
     categoryId: string
     categoryName: string
     status: { id: string; name: string; steps: number; days: number; processes: number }
   } | null>(null)
-
+  
   // Workflow steps for the selected stage
   const [stageWorkflowSteps, setStageWorkflowSteps] = useState([
     { id: "1", type: "email", name: "Banking", timing: "immediately", day: 1, autoSend: true, processName: null, instructions: "" },
@@ -2797,7 +2800,7 @@ function StagesTenantsPage() {
             <Input
               placeholder="Search categories..."
               value={editingCategoryName && editingCategoryId === null ? editingCategoryName : ""}
-              onChange={() => { }}
+              onChange={() => {}}
               className="pl-10"
             />
           </div>
@@ -2927,8 +2930,9 @@ function StagesTenantsPage() {
                         {category.statuses.map((status, index) => (
                           <tr
                             key={status.id}
-                            className={`border-b transition-all duration-150 ${editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
-                              }`}
+                            className={`border-b transition-all duration-150 ${
+                              editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
+                            }`}
                           >
                             <td colSpan={4} className="p-0">
                               <div className="p-4 pl-16 flex items-center gap-4">
@@ -3851,10 +3855,11 @@ function TemplateManagementPage() {
           <button
             type="button"
             onClick={() => setActiveTab("email")}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "email"
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "email"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+            }`}
           >
             <div className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
@@ -3867,10 +3872,11 @@ function TemplateManagementPage() {
           <button
             type="button"
             onClick={() => setActiveTab("sms")}
-            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "sms"
+            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === "sms"
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
+            }`}
           >
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
@@ -3959,8 +3965,9 @@ function TemplateManagementPage() {
               <tr key={template.id} className="hover:bg-muted transition-colors">
                 <td className="px-4 py-4">
                   <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${activeTab === "email" ? "bg-chart-1/20" : "bg-chart-2/20"
-                      }`}>
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      activeTab === "email" ? "bg-chart-1/20" : "bg-chart-2/20"
+                    }`}>
                       {activeTab === "email" ? (
                         <Mail className="h-4 w-4 text-chart-1" />
                       ) : (
@@ -4081,8 +4088,9 @@ function TemplateManagementPage() {
                     setEditingTemplate({ ...editingTemplate, content: e.target.value })
                   }
                   disabled={isViewMode}
-                  className={`w-full min-h-[200px] p-3 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${isViewMode ? "bg-muted" : ""
-                    }`}
+                  className={`w-full min-h-[200px] p-3 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+                    isViewMode ? "bg-muted" : ""
+                  }`}
                 />
                 {!isViewMode && (
                   <p className="text-xs text-muted-foreground">
@@ -4163,6 +4171,677 @@ function TemplateManagementPage() {
   )
 }
 
+// Contacts Directory Page Component
+function ContactsDirectoryPage() {
+  const [activeTab, setActiveTab] = useState<"owners" | "tenants">("owners")
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Mock data for inactive owners
+  const inactiveOwners = [
+    { id: "1", name: "James Wilson", email: "james.wilson@email.com", phone: "(555) 123-4567", propertyType: "Multi Family", createdDate: "2023-06-15", lastContact: "2024-01-10", status: "Inactive" },
+    { id: "2", name: "Sarah Mitchell", email: "sarah.m@email.com", phone: "(555) 234-5678", propertyType: "Single Family", createdDate: "2023-04-22", lastContact: "2023-12-05", status: "Inactive" },
+    { id: "3", name: "Robert Chen", email: "r.chen@email.com", phone: "(555) 345-6789", propertyType: "Apartment", createdDate: "2023-08-10", lastContact: "2024-02-15", status: "Inactive" },
+    { id: "4", name: "Emily Parker", email: "emily.p@email.com", phone: "(555) 456-7890", propertyType: "Multi Family", createdDate: "2023-03-18", lastContact: "2023-11-20", status: "Inactive" },
+    { id: "5", name: "Michael Brown", email: "m.brown@email.com", phone: "(555) 567-8901", propertyType: "Single Family", createdDate: "2023-09-05", lastContact: "2024-01-25", status: "Inactive" },
+    { id: "6", name: "Jennifer Davis", email: "j.davis@email.com", phone: "(555) 678-9012", propertyType: "Apartment", createdDate: "2023-05-30", lastContact: "2023-10-15", status: "Inactive" },
+  ]
+
+  // Mock data for inactive tenants
+  const inactiveTenants = [
+    { id: "1", name: "David Thompson", email: "david.t@email.com", phone: "(555) 111-2222", propertyType: "Apartment", createdDate: "2023-07-12", lastContact: "2024-01-05", status: "Inactive" },
+    { id: "2", name: "Lisa Anderson", email: "l.anderson@email.com", phone: "(555) 222-3333", propertyType: "Single Family", createdDate: "2023-05-20", lastContact: "2023-12-18", status: "Inactive" },
+    { id: "3", name: "Kevin Martinez", email: "k.martinez@email.com", phone: "(555) 333-4444", propertyType: "Multi Family", createdDate: "2023-08-25", lastContact: "2024-02-01", status: "Inactive" },
+    { id: "4", name: "Amanda White", email: "a.white@email.com", phone: "(555) 444-5555", propertyType: "Apartment", createdDate: "2023-04-10", lastContact: "2023-11-30", status: "Inactive" },
+    { id: "5", name: "Chris Taylor", email: "c.taylor@email.com", phone: "(555) 555-6666", propertyType: "Single Family", createdDate: "2023-09-15", lastContact: "2024-01-20", status: "Inactive" },
+  ]
+
+  const currentData = activeTab === "owners" ? inactiveOwners : inactiveTenants
+
+  const filteredData = currentData.filter((item) =>
+    item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.phone.includes(searchQuery)
+  )
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Contacts Directory</h1>
+        <p className="text-muted-foreground">View and manage inactive prospects for potential re-engagement</p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-1 mb-6 border-b border-border">
+        <button
+          onClick={() => setActiveTab("owners")}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            activeTab === "owners"
+              ? "text-teal-600"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Owners
+          {activeTab === "owners" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("tenants")}
+          className={`px-4 py-2.5 text-sm font-medium transition-colors relative ${
+            activeTab === "tenants"
+              ? "text-teal-600"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Tenants
+          {activeTab === "tenants" && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-teal-600" />
+          )}
+        </button>
+      </div>
+
+      {/* Search and Filters */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder={`Search ${activeTab}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Badge variant="secondary" className="text-sm">
+              {filteredData.length} {activeTab === "owners" ? "Owners" : "Tenants"}
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Data Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="font-semibold">Name</TableHead>
+                <TableHead className="font-semibold">Email</TableHead>
+                <TableHead className="font-semibold">Phone</TableHead>
+                <TableHead className="font-semibold">Property Type</TableHead>
+                <TableHead className="font-semibold">Created Date</TableHead>
+                <TableHead className="font-semibold">Last Contact</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+                <TableHead className="font-semibold text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredData.map((item) => (
+                <TableRow key={item.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback className="bg-teal-100 text-teal-700 text-xs">
+                          {item.name.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium text-foreground">{item.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{item.email}</TableCell>
+                  <TableCell className="text-muted-foreground">{item.phone}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-xs">
+                      {item.propertyType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(item.createdDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(item.lastContact).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+                      {item.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50">
+                        <Mail className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50">
+                        <Phone className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-teal-600 hover:text-teal-700 hover:bg-teal-50">
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {filteredData.length === 0 && (
+            <div className="p-8 text-center">
+              <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No {activeTab} found</h3>
+              <p className="text-sm text-muted-foreground">Try adjusting your search query</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Property Directory Page Component
+function PropertyDirectoryPage() {
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Mock data for properties related to inactive owners
+  const properties = [
+    { id: "1", name: "Sunset Apartments", address: "123 Sunset Blvd, Los Angeles, CA 90028", type: "Apartment", units: 24, owner: "James Wilson", status: "Inactive", createdDate: "2023-06-15" },
+    { id: "2", name: "Oak Street Residence", address: "456 Oak Street, San Francisco, CA 94102", type: "Single Family", units: 1, owner: "Sarah Mitchell", status: "Inactive", createdDate: "2023-04-22" },
+    { id: "3", name: "Harbor View Complex", address: "789 Harbor Way, San Diego, CA 92101", type: "Multi Family", units: 8, owner: "Robert Chen", status: "Inactive", createdDate: "2023-08-10" },
+    { id: "4", name: "Maple Gardens", address: "321 Maple Ave, Sacramento, CA 95814", type: "Apartment", units: 32, owner: "Emily Parker", status: "Inactive", createdDate: "2023-03-18" },
+    { id: "5", name: "Pine Valley Home", address: "654 Pine Valley Rd, Fresno, CA 93720", type: "Single Family", units: 1, owner: "Michael Brown", status: "Inactive", createdDate: "2023-09-05" },
+    { id: "6", name: "Downtown Lofts", address: "987 Main Street, Oakland, CA 94612", type: "Apartment", units: 16, owner: "Jennifer Davis", status: "Inactive", createdDate: "2023-05-30" },
+    { id: "7", name: "Riverside Duplex", address: "147 River Road, Riverside, CA 92501", type: "Multi Family", units: 4, owner: "James Wilson", status: "Inactive", createdDate: "2023-07-20" },
+    { id: "8", name: "Coastal Retreat", address: "258 Beach Blvd, Santa Monica, CA 90401", type: "Single Family", units: 1, owner: "Sarah Mitchell", status: "Inactive", createdDate: "2023-02-14" },
+  ]
+
+  const filteredProperties = properties.filter((property) =>
+    property.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    property.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    property.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    property.type.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const getPropertyTypeColor = (type: string) => {
+    switch (type) {
+      case "Apartment":
+        return "bg-blue-100 text-blue-700 border-blue-200"
+      case "Multi Family":
+        return "bg-purple-100 text-purple-700 border-purple-200"
+      case "Single Family":
+        return "bg-green-100 text-green-700 border-green-200"
+      default:
+        return "bg-gray-100 text-gray-700 border-gray-200"
+    }
+  }
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Property Directory</h1>
+        <p className="text-muted-foreground">View properties associated with inactive owner prospects</p>
+      </div>
+
+      {/* Search and Filters */}
+      <Card className="mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search properties by name, address, owner, or type..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Badge variant="secondary" className="text-sm">
+              {filteredProperties.length} Properties
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Properties Table */}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="font-semibold">Property Name</TableHead>
+                <TableHead className="font-semibold">Address</TableHead>
+                <TableHead className="font-semibold">Type</TableHead>
+                <TableHead className="font-semibold text-center">Units</TableHead>
+                <TableHead className="font-semibold">Owner</TableHead>
+                <TableHead className="font-semibold">Created Date</TableHead>
+                <TableHead className="font-semibold">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredProperties.map((property) => (
+                <TableRow key={property.id} className="hover:bg-muted/50">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded bg-teal-100 flex items-center justify-center">
+                        <Building2 className="h-4 w-4 text-teal-600" />
+                      </div>
+                      <span className="font-medium text-foreground">{property.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground max-w-xs truncate">
+                    {property.address}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={`text-xs ${getPropertyTypeColor(property.type)}`}>
+                      {property.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center text-muted-foreground">
+                    {property.units}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
+                          {property.owner.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-muted-foreground">{property.owner}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {new Date(property.createdDate).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
+                      {property.status}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {filteredProperties.length === 0 && (
+            <div className="p-8 text-center">
+              <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No properties found</h3>
+              <p className="text-sm text-muted-foreground">Try adjusting your search query</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// Roles & Permissions Page Component
+function RolesPermissionsPage() {
+  const [selectedRole, setSelectedRole] = useState<string | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [permissionSearch, setPermissionSearch] = useState("")
+
+  const roles = [
+    { id: "1", name: "Process Owner", description: "Manages and oversees business processes", usersCount: 4 },
+    { id: "2", name: "Accountant", description: "Handles financial records and transactions", usersCount: 3 },
+    { id: "3", name: "Acquisition Manager", description: "Manages property acquisition and owner prospects", usersCount: 2 },
+    { id: "4", name: "Agent", description: "Handles leasing and tenant relations", usersCount: 8 },
+    { id: "5", name: "AGM", description: "Assistant General Manager supporting operations", usersCount: 2 },
+    { id: "6", name: "BC", description: "Business Coordinator managing day-to-day activities", usersCount: 3 },
+    { id: "7", name: "CEO", description: "Chief Executive Officer with full system access", usersCount: 1 },
+    { id: "8", name: "CSM", description: "Customer Success Manager for client relations", usersCount: 5 },
+    { id: "9", name: "HR Executive", description: "Handles HR operations and employee management", usersCount: 2 },
+    { id: "10", name: "HR Manager", description: "Oversees HR department and policies", usersCount: 1 },
+    { id: "11", name: "Lead Coordinator", description: "Coordinates lead distribution and follow-ups", usersCount: 4 },
+    { id: "12", name: "Lead Owner", description: "Owns and manages assigned leads", usersCount: 6 },
+  ]
+
+  const permissionCategories = [
+    { id: "1", name: "Accounting - Advanced", isNew: false, sections: [
+      { id: "1-1", name: "Bank Reconciliation" },
+      { id: "1-2", name: "Budget Management" },
+      { id: "1-3", name: "Financial Reports" },
+    ]},
+    { id: "2", name: "Accounting - Common Area Maintenance", isNew: false, sections: [
+      { id: "2-1", name: "CAM Charges" },
+      { id: "2-2", name: "CAM Reconciliation" },
+    ]},
+    { id: "3", name: "Accounting - Debt Collections", isNew: false, sections: [
+      { id: "3-1", name: "Collection Letters" },
+      { id: "3-2", name: "Payment Plans" },
+      { id: "3-3", name: "Write-offs" },
+    ]},
+    { id: "4", name: "Accounting - General", isNew: false, sections: [
+      { id: "4-1", name: "Chart of Accounts" },
+      { id: "4-2", name: "General Ledger" },
+      { id: "4-3", name: "Account Statements" },
+    ]},
+    { id: "5", name: "Accounting - Journal Entries", isNew: false, sections: [
+      { id: "5-1", name: "Manual Entries" },
+      { id: "5-2", name: "Recurring Entries" },
+      { id: "5-3", name: "Adjusting Entries" },
+    ]},
+    { id: "6", name: "Accounting - Payables", isNew: false, sections: [
+      { id: "6-1", name: "Vendor Bills" },
+      { id: "6-2", name: "Bill Payments" },
+      { id: "6-3", name: "Purchase Orders" },
+    ]},
+    { id: "7", name: "Accounting - Receivables", isNew: false, sections: [
+      { id: "7-1", name: "Invoices" },
+      { id: "7-2", name: "Payments Received" },
+      { id: "7-3", name: "Credit Memos" },
+    ]},
+    { id: "8", name: "Accounting - Transactions", isNew: false, sections: [
+      { id: "8-1", name: "Transaction History" },
+      { id: "8-2", name: "Void Transactions" },
+      { id: "8-3", name: "Transaction Reports" },
+    ]},
+    { id: "9", name: "Affordable Housing", isNew: false, sections: [
+      { id: "9-1", name: "Compliance Reports" },
+      { id: "9-2", name: "Income Certifications" },
+      { id: "9-3", name: "HUD Forms" },
+    ]},
+    { id: "10", name: "Assigned Tasks", isNew: true, sections: [
+      { id: "10-1", name: "Task List" },
+      { id: "10-2", name: "Task Assignment" },
+      { id: "10-3", name: "Task Templates" },
+    ]},
+    { id: "11", name: "Associations", isNew: false, sections: [
+      { id: "11-1", name: "HOA Management" },
+      { id: "11-2", name: "Meeting Minutes" },
+      { id: "11-3", name: "Violation Tracking" },
+    ]},
+    { id: "12", name: "Bulk Workflows", isNew: false, sections: [
+      { id: "12-1", name: "Bulk Communications" },
+      { id: "12-2", name: "Bulk Updates" },
+      { id: "12-3", name: "Import/Export" },
+    ]},
+    { id: "13", name: "Communication", isNew: false, sections: [
+      { id: "13-1", name: "Email Templates" },
+      { id: "13-2", name: "SMS Templates" },
+      { id: "13-3", name: "Notification Settings" },
+    ]},
+    { id: "14", name: "Global", isNew: false, sections: [
+      { id: "14-1", name: "System Settings" },
+      { id: "14-2", name: "Company Profile" },
+      { id: "14-3", name: "Integrations" },
+    ]},
+    { id: "15", name: "Information Security", isNew: false, sections: [
+      { id: "15-1", name: "Audit Logs" },
+      { id: "15-2", name: "Data Access" },
+      { id: "15-3", name: "Security Settings" },
+    ]},
+    { id: "16", name: "Leasing", isNew: false, sections: [
+      { id: "16-1", name: "Applications" },
+      { id: "16-2", name: "Lease Agreements" },
+      { id: "16-3", name: "Renewals" },
+      { id: "16-4", name: "Move-in/Move-out" },
+    ]},
+    { id: "17", name: "Maintenance", isNew: false, sections: [
+      { id: "17-1", name: "Work Orders" },
+      { id: "17-2", name: "Vendor Management" },
+      { id: "17-3", name: "Inspections" },
+    ]},
+    { id: "18", name: "Properties", isNew: false, sections: [
+      { id: "18-1", name: "Property List" },
+      { id: "18-2", name: "Unit Management" },
+      { id: "18-3", name: "Amenities" },
+    ]},
+    { id: "19", name: "Reporting", isNew: true, sections: [
+      { id: "19-1", name: "Financial Reports" },
+      { id: "19-2", name: "Operational Reports" },
+      { id: "19-3", name: "Custom Reports" },
+    ]},
+    { id: "20", name: "Tenant Management", isNew: false, sections: [
+      { id: "20-1", name: "Tenant Profiles" },
+      { id: "20-2", name: "Lease History" },
+      { id: "20-3", name: "Tenant Communications" },
+    ]},
+  ]
+
+  const getRoleColor = (index: number) => {
+    const colors = [
+      "bg-teal-500",
+      "bg-blue-500",
+      "bg-purple-500",
+      "bg-orange-500",
+      "bg-pink-500",
+      "bg-indigo-500",
+      "bg-green-500",
+      "bg-red-500",
+      "bg-yellow-500",
+      "bg-cyan-500",
+      "bg-emerald-500",
+      "bg-violet-500",
+    ]
+    return colors[index % colors.length]
+  }
+
+  const currentRole = roles.find((r) => r.id === selectedRole)
+  const currentCategory = permissionCategories.find((c) => c.id === selectedCategory)
+
+  const filteredCategories = permissionCategories.filter((category) =>
+    category.name.toLowerCase().includes(permissionSearch.toLowerCase())
+  )
+
+  // Category Detail View (Permission Sections Table)
+  if (selectedRole && currentRole && selectedCategory && currentCategory) {
+    return (
+      <div className="p-6">
+        {/* Header with Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className="flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to {currentRole.name} Permissions</span>
+          </button>
+          <h1 className="text-2xl font-bold text-foreground">{currentCategory.name}</h1>
+          <p className="text-muted-foreground">Manage permissions for {currentCategory.name}</p>
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+              Save Changes
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setSelectedCategory(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+
+        {/* Permissions Table */}
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead className="font-semibold w-1/2">Permission</TableHead>
+                  <TableHead className="font-semibold text-center">View/Read</TableHead>
+                  <TableHead className="font-semibold text-center">Write</TableHead>
+                  <TableHead className="font-semibold text-center">Delete</TableHead>
+                  <TableHead className="font-semibold text-center">Add</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {currentCategory.sections.map((section) => (
+                  <TableRow key={section.id} className="hover:bg-muted/50">
+                    <TableCell className="font-medium text-foreground">{section.name}</TableCell>
+                    <TableCell className="text-center">
+                      <input
+                        type="checkbox"
+                        id={`${section.id}-view`}
+                        className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <input
+                        type="checkbox"
+                        id={`${section.id}-write`}
+                        className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <input
+                        type="checkbox"
+                        id={`${section.id}-delete`}
+                        className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <input
+                        type="checkbox"
+                        id={`${section.id}-add`}
+                        className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Role Detail View (Permission Categories as Tiles)
+  if (selectedRole && currentRole) {
+    return (
+      <div className="p-6">
+        {/* Header with Back Button */}
+        <div className="mb-6">
+          <button
+            onClick={() => setSelectedRole(null)}
+            className="flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-4"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Roles</span>
+          </button>
+          <h1 className="text-2xl font-bold text-foreground">{currentRole.name} Access Permissions</h1>
+          <p className="text-muted-foreground">{currentRole.name}</p>
+        </div>
+
+        {/* Action Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Button className="bg-teal-600 hover:bg-teal-700 text-white">
+              Review Changes
+            </Button>
+            <Button
+              variant="link"
+              className="text-teal-600 hover:text-teal-700"
+              onClick={() => setSelectedRole(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+          <div className="relative">
+            <Input
+              placeholder="Search for Permissions"
+              value={permissionSearch}
+              onChange={(e) => setPermissionSearch(e.target.value)}
+              className="pl-3 pr-10 w-64"
+            />
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+
+        {/* Permission Categories as Tiles */}
+        <div className="border rounded-lg divide-y">
+          {filteredCategories.map((category) => (
+            <button
+              key={category.id}
+              onClick={() => setSelectedCategory(category.id)}
+              className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-foreground">{category.name}</span>
+                {category.isNew && (
+                  <Badge className="bg-teal-100 text-teal-700 text-xs ml-2">NEW</Badge>
+                )}
+              </div>
+              <span className="text-sm text-muted-foreground">{category.sections.length} permissions</span>
+            </button>
+          ))}
+        </div>
+
+        {filteredCategories.length === 0 && (
+          <div className="p-8 text-center border rounded-lg">
+            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-foreground mb-2">No permissions found</h3>
+            <p className="text-sm text-muted-foreground">Try adjusting your search query</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // Roles List View
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-foreground">Roles & Permissions</h1>
+        <p className="text-muted-foreground">Manage user roles and their associated permissions</p>
+      </div>
+
+      {/* Roles List */}
+      <div className="space-y-3">
+        {roles.map((role, index) => (
+          <Card
+            key={role.id}
+            className="hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => setSelectedRole(role.id)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-center gap-4">
+                {/* Role Icon/Color */}
+                <div className={`w-12 h-12 rounded-lg ${getRoleColor(index)} flex items-center justify-center flex-shrink-0`}>
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+
+                {/* Role Info */}
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-foreground">{role.name}</h3>
+                  <p className="text-sm text-muted-foreground truncate">{role.description}</p>
+                </div>
+
+                {/* Users Count */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Badge variant="secondary" className="text-xs">
+                    {role.usersCount} {role.usersCount === 1 ? "user" : "users"}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setSelectedRole(role.id)
+                    }}
+                  >
+                    <Settings className="h-4 w-4 mr-1" />
+                    Manage
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage({ params }: { params?: { view?: string } }) {
   const view = params?.view || "user-roles"
 
@@ -4174,6 +4853,9 @@ export default function SettingsPage({ params }: { params?: { view?: string } })
       {view === "template-management" && <TemplateManagementPage />}
       {view === "property-tags" && <PropertyTagsPage />}
       {view === "custom-fields" && <CustomFieldsPage />}
+      {view === "contacts-directory" && <ContactsDirectoryPage />}
+      {view === "property-directory" && <PropertyDirectoryPage />}
+      {view === "roles-permissions" && <RolesPermissionsPage />}
     </div>
   )
 }

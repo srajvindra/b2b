@@ -2,10 +2,12 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
-import { Mail, MessageSquare, Phone, Calendar, Users, StickyNote, X } from "lucide-react"
+import { useMemo, useRef, useState } from "react"
+import { StickyNote, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useQuickActions } from "@/context/QuickActionsContext"
+import { getOwnerProspectQuickActions } from "@/lib/quickActions"
 
 const teamMembers = [
   { id: 1, name: "Nina Patel", role: "Property Manager" },
@@ -13,15 +15,6 @@ const teamMembers = [
   { id: 3, name: "Suzanne Hall", role: "Account Manager" },
   { id: 4, name: "Mike Johnson", role: "Maintenance Lead" },
   { id: 5, name: "Sarah Chen", role: "Operations Director" },
-]
-
-const quickActions = [
-  { icon: Mail, label: "Send Email", action: "email" },
-  { icon: MessageSquare, label: "Send SMS", action: "sms" },
-  { icon: Phone, label: "Log Call", action: "call" },
-  { icon: StickyNote, label: "Add Note", action: "note" },
-  { icon: Calendar, label: "Schedule Meeting", action: "meeting" },
-  { icon: Users, label: "Reassign Lead", action: "reassign" },
 ]
 
 export function OwnerDetailQuickActions() {
@@ -38,11 +31,15 @@ export function OwnerDetailQuickActions() {
       member.name.toLowerCase().includes(mentionQuery.toLowerCase()) && !taggedUsers.some((t) => t.id === member.id),
   )
 
-  const handleActionClick = (action: string) => {
-    if (action === "note") {
-      setShowNoteModal(true)
-    }
-  }
+  const actions = useMemo(
+    () =>
+      getOwnerProspectQuickActions({
+        onAddNote: () => setShowNoteModal(true),
+      }),
+    [],
+  )
+
+  useQuickActions(actions)
 
   const handleNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
@@ -103,22 +100,7 @@ export function OwnerDetailQuickActions() {
   }
 
   return (
-    <div className="space-y-3">
-      <h2 className="font-semibold text-base text-gray-800">Quick Actions</h2>
-
-      <div className="flex flex-col gap-2">
-        {quickActions.map((action, index) => (
-          <button
-            key={index}
-            onClick={() => handleActionClick(action.action)}
-            className="flex w-full items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 bg-white hover:shadow-md hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer"
-          >
-            <action.icon className="h-4 w-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700">{action.label}</span>
-          </button>
-        ))}
-      </div>
-
+    <>
       <Dialog open={showNoteModal} onOpenChange={handleCloseModal}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -191,6 +173,6 @@ export function OwnerDetailQuickActions() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

@@ -112,7 +112,7 @@ export function QuickActionSidebar({
             <div key={group.id} className="flex flex-col">
               {group.title ? (
                 <>
-                  <div className="border-t-2 border-gray-300 shrink-0" aria-hidden />
+                  <div className="shrink-0" aria-hidden />
                   <div className="flex w-full items-center gap-3 px-2 py-2.5 text-left">
                     <span className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">
                       {group.title}
@@ -120,7 +120,7 @@ export function QuickActionSidebar({
                   </div>
                 </>
               ) : null}
-              <div className="flex flex-col divide-y divide-gray-100">
+              <div className="flex flex-col divide-y">
                 {group.actions.map((action) => {
                   const Icon = action.icon
                   const sharedClasses =

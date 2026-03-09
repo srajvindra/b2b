@@ -1210,11 +1210,11 @@ export default function LeadsPageContent({
                           <div className="p-2 border-b">
                             <div className="flex items-center justify-between">
                               <span className="text-sm font-medium">Created</span>
-                              {selectedCreated.length > 0 ? (
+                              {selectedCreated.length > 0 && (
                                 <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedCreated([])}>
                                   Clear
                                 </Button>
-                              ) : "N/A"}
+                              )}
                             </div>
                           </div>
                           <div className="max-h-[200px] overflow-y-auto p-2">
@@ -1299,15 +1299,15 @@ export default function LeadsPageContent({
                       </td>
                       )}
                       {isColumnVisible("emailsSent") && (
-                      <td className="p-4">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                          {lead.emailsSent || 0}
-                        </Badge>
-                      </td>
-                      )}
-                      {(params?.view === "owners" || params?.view === "tenants") && isColumnVisible("units") && (
                         <td className="p-4">
-                          {params?.view === "tenants" && lead.interestedUnits && lead.interestedUnits.length > 0 ? (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            {lead.emailsSent || 0}
+                          </Badge>
+                        </td>
+                      )}
+                      {(params?.view === "owners" || params?.view === "lease-prospects") && isColumnVisible("units") && (
+                        <td className="p-4">
+                          {params?.view === "lease-prospects" && lead.interestedUnits && lead.interestedUnits.length > 0 ? (
                             <button
                               type="button"
                               onClick={(e) => {

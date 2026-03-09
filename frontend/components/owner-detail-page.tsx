@@ -4271,10 +4271,8 @@ export function OwnerDetailPage({ lead, onBack, onNavigateToProperty }: OwnerDet
         </Tabs>
       </div>
 
-      {/* Quick Actions Sidebar */}
-      <div className="w-64 flex-shrink-0 border-l pl-6 sticky top-0 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
-        <OwnerDetailQuickActions />
-      </div>
+      {/* Register owner quick actions for global sidebar */}
+      <OwnerDetailQuickActions />
 
       {/* Start New Process Modal */}
       <Dialog open={showStartProcessModal} onOpenChange={setShowStartProcessModal}>

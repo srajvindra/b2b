@@ -2,7 +2,7 @@
 
 import { useMemo } from "react"
 import { useQuickActions } from "@/context/QuickActionsContext"
-import { getLeadQuickActions } from "@/lib/quickActions"
+import { getLeadProspectQuickActions } from "@/lib/quickActions"
 
 type LeadQuickActionsProps = {
   subtitle?: string
@@ -29,7 +29,7 @@ export function LeadQuickActions({
 }: LeadQuickActionsProps) {
   const actions = useMemo(
     () =>
-      getLeadQuickActions({
+      getLeadProspectQuickActions({
         onSendEmail,
         onSendSMS,
         onLogCall,
