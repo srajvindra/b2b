@@ -11,8 +11,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { DateFilterType, EmailTemplate, SmsTemplate, Template } from "../types"
 import { initialEmailTemplates, initialSmsTemplates } from "../data/templateManagement"
 
-export function TemplateManagementPage() {
-    const [activeTab, setActiveTab] = useState<"email" | "sms">("email")
+interface TemplateManagementPageProps {
+    defaultTab?: "email" | "sms"
+    hideTabs?: boolean
+    hideHeader?: boolean
+}
+
+export function TemplateManagementPage({ defaultTab = "email", hideTabs = false, hideHeader = false }: TemplateManagementPageProps) {
+    const [activeTab, setActiveTab] = useState<"email" | "sms">(defaultTab)
     const [searchQuery, setSearchQuery] = useState("")
     const [creatorFilter, setCreatorFilter] = useState("all-creators")
     const [dateFilter, setDateFilter] = useState<DateFilterType>("all")
@@ -115,58 +121,62 @@ const handleViewTemplate = (template: Template) => {
     return (
       <div className="p-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Template Management</h1>
-            <p className="text-muted-foreground text-sm mt-1">
-              Create and manage email and SMS templates for your workflows.
-            </p>
+        {!hideHeader && (
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Template Management</h1>
+              <p className="text-muted-foreground text-sm mt-1">
+                Create and manage email and SMS templates for your workflows.
+              </p>
+            </div>
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Template
+            </Button>
           </div>
-          <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Template
-          </Button>
-        </div>
+        )}
   
         {/* Tabs */}
-        <div className="border-b border-border mb-6">
-          <div className="flex gap-8">
-            <button
-              type="button"
-              onClick={() => setActiveTab("email")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "email"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Email Templates
-                <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">
-                  {emailTemplates.length}
-                </span>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("sms")}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === "sms"
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                SMS Templates
-                <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">
-                  {smsTemplates.length}
-                </span>
-              </div>
-            </button>
+        {!hideTabs && (
+          <div className="border-b border-border mb-6">
+            <div className="flex gap-8">
+              <button
+                type="button"
+                onClick={() => setActiveTab("email")}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "email"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email Templates
+                  <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">
+                    {emailTemplates.length}
+                  </span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("sms")}
+                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === "sms"
+                    ? "border-primary text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  SMS Templates
+                  <span className="bg-muted text-muted-foreground text-xs px-2 py-0.5 rounded-full">
+                    {smsTemplates.length}
+                  </span>
+                </div>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
   
         {/* Search and Filters */}
         <div className="flex flex-wrap items-center gap-4 mb-6">

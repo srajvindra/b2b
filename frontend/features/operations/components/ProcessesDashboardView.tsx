@@ -577,7 +577,7 @@ export function ProcessesDashboardView({
                   <span className="text-sm text-gray-600">{instance.createdAt}</span>
                 </td>
                 <td className="py-3 px-2">
-                  <Button variant="outline" onClick={() => router.push(`/operations/processes-workflow?processId=${instance.id}`)}>
+                  <Button variant="outline" onClick={() => router.push(`/operations/processes-workflow?processId=${instance.id}&name=${encodeURIComponent(instance.processType)}`)}>
                     <Eye className="h-4 w-4" />
                   </Button>
                 </td>
