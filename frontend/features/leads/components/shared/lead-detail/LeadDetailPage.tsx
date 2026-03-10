@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { useMemo } from "react"
-import OwnerDetailPage from "@/components/owner-detail-page"
+import { OwnerDetailView } from "@/features/leads/components/OwnerDetailView"
 import { TenantApplicationDetailView } from "@/features/leads/components/TenantApplicationDetailView"
 import { initialLeadsData, CATEGORY_LEADS, PROSPECT_CATEGORY_LEADS } from "@/features/leads/data/mockLeads"
 import type { Lead } from "@/features/leads/types"
@@ -65,7 +65,7 @@ export function LeadDetailPage({ mode, categoryId: categoryIdProp, leadId: leadI
 
   if (mode === "owner-prospects") {
     return (
-      <OwnerDetailPage
+      <OwnerDetailView
         lead={lead}
         onBack={() => router.push(listPath)}
         onNavigateToProperty={(propertyName) => nav.go("propertyDetail", { id: propertyName })}

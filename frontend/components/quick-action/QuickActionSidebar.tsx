@@ -120,7 +120,7 @@ export function QuickActionSidebar({
                   </div>
                 </>
               ) : null}
-              <div className="flex flex-col divide-y">
+              <div className="flex flex-col divide-y-1">
                 {group.actions.map((action) => {
                   const Icon = action.icon
                   const sharedClasses =
@@ -159,31 +159,8 @@ export function QuickActionSidebar({
       </div>
 
       {showAiAssistant && (
-        <div className="flex-shrink-0 border-t-2 border-gray-300 p-4 bg-background/50">
-          <h3 className="font-semibold text-sm text-foreground flex items-center gap-2 mb-3">
-            <Lightbulb className="h-4 w-4 text-amber-500" />
-            AI Assistant
-          </h3>
-          <div className="flex gap-2 mb-3">
-            <Input
-              placeholder="Ask..."
-              // placeholder={aiPlaceholder}
-              value={aiQuery}
-              onChange={(e) => setAiQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAiSend()}
-              className="flex-1 h-9 text-sm"
-            />
-            <Button
-              type="button"
-              size="icon"
-              className="h-9 w-9 shrink-0 bg-primary hover:bg-primary/90"
-              onClick={handleAiSend}
-              aria-label="Send"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex flex-col">
+        <div className="flex-shrink-0 border-t-2 border-gray-300 p-4 bg-background/50 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             {prompts.map((prompt) => (
               <button
                 key={prompt}
@@ -195,6 +172,34 @@ export function QuickActionSidebar({
               </button>
             ))}
           </div>
+          <div className="flex gap-2">
+            <Input
+              placeholder="Ask..."
+              // placeholder={aiPlaceholder}
+              value={aiQuery}
+              onChange={(e) => setAiQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAiSend()}
+              className="flex-1 h-9 text-sm"
+            />
+            <Button
+              type="button"
+              size="icon"
+              // className="h-9 w-9 shrink-0 bg-blue-500 hover:bg-blue-600"
+              className={`p-1.5 rounded transition-colors flex-shrink-0 ${
+                aiQuery.trim()
+                  ? "bg-blue-700 hover:bg-blue-800 text-white"
+                  : "bg-blue-100 text-blue-400 hover:bg-blue-200"
+              }`}
+              onClick={handleAiSend}
+              aria-label="Send"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+          <h3 className="font-semibold text-sm text-foreground flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-amber-500" />
+            AI Assistant
+          </h3>
         </div>
       )}
 

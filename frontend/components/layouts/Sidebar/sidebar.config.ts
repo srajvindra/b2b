@@ -40,12 +40,13 @@ export const ROUTE_KEY_TO_PATH: Record<string, string> = {
   "all-properties": "/properties",
   "property-groups": "/properties/groups",
   processes: "/operations/processes",
+  "all-tasks": "/operations/all-tasks",
   projects: "/operations/projects",
   automations: "/operations/automations",
   messages: "/messages",
   reports: "/reports",
   "user-roles": "/settings/staff",
-  "role-permissions": "/settings/staff/role-permissions",
+  "roles-permissions": "/settings/staff/roles-permissions",
   "stages-owners": "/settings/stages/owners",
   "stages-tenants": "/settings/stages/tenants",
   "template-management": "/settings/templates",
@@ -53,6 +54,7 @@ export const ROUTE_KEY_TO_PATH: Record<string, string> = {
   "custom-fields": "/settings/custom-fields",
   "contact-directory": "/settings/contact-directory",
   "property-directory": "/settings/property-directory",
+  "manage-processes": "/settings/manage-processes",
 };
 
 function href(key: string): string {
@@ -83,8 +85,16 @@ export const ROUTES: RouteItem[] = [
     label: "Leads",
     icon: Users,
     children: [
-      { key: "owner-prospects", label: "Owner Prospects", href: href("owner-prospects") },
-      { key: "lease-prospects", label: "Lease Prospects", href: href("lease-prospects") },
+      {
+        key: "owner-prospects",
+        label: "Owner Prospects",
+        href: href("owner-prospects"),
+      },
+      {
+        key: "lease-prospects",
+        label: "Lease Prospects",
+        href: href("lease-prospects"),
+      },
     ],
   },
   {
@@ -138,6 +148,7 @@ export const ROUTES: RouteItem[] = [
     icon: Cog,
     children: [
       { key: "processes", label: "Processes", href: href("processes") },
+      { key: "all-tasks", label: "All Tasks", href: href("all-tasks") },
       { key: "projects", label: "Projects", href: href("projects") },
       { key: "automations", label: "Automations", href: href("automations") },
     ],
@@ -164,19 +175,19 @@ export const ROUTES: RouteItem[] = [
             href: href("user-roles"),
           },
           {
-            key: "role-permissions",
-            label: "Role & Permission",
-            href: href("role-permissions"),
+            key: "roles-permissions",
+            label: "Roles & Permissions",
+            href: href("roles-permissions"),
           },
         ],
       },
       {
         key: "stages",
-        label: "Pipeline/Process",
+        label: "Sales Pipeline",
         children: [
           {
             key: "stages-owners",
-            label: "Owners",
+            label: "Owners Prospects",
             href: href("stages-owners"),
           },
           {
@@ -185,6 +196,11 @@ export const ROUTES: RouteItem[] = [
             href: href("stages-tenants"),
           },
         ],
+      },
+      {
+        key: "manage-processes",
+        label: "Manage Processes",
+        href: href("manage-processes"),
       },
       {
         key: "template-management",
@@ -202,12 +218,12 @@ export const ROUTES: RouteItem[] = [
         href: href("custom-fields"),
       },
       {
-        key:"contact-directory",
+        key: "contact-directory",
         label: "Contact Directory",
         href: href("contact-directory"),
       },
       {
-        key:"property-directory",
+        key: "property-directory",
         label: "Property Directory",
         href: href("property-directory"),
       },

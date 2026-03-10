@@ -25,8 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { useNav, useView } from "@/app/dashboard/page"
 import { BulkActionBar } from "@/components/bulk-action-bar"
 import { TenantApplicationDetailView } from "@/features/leads/components/TenantApplicationDetailView"
+import { OwnerDetailView } from "@/features/leads/components/OwnerDetailView"
 import { CategoryListView } from "@/features/leads/components/CategoryListView"
-import OwnerDetailPage from "@/components/owner-detail-page"
 import {
   ASSIGNEES,
   CATEGORY_LEADS,
@@ -474,7 +474,7 @@ export default function LeadsPageContent({
     if (lead) {
       if (params?.view === "owners") {
         return (
-          <OwnerDetailPage
+          <OwnerDetailView
             lead={lead}
             onBack={() => setSelectedLead(null)}
             onNavigateToProperty={(propertyName) => nav.go("propertyDetail", { id: propertyName })}

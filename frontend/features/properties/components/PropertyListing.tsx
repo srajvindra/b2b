@@ -527,9 +527,9 @@ export default function AllPropertiesPage() {
                   <div className="p-5 border-b relative overflow-hidden bg-gray-50 border-gray-200">
                     <div className="flex justify-between items-start gap-3 mb-3">
                       <div className="space-y-2 flex-1">
-                        <h3 className="font-bold text-lg leading-tight transition-colors text-gray-900 group-hover:text-gray-700">
+                        {/* <h3 className="font-bold text-lg leading-tight transition-colors text-gray-900 group-hover:text-gray-700">
                           {property.name}
-                        </h3>
+                        </h3> */}
                         <div className="flex items-start text-sm gap-1.5 text-gray-600">
                           <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-gray-500" />
                           <span className="line-clamp-2">{property.address}</span>
@@ -615,7 +615,7 @@ export default function AllPropertiesPage() {
                     <TableRow className="bg-muted/50 shadow-sm">
                       {viewToggle === "properties" ? (
                         <>
-                          {visiblePropertyColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>}
+                          {/* {visiblePropertyColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>} */}
                           {visiblePropertyColumns.includes("propertyAddress") && <TableHead className="font-semibold">Property Address</TableHead>}
                           {visiblePropertyColumns.includes("unitCount") && <TableHead className="font-semibold text-center">Unit Count</TableHead>}
                           {visiblePropertyColumns.includes("ownerName") && <TableHead className="font-semibold">Owner Name</TableHead>}
@@ -636,7 +636,7 @@ export default function AllPropertiesPage() {
                       ) : (
                         <>
                           {visibleUnitColumns.includes("unitAddress") && <TableHead className="font-semibold">Unit Address</TableHead>}
-                          {visibleUnitColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>}
+                          {/* {visibleUnitColumns.includes("propertyName") && <TableHead className="font-semibold">Property Name</TableHead>} */}
                           {visibleUnitColumns.includes("ownerName") && <TableHead className="font-semibold">Owner Name</TableHead>}
                           {visibleUnitColumns.includes("tenantName") && <TableHead className="font-semibold">Tenant Name</TableHead>}
                           {visibleUnitColumns.includes("occupancy") && <TableHead className="font-semibold text-center">Occupancy</TableHead>}
@@ -660,12 +660,11 @@ export default function AllPropertiesPage() {
                     {visibleProperties.map((property) => (
                       <TableRow
                         key={property.id}
-                        onClick={() => handlePropertyClick(property.id)}
                         className="cursor-pointer hover:bg-muted/50 transition-colors"
                       >
                         {viewToggle === "properties" ? (
                           <>
-                            {visiblePropertyColumns.includes("propertyName") && (
+                            {/* {visiblePropertyColumns.includes("propertyName") && (
                               <TableCell className="font-medium">
                                 <div className="flex items-center gap-2 text-[rgba(1,96,209,1)]">
                                   <div className="p-1.5 rounded bg-gray-100">
@@ -674,10 +673,10 @@ export default function AllPropertiesPage() {
                                   <span className="whitespace-nowrap">{property.name}</span>
                                 </div>
                               </TableCell>
-                            )}
+                            )} */}
                             {visiblePropertyColumns.includes("propertyAddress") && (
-                              <TableCell>
-                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                              <TableCell onClick={() => handlePropertyClick(property.id)}>
+                                <div className="flex items-center gap-1.5 text-[rgba(1,96,209,1)] hover:underline">
                                   <MapPin className="h-3.5 w-3.5 shrink-0" />
                                   <span className="max-w-[200px] truncate">{property.address}</span>
                                 </div>
@@ -750,19 +749,19 @@ export default function AllPropertiesPage() {
                               <TableCell>
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); nav.go("unitDetail", { id: `${100 + (Number(property.id) % Math.max(property.units, 1))}`, propertyId: property.id }) }}
-                                  className="flex items-center gap-1.5 text-[rgba(1,96,209,1)] hover:underline"
+                                  onClick={(e) => {router.push(`/properties/${property.id}/unit/${100 + (Number(property.id) % Math.max(property.units, 1))}`) }}
+                                  className="flex items-center gap-1.5 text-[rgba(1,96,209,1)] hover:underline cursor-pointer"
                                 >
                                   <MapPin className="h-3.5 w-3.5 shrink-0" />
                                   <span className="max-w-[200px] truncate">{property.unitAddress}</span>
                                 </button>
                               </TableCell>
                             )}
-                            {visibleUnitColumns.includes("propertyName") && (
+                            {/* {visibleUnitColumns.includes("propertyName") && (
                               <TableCell className="font-medium">
                                 <span className="text-[rgba(1,96,209,1)] whitespace-nowrap">{property.name}</span>
                               </TableCell>
-                            )}
+                            )} */}
                             {visibleUnitColumns.includes("ownerName") && (
                               <TableCell>
                                 <span className="max-w-[120px] truncate block">{property.ownerName}</span>

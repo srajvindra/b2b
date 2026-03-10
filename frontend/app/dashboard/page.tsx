@@ -41,9 +41,7 @@ export default function Page() {
   useQuickActions(dashboardQuickActions, {
     subtitle: "Dashboard",
     aiSuggestedPrompts: [
-      "What's my current occupancy rate?",
-      "Show me delinquent accounts",
-      "Upcoming tasks this week",
+      "Missing Documents", "Application Status", "Available units"
     ],
     aiPlaceholder: "Ask about your dashboard...",
   })
@@ -451,11 +449,11 @@ export default function Page() {
           userRole={userRole}
         />
 
-      <CommunicationModal
-        communication={selectedCommunication}
-        open={showCommModal}
-        onOpenChange={setShowCommModal}
-      />
+        <CommunicationModal
+          communication={selectedCommunication}
+          open={showCommModal}
+          onOpenChange={setShowCommModal}
+        />
       </div>
     </div>
   )

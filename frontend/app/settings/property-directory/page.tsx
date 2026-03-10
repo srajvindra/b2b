@@ -1,7 +1,5 @@
-import PropertyListingPage from "@/features/properties/components/PropertyListing"
+import PropertyDirectoryPage from "@/features/settings/components/PropertyDirectoryPage"
 
 export default function Page() {
-  return (
-    <PropertyListingPage />
-  )
+  return <PropertyDirectoryPage />
 }

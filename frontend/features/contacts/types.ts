@@ -31,6 +31,14 @@ export interface Contact {
   moveOutStatus?: "Pending" | "Completed"
   evictionStatus?: "Pending" | "Completed"
   tenantType?: "Self Paying" | "Section 8"
+  rentCollected?: number
+  delinquentAmount?: number
+  ownerIncome?: number
+  ownerExpense?: number
+  occupiedUnits?: number
+  vacantUnits?: number
+  approvedWOs?: number
+  pendingApprovalWOs?: number
 }
 
 export interface Vendor {

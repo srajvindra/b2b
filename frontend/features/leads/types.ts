@@ -43,3 +43,10 @@ export interface ProspectTask {
   autoCreated?: boolean
 }
 
+// Owner prospect detail view (lead detail for owner-prospects mode)
+export interface OwnerDetailViewProps {
+  lead?: Lead | null
+  onBack: () => void
+  onNavigateToProperty?: (propertyName: string) => void
+}
+

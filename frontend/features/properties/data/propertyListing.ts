@@ -977,7 +977,7 @@ export const getFilterOptions = (field: string): string[] => {
 }
 
 export const propertyColumns = [
-  { id: "propertyName", label: "Property Name" },
+  // { id: "propertyName", label: "Property Name" },
   { id: "propertyAddress", label: "Property Address" },
   { id: "unitCount", label: "Unit Count" },
   { id: "ownerName", label: "Owner Name" },
@@ -998,7 +998,7 @@ export const propertyColumns = [
 
 export const unitColumns = [
   { id: "unitAddress", label: "Unit Address" },
-  { id: "propertyName", label: "Property Name" },
+  // { id: "propertyName", label: "Property Name" },
   { id: "ownerName", label: "Owner Name" },
   { id: "tenantName", label: "Tenant Name" },
   { id: "occupancy", label: "Occupancy" },

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   MoreHorizontal,
@@ -69,9 +69,7 @@ export function ProcessesView() {
   const [processInstances, setProcessInstances] = useState<ProcessInstance[]>(initialProcessInstances)
   const [sortField, setSortField] = useState<"dueAt" | "createdAt">("createdAt")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
-  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([
-    { type: "status", value: "working", label: "Working" }
-  ])
+  const [activeFilters, setActiveFilters] = useState<ActiveFilter[]>([])
   const [summaryCards, setSummaryCards] = useState<SummaryCard[]>([
     { id: "count", label: "Count", value: 768, visible: true },
     { id: "overdue", label: "Overdue", value: 526, visible: true },
@@ -189,12 +187,20 @@ export function ProcessesView() {
     }
   }
 
+  const handleQuickAddFilter = (filter: ActiveFilter) => {
+    setActiveFilters((prev) => [...prev, filter])
+  }
+
   const handleRemoveFilter = (index: number) => {
     setActiveFilters(prev => prev.filter((_, i) => i !== index))
   }
 
   const handleClearAllFilters = () => {
     setActiveFilters([])
+  }
+
+  const handleClearBottomFilters = () => {
+    setActiveFilters((prev) => prev.filter((f) => f.type === "processType"))
   }
 
   const toggleProcessExpand = (processId: string) => {
@@ -384,55 +390,115 @@ export function ProcessesView() {
 
   // Filter instances based on active filters
   const filteredInstances = processInstances.filter((instance) => {
-    return activeFilters.every((filter) => {
-      switch (filter.type) {
-        case "status":
-          // Status filter - all working instances match "working"
-          return filter.value === "working" || filter.value === "completed" || filter.value === "on_hold"
-        case "assignee":
-          return instance.assignee === filter.value
-        case "stage":
-          return instance.stage === filter.value
-        case "onTrack":
-          return instance.onTrack === filter.value ||
-            (filter.value === "tasks_overdue" && (instance.onTrack === "tasks_overdue" || instance.onTrack === "overdue_date"))
-        case "processes":
-          // Filter by process type name
-          const matchesProcess = instance.name.toLowerCase().includes(filter.value.toLowerCase().replace(" Process", ""))
-          // If stage is also specified, filter by that too
-          if (filter.stageValue && filter.stageValue !== "" && filter.stageValue !== "all") {
-            return matchesProcess && instance.stage === filter.stageValue
+    if (activeFilters.length === 0) return true
+
+    const filtersByType = activeFilters.reduce<Record<string, ActiveFilter[]>>((acc, f) => {
+      acc[f.type] = acc[f.type] ? [...acc[f.type], f] : [f]
+      return acc
+    }, {})
+
+    const statusMatches = (value: string) => {
+      const v = value.trim().toLowerCase()
+      if (v === "working") return instance.status === "In-Progress"
+      if (v === "completed") return instance.status === "Completed"
+      if (v === "open") return instance.status === "Open"
+      if (v === "in-progress" || v === "in progress") return instance.status === "In-Progress"
+      if (v === "overdue") return instance.status === "Overdue"
+      if (v === "on_hold" || v === "on hold") return false
+      return instance.status.toLowerCase() === v
+    }
+
+    const matchesForType = (type: FilterType, filters: ActiveFilter[]) => {
+      // OR within same type (supports multi-select processType etc.)
+      return filters.some((filter) => {
+        switch (filter.type) {
+          case "status":
+            return statusMatches(filter.value)
+          case "assignee":
+            return instance.assignee === filter.value
+          case "stage":
+            return instance.stage === filter.value
+          case "onTrack":
+            return (
+              instance.onTrack === filter.value ||
+              (filter.value === "tasks_overdue" && (instance.onTrack === "tasks_overdue" || instance.onTrack === "overdue_date"))
+            )
+          case "processes": {
+            const matchesProcess = instance.name
+              .toLowerCase()
+              .includes(filter.value.toLowerCase().replace(" process", ""))
+            if (filter.stageValue && filter.stageValue !== "" && filter.stageValue !== "all") {
+              return matchesProcess && instance.stage === filter.stageValue
+            }
+            return matchesProcess
           }
-          return matchesProcess
-        case "property":
-          return instance.property.includes(filter.value)
-        case "createdAt":
-          // Simplified date filtering
-          const today = new Date()
-          const instanceDate = new Date(instance.createdAt)
-          switch (filter.value) {
-            case "today":
-              return instanceDate.toDateString() === today.toDateString()
-            case "yesterday":
-              const yesterday = new Date(today)
-              yesterday.setDate(yesterday.getDate() - 1)
-              return instanceDate.toDateString() === yesterday.toDateString()
-            case "last7days":
-              const last7 = new Date(today)
-              last7.setDate(last7.getDate() - 7)
-              return instanceDate >= last7
-            case "last30days":
-              const last30 = new Date(today)
-              last30.setDate(last30.getDate() - 30)
-              return instanceDate >= last30
-            default:
-              return true
+          case "processType":
+            return instance.processType === filter.value
+          case "property":
+            return instance.property.includes(filter.value)
+          case "createdAt": {
+            const today = new Date()
+            const instanceDate = new Date(instance.createdAt)
+            switch (filter.value) {
+              case "today":
+                return instanceDate.toDateString() === today.toDateString()
+              case "yesterday": {
+                const yesterday = new Date(today)
+                yesterday.setDate(yesterday.getDate() - 1)
+                return instanceDate.toDateString() === yesterday.toDateString()
+              }
+              case "last7days": {
+                const last7 = new Date(today)
+                last7.setDate(last7.getDate() - 7)
+                return instanceDate >= last7
+              }
+              case "last30days": {
+                const last30 = new Date(today)
+                last30.setDate(last30.getDate() - 30)
+                return instanceDate >= last30
+              }
+              default:
+                return true
+            }
           }
+          case "processName":
+            return instance.name.toLowerCase().includes(filter.value.toLowerCase())
+          case "assignedTeam":
+            return instance.assignedTeam === filter.value
+          case "relatedEntity":
+            return instance.relatedEntity?.name === filter.value || instance.relatedEntity?.type === filter.value
+          default:
+            return true
+        }
+      })
+    }
+
+    return (Object.keys(filtersByType) as FilterType[]).every((type) =>
+      matchesForType(type, filtersByType[type] ?? []),
+    )
+  })
+
+  const summaryCardsWithValues = useMemo(() => {
+    const count = filteredInstances.length
+    const overdue = filteredInstances.filter((i) => i.status === "Overdue").length
+    const offTrack = filteredInstances.filter((i) => i.onTrack !== "no_overdue").length
+    const completed = filteredInstances.filter((i) => i.status === "Completed").length
+
+    return summaryCards.map((c) => {
+      switch (c.id) {
+        case "count":
+          return { ...c, value: count }
+        case "overdue":
+          return { ...c, value: overdue }
+        case "offTrack":
+          return { ...c, value: offTrack }
+        case "completed":
+          return { ...c, value: completed }
         default:
-          return true
+          return c
       }
     })
-  })
+  }, [filteredInstances, summaryCards])
 
   // Sort filtered instances
   const sortedInstances = [...filteredInstances].sort((a, b) => {
@@ -459,7 +525,7 @@ export function ProcessesView() {
   }
 
   // All Processes Dashboard View
-  if (showDashboard) {
+  // if (showDashboard) {
     return (
       <ProcessesDashboardView
         onBack={handleBackToList}
@@ -474,11 +540,12 @@ export function ProcessesView() {
         sortField={sortField}
         sortDirection={sortDirection}
         onSort={handleSort}
-        summaryCards={summaryCards}
+        summaryCards={summaryCardsWithValues}
         onRemoveSummaryCard={handleRemoveSummaryCard}
         activeFilters={activeFilters}
         onRemoveFilter={handleRemoveFilter}
         onClearAllFilters={handleClearAllFilters}
+        onClearBottomFilters={handleClearBottomFilters}
         showStartProcessModal={showStartProcessModal}
         setShowStartProcessModal={setShowStartProcessModal}
         showAddFilterModal={showAddFilterModal}
@@ -494,527 +561,528 @@ export function ProcessesView() {
         newViewName={newViewName}
         setNewViewName={setNewViewName}
         onAddFilter={handleAddFilter}
+        onQuickAddFilter={handleQuickAddFilter}
         onStartProcess={handleStartProcess}
         onSaveView={handleSaveView}
         onStageChange={handleStageChange}
         onAssigneeChange={handleAssigneeChange}
       />
     )
-  }
+  // }
 
   // Process List View
-  return (
-    <div className="min-h-screen bg-white">
-      {/* Top Navigation Bar */}
-      <div className="border-b border-gray-200 px-6 py-3 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded">
-              Processes
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button type="button" className="text-sm text-gray-600 hover:text-gray-800">
-                  Assign
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {teams.map((team) => (
-                  <DropdownMenuItem key={team.id}>{team.name}</DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <button
-              type="button"
-              className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
-              onClick={() => setShowNewProcessModal(true)}
-            >
-              <Pencil className="h-3 w-3 text-gray-400" />
-              New
-            </button>
-          </div>
-        </div>
-      </div>
+  // return (
+  //   <div className="min-h-screen bg-white">
+  //     {/* Top Navigation Bar */}
+  //     <div className="border-b border-gray-200 px-6 py-3 bg-white">
+  //       <div className="flex items-center justify-between">
+  //         <div className="flex items-center gap-3">
+  //           <span className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded">
+  //             Processes
+  //           </span>
+  //         </div>
+  //         <div className="flex items-center gap-4">
+  //           <DropdownMenu>
+  //             <DropdownMenuTrigger asChild>
+  //               <button type="button" className="text-sm text-gray-600 hover:text-gray-800">
+  //                 Assign
+  //               </button>
+  //             </DropdownMenuTrigger>
+  //             <DropdownMenuContent align="end">
+  //               {teams.map((team) => (
+  //                 <DropdownMenuItem key={team.id}>{team.name}</DropdownMenuItem>
+  //               ))}
+  //             </DropdownMenuContent>
+  //           </DropdownMenu>
+  //           <button
+  //             type="button"
+  //             className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+  //             onClick={() => setShowNewProcessModal(true)}
+  //           >
+  //             <Pencil className="h-3 w-3 text-gray-400" />
+  //             New
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
 
-      {/* Header Section */}
-      <div className="px-6 py-4 border-b border-gray-200 bg-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-semibold text-gray-900">Processes</h1>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-sm bg-white border-blue-300 text-blue-600 hover:bg-blue-50"
-              onClick={handleViewDashboard}
-            >
-              All Processes Dashboard
-            </Button>
-            <Button
-              size="sm"
-              className="text-sm bg-blue-600 text-white hover:bg-blue-700"
-              onClick={() => setShowNewProcessModal(true)}
-            >
-              New Process Type
-            </Button>
-          </div>
-          <button
-            type="button"
-            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-            onClick={() => setShowNewFolderModal(true)}
-          >
-            New Filter
-          </button>
-        </div>
-        <p className="text-sm text-gray-500 mt-2">
-          Processes are workflows that help you achieve goals for your owners and tenants.
-        </p>
-      </div>
+  //     {/* Header Section */}
+  //     <div className="px-6 py-4 border-b border-gray-200 bg-white">
+  //       <div className="flex items-center justify-between">
+  //         <div className="flex items-center gap-3">
+  //           <h1 className="text-xl font-semibold text-gray-900">Processes</h1>
+  //           <Button
+  //             variant="outline"
+  //             size="sm"
+  //             className="text-sm bg-white border-blue-300 text-blue-600 hover:bg-blue-50"
+  //             onClick={handleViewDashboard}
+  //           >
+  //             All Processes Dashboard
+  //           </Button>
+  //           <Button
+  //             size="sm"
+  //             className="text-sm bg-blue-600 text-white hover:bg-blue-700"
+  //             onClick={() => setShowNewProcessModal(true)}
+  //           >
+  //             New Process Type
+  //           </Button>
+  //         </div>
+  //         <button
+  //           type="button"
+  //           className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+  //           onClick={() => setShowNewFolderModal(true)}
+  //         >
+  //           New Filter
+  //         </button>
+  //       </div>
+  //       <p className="text-sm text-gray-500 mt-2">
+  //         Processes are workflows that help you achieve goals for your owners and tenants.
+  //       </p>
+  //     </div>
 
-      {/* Unassigned Processes Section */}
-      <div className="px-6 py-4 bg-white">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Unassigned Processes</h2>
-          <span className="text-sm text-gray-500">{processTypes.length} processes</span>
-        </div>
+  //     {/* Unassigned Processes Section */}
+  //     <div className="px-6 py-4 bg-white">
+  //       <div className="flex items-center justify-between mb-4">
+  //         <h2 className="text-base font-semibold text-gray-900">Unassigned Processes</h2>
+  //         <span className="text-sm text-gray-500">{processTypes.length} processes</span>
+  //       </div>
 
-        <div className="divide-y divide-gray-200 border-t border-gray-200">
-          {processTypes.map((process) => {
-            const isExpanded = expandedProcesses.includes(process.id)
-            return (
-              <div key={process.id}>
-                <div
-                  className={`group flex items-center justify-between py-4 px-3 hover:bg-gray-50 transition-colors cursor-pointer ${selectedProcess === process.id ? "bg-teal-50/40" : ""
-                    }`}
-                  onClick={() => setSelectedProcess(process.id)}
-                >
-                  <div className="flex items-center gap-4">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleProcessExpand(process.id)
-                      }}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      {isExpanded ? (
-                        <ChevronDown className="h-5 w-5" />
-                      ) : (
-                        <ChevronUp className="h-5 w-5 rotate-90" />
-                      )}
-                    </button>
+  //       <div className="divide-y divide-gray-200 border-t border-gray-200">
+  //         {processTypes.map((process) => {
+  //           const isExpanded = expandedProcesses.includes(process.id)
+  //           return (
+  //             <div key={process.id}>
+  //               <div
+  //                 className={`group flex items-center justify-between py-4 px-3 hover:bg-gray-50 transition-colors cursor-pointer ${selectedProcess === process.id ? "bg-teal-50/40" : ""
+  //                   }`}
+  //                 onClick={() => setSelectedProcess(process.id)}
+  //               >
+  //                 <div className="flex items-center gap-4">
+  //                   <button
+  //                     type="button"
+  //                     onClick={(e) => {
+  //                       e.stopPropagation()
+  //                       toggleProcessExpand(process.id)
+  //                     }}
+  //                     className="text-gray-400 hover:text-gray-600"
+  //                   >
+  //                     {isExpanded ? (
+  //                       <ChevronDown className="h-5 w-5" />
+  //                     ) : (
+  //                       <ChevronUp className="h-5 w-5 rotate-90" />
+  //                     )}
+  //                   </button>
 
-                    <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
-                      <FolderPlus className="h-5 w-5 text-white" />
-                    </div>
+  //                   <div className="h-10 w-10 rounded-lg bg-teal-600 flex items-center justify-center shrink-0">
+  //                     <FolderPlus className="h-5 w-5 text-white" />
+  //                   </div>
 
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleProcessExpand(process.id)
-                        }}
-                        className="text-[15px] font-semibold text-gray-900 hover:text-teal-700 text-left transition-colors"
-                      >
-                        {process.name}
-                      </button>
-                      {process.isDraft && (
-                        <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">
-                          Draft
-                        </span>
-                      )}
-                      {process.team && (
-                        <span className="px-2 py-0.5 text-xs text-teal-600 bg-teal-50 rounded">
-                          {teams.find(t => t.id === process.team)?.name}
-                        </span>
-                      )}
-                      {process.folder && (
-                        <span className="px-2 py-0.5 text-xs text-purple-600 bg-purple-50 rounded">
-                          {folders.find(f => f.id === process.folder)?.name}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+  //                   <div className="flex items-center gap-2.5">
+  //                     <button
+  //                       type="button"
+  //                       onClick={(e) => {
+  //                         e.stopPropagation()
+  //                         toggleProcessExpand(process.id)
+  //                       }}
+  //                       className="text-[15px] font-semibold text-gray-900 hover:text-teal-700 text-left transition-colors"
+  //                     >
+  //                       {process.name}
+  //                     </button>
+  //                     {process.isDraft && (
+  //                       <span className="px-2 py-0.5 text-xs text-gray-500 bg-gray-100 rounded">
+  //                         Draft
+  //                       </span>
+  //                     )}
+  //                     {process.team && (
+  //                       <span className="px-2 py-0.5 text-xs text-teal-600 bg-teal-50 rounded">
+  //                         {teams.find(t => t.id === process.team)?.name}
+  //                       </span>
+  //                     )}
+  //                     {process.folder && (
+  //                       <span className="px-2 py-0.5 text-xs text-purple-600 bg-purple-50 rounded">
+  //                         {folders.find(f => f.id === process.folder)?.name}
+  //                       </span>
+  //                     )}
+  //                   </div>
+  //                 </div>
 
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm text-gray-400">{process.stages} stages</span>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            router.push(`/operations/processes/${process.id}`)
-                          }}
-                        >
-                          <Pencil className="h-4 w-4 mr-2" />
-                          Edit Process
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDuplicateProcess(process)
-                          }}
-                        >
-                          <Copy className="h-4 w-4 mr-2" />
-                          Duplicate
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedProcessForAction(process)
-                            setShowMoveToFolderModal(true)
-                          }}
-                        >
-                          <FolderPlus className="h-4 w-4 mr-2" />
-                          Move to Folder
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedProcessForAction(process)
-                            setShowAssignToTeamModal(true)
-                          }}
-                        >
-                          <Users className="h-4 w-4 mr-2" />
-                          Assign to Team
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedProcessForAction(process)
-                            setShowDeleteConfirmModal(true)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+  //                 <div className="flex items-center gap-4">
+  //                   <span className="text-sm text-gray-400">{process.stages} stages</span>
+  //                   <DropdownMenu>
+  //                     <DropdownMenuTrigger asChild>
+  //                       <Button
+  //                         variant="ghost"
+  //                         size="icon"
+  //                         className="h-8 w-8 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100"
+  //                         onClick={(e) => e.stopPropagation()}
+  //                       >
+  //                         <MoreHorizontal className="h-4 w-4" />
+  //                       </Button>
+  //                     </DropdownMenuTrigger>
+  //                     <DropdownMenuContent align="end">
+  //                       <DropdownMenuItem
+  //                         onClick={(e) => {
+  //                           e.stopPropagation()
+  //                           router.push(`/operations/processes/${process.id}`)
+  //                         }}
+  //                       >
+  //                         <Pencil className="h-4 w-4 mr-2" />
+  //                         Edit Process
+  //                       </DropdownMenuItem>
+  //                       <DropdownMenuItem
+  //                         onClick={(e) => {
+  //                           e.stopPropagation()
+  //                           handleDuplicateProcess(process)
+  //                         }}
+  //                       >
+  //                         <Copy className="h-4 w-4 mr-2" />
+  //                         Duplicate
+  //                       </DropdownMenuItem>
+  //                       <DropdownMenuSeparator />
+  //                       <DropdownMenuItem
+  //                         onClick={(e) => {
+  //                           e.stopPropagation()
+  //                           setSelectedProcessForAction(process)
+  //                           setShowMoveToFolderModal(true)
+  //                         }}
+  //                       >
+  //                         <FolderPlus className="h-4 w-4 mr-2" />
+  //                         Move to Folder
+  //                       </DropdownMenuItem>
+  //                       <DropdownMenuItem
+  //                         onClick={(e) => {
+  //                           e.stopPropagation()
+  //                           setSelectedProcessForAction(process)
+  //                           setShowAssignToTeamModal(true)
+  //                         }}
+  //                       >
+  //                         <Users className="h-4 w-4 mr-2" />
+  //                         Assign to Team
+  //                       </DropdownMenuItem>
+  //                       <DropdownMenuSeparator />
+  //                       <DropdownMenuItem
+  //                         className="text-red-600"
+  //                         onClick={(e) => {
+  //                           e.stopPropagation()
+  //                           setSelectedProcessForAction(process)
+  //                           setShowDeleteConfirmModal(true)
+  //                         }}
+  //                       >
+  //                         <Trash2 className="h-4 w-4 mr-2" />
+  //                         Delete
+  //                       </DropdownMenuItem>
+  //                     </DropdownMenuContent>
+  //                   </DropdownMenu>
+  //                 </div>
+  //               </div>
 
-                {isExpanded && (
-                  <div className="bg-white border-t border-gray-200">
-                    <div className="py-2">
-                      <div className="flex items-center justify-end px-4 py-2 border-b border-gray-100">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs bg-white border-teal-500 text-teal-600 hover:bg-teal-50"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setProcessForNewStage(process.id)
-                            setNewStageName("")
-                            setShowAddStageModal(true)
-                          }}
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add Stage
-                        </Button>
-                      </div>
-                      <div className="divide-y divide-gray-100">
-                        {process.stagesList.map((stage, index) => (
-                          <div
-                            key={stage.id}
-                            draggable
-                            onDragStart={() => handleDragStart(process.id, index)}
-                            onDragOver={(e) => handleDragOver(e, index)}
-                            onDragLeave={handleDragLeave}
-                            onDrop={() => handleDrop(process.id, index)}
-                            onDragEnd={handleDragEnd}
-                            className={`flex items-center justify-between py-3 px-4 transition-all ${draggedStage?.processId === process.id && draggedStage?.stageIndex === index
-                                ? "opacity-50 bg-blue-50"
-                                : dragOverIndex === index && draggedStage?.processId === process.id
-                                  ? "bg-blue-50 border-l-2 border-l-blue-500"
-                                  : "hover:bg-gray-50"
-                              }`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <GripVertical className="h-5 w-5 text-gray-300 cursor-grab active:cursor-grabbing" />
-                              <div className="h-7 w-7 rounded-full bg-gray-900 flex items-center justify-center">
-                                <span className="text-xs font-medium text-white">{index + 1}</span>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  setSelectedStageForWorkflow({ stageName: stage.name, processName: process.name })
-                                  setShowStageWorkflow(true)
-                                }}
-                                className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
-                              >
-                                {stage.name}
-                              </button>
-                            </div>
-                            <div className="flex items-center gap-6">
-                              <div className="flex items-center gap-6 text-sm text-gray-500">
-                                <span>
-                                  <span className="text-gray-700">{stage.steps}</span> Steps
-                                </span>
-                                <span>
-                                  <span className="text-gray-700">{stage.days}</span> Days
-                                </span>
-                                <span>
-                                  <span className="text-gray-700">{stage.processes}</span> Processes
-                                </span>
-                              </div>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8 text-gray-400 hover:text-gray-600"
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      setSelectedStageForRename({
-                                        processId: process.id,
-                                        stageId: stage.id,
-                                        stageName: stage.name,
-                                      })
-                                      setNewStageName(stage.name)
-                                      setShowRenameStageModal(true)
-                                    }}
-                                  >
-                                    <Pencil className="h-4 w-4 mr-2" />
-                                    Rename Stage
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
+  //               {isExpanded && (
+  //                 <div className="bg-white border-t border-gray-200">
+  //                   <div className="py-2">
+  //                     <div className="flex items-center justify-end px-4 py-2 border-b border-gray-100">
+  //                       <Button
+  //                         variant="outline"
+  //                         size="sm"
+  //                         className="h-7 text-xs bg-white border-teal-500 text-teal-600 hover:bg-teal-50"
+  //                         onClick={(e) => {
+  //                           e.stopPropagation()
+  //                           setProcessForNewStage(process.id)
+  //                           setNewStageName("")
+  //                           setShowAddStageModal(true)
+  //                         }}
+  //                       >
+  //                         <Plus className="h-3 w-3 mr-1" />
+  //                         Add Stage
+  //                       </Button>
+  //                     </div>
+  //                     <div className="divide-y divide-gray-100">
+  //                       {process.stagesList.map((stage, index) => (
+  //                         <div
+  //                           key={stage.id}
+  //                           draggable
+  //                           onDragStart={() => handleDragStart(process.id, index)}
+  //                           onDragOver={(e) => handleDragOver(e, index)}
+  //                           onDragLeave={handleDragLeave}
+  //                           onDrop={() => handleDrop(process.id, index)}
+  //                           onDragEnd={handleDragEnd}
+  //                           className={`flex items-center justify-between py-3 px-4 transition-all ${draggedStage?.processId === process.id && draggedStage?.stageIndex === index
+  //                               ? "opacity-50 bg-blue-50"
+  //                               : dragOverIndex === index && draggedStage?.processId === process.id
+  //                                 ? "bg-blue-50 border-l-2 border-l-blue-500"
+  //                                 : "hover:bg-gray-50"
+  //                             }`}
+  //                         >
+  //                           <div className="flex items-center gap-4">
+  //                             <GripVertical className="h-5 w-5 text-gray-300 cursor-grab active:cursor-grabbing" />
+  //                             <div className="h-7 w-7 rounded-full bg-gray-900 flex items-center justify-center">
+  //                               <span className="text-xs font-medium text-white">{index + 1}</span>
+  //                             </div>
+  //                             <button
+  //                               type="button"
+  //                               onClick={(e) => {
+  //                                 e.stopPropagation()
+  //                                 setSelectedStageForWorkflow({ stageName: stage.name, processName: process.name })
+  //                                 setShowStageWorkflow(true)
+  //                               }}
+  //                               className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
+  //                             >
+  //                               {stage.name}
+  //                             </button>
+  //                           </div>
+  //                           <div className="flex items-center gap-6">
+  //                             <div className="flex items-center gap-6 text-sm text-gray-500">
+  //                               <span>
+  //                                 <span className="text-gray-700">{stage.steps}</span> Steps
+  //                               </span>
+  //                               <span>
+  //                                 <span className="text-gray-700">{stage.days}</span> Days
+  //                               </span>
+  //                               <span>
+  //                                 <span className="text-gray-700">{stage.processes}</span> Processes
+  //                               </span>
+  //                             </div>
+  //                             <DropdownMenu>
+  //                               <DropdownMenuTrigger asChild>
+  //                                 <Button
+  //                                   variant="ghost"
+  //                                   size="icon"
+  //                                   className="h-8 w-8 text-gray-400 hover:text-gray-600"
+  //                                   onClick={(e) => e.stopPropagation()}
+  //                                 >
+  //                                   <MoreVertical className="h-4 w-4" />
+  //                                 </Button>
+  //                               </DropdownMenuTrigger>
+  //                               <DropdownMenuContent align="end">
+  //                                 <DropdownMenuItem
+  //                                   onClick={(e) => {
+  //                                     e.stopPropagation()
+  //                                     setSelectedStageForRename({
+  //                                       processId: process.id,
+  //                                       stageId: stage.id,
+  //                                       stageName: stage.name,
+  //                                     })
+  //                                     setNewStageName(stage.name)
+  //                                     setShowRenameStageModal(true)
+  //                                   }}
+  //                                 >
+  //                                   <Pencil className="h-4 w-4 mr-2" />
+  //                                   Rename Stage
+  //                                 </DropdownMenuItem>
+  //                               </DropdownMenuContent>
+  //                             </DropdownMenu>
+  //                           </div>
+  //                         </div>
+  //                       ))}
+  //                     </div>
+  //                   </div>
+  //                 </div>
+  //               )}
+  //             </div>
+  //           )
+  //         })}
+  //       </div>
+  //     </div>
 
 
 
-      {/* New Process Type Modal */}
-      <Dialog open={showNewProcessModal} onOpenChange={setShowNewProcessModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Process Type</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Process Name</Label>
-              <Input
-                value={newProcessName}
-                onChange={(e) => setNewProcessName(e.target.value)}
-                placeholder="Enter process name..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewProcessModal(false)} className="bg-transparent">Cancel</Button>
-            <Button onClick={handleCreateProcessType} className="bg-blue-600 hover:bg-blue-700">Create Process</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  //     {/* New Process Type Modal */}
+  //     <Dialog open={showNewProcessModal} onOpenChange={setShowNewProcessModal}>
+  //       <DialogContent>
+  //         <DialogHeader>
+  //           <DialogTitle>Create New Process Type</DialogTitle>
+  //         </DialogHeader>
+  //         <div className="space-y-4 py-4">
+  //           <div className="space-y-2">
+  //             <Label>Process Name</Label>
+  //             <Input
+  //               value={newProcessName}
+  //               onChange={(e) => setNewProcessName(e.target.value)}
+  //               placeholder="Enter process name..."
+  //             />
+  //           </div>
+  //         </div>
+  //         <DialogFooter>
+  //           <Button variant="outline" onClick={() => setShowNewProcessModal(false)} className="bg-transparent">Cancel</Button>
+  //           <Button onClick={handleCreateProcessType} className="bg-blue-600 hover:bg-blue-700">Create Process</Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
 
-      {/* Move to Folder Modal */}
-      <Dialog open={showMoveToFolderModal} onOpenChange={setShowMoveToFolderModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Move to Folder</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-500">
-              Move "{selectedProcessForAction?.name}" to a folder
-            </p>
-            <div className="space-y-2">
-              <Label>Select Folder</Label>
-              <Select value={selectedFolder} onValueChange={setSelectedFolder}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a folder..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {folders.map((folder) => (
-                    <SelectItem key={folder.id} value={folder.id}>{folder.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowMoveToFolderModal(false)} className="bg-transparent">Cancel</Button>
-            <Button onClick={handleMoveToFolder} className="bg-blue-600 hover:bg-blue-700">Move</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  //     {/* Move to Folder Modal */}
+  //     <Dialog open={showMoveToFolderModal} onOpenChange={setShowMoveToFolderModal}>
+  //       <DialogContent>
+  //         <DialogHeader>
+  //           <DialogTitle>Move to Folder</DialogTitle>
+  //         </DialogHeader>
+  //         <div className="space-y-4 py-4">
+  //           <p className="text-sm text-gray-500">
+  //             Move "{selectedProcessForAction?.name}" to a folder
+  //           </p>
+  //           <div className="space-y-2">
+  //             <Label>Select Folder</Label>
+  //             <Select value={selectedFolder} onValueChange={setSelectedFolder}>
+  //               <SelectTrigger>
+  //                 <SelectValue placeholder="Choose a folder..." />
+  //               </SelectTrigger>
+  //               <SelectContent>
+  //                 {folders.map((folder) => (
+  //                   <SelectItem key={folder.id} value={folder.id}>{folder.name}</SelectItem>
+  //                 ))}
+  //               </SelectContent>
+  //             </Select>
+  //           </div>
+  //         </div>
+  //         <DialogFooter>
+  //           <Button variant="outline" onClick={() => setShowMoveToFolderModal(false)} className="bg-transparent">Cancel</Button>
+  //           <Button onClick={handleMoveToFolder} className="bg-blue-600 hover:bg-blue-700">Move</Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
 
-      {/* Assign to Team Modal */}
-      <Dialog open={showAssignToTeamModal} onOpenChange={setShowAssignToTeamModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign to Team</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-500">
-              Assign "{selectedProcessForAction?.name}" to a team
-            </p>
-            <div className="space-y-2">
-              <Label>Select Team</Label>
-              <Select value={selectedTeam} onValueChange={setSelectedTeam}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a team..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {teams.map((team) => (
-                    <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAssignToTeamModal(false)} className="bg-transparent">Cancel</Button>
-            <Button onClick={handleAssignToTeam} className="bg-blue-600 hover:bg-blue-700">Assign</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  //     {/* Assign to Team Modal */}
+  //     <Dialog open={showAssignToTeamModal} onOpenChange={setShowAssignToTeamModal}>
+  //       <DialogContent>
+  //         <DialogHeader>
+  //           <DialogTitle>Assign to Team</DialogTitle>
+  //         </DialogHeader>
+  //         <div className="space-y-4 py-4">
+  //           <p className="text-sm text-gray-500">
+  //             Assign "{selectedProcessForAction?.name}" to a team
+  //           </p>
+  //           <div className="space-y-2">
+  //             <Label>Select Team</Label>
+  //             <Select value={selectedTeam} onValueChange={setSelectedTeam}>
+  //               <SelectTrigger>
+  //                 <SelectValue placeholder="Choose a team..." />
+  //               </SelectTrigger>
+  //               <SelectContent>
+  //                 {teams.map((team) => (
+  //                   <SelectItem key={team.id} value={team.id}>{team.name}</SelectItem>
+  //                 ))}
+  //               </SelectContent>
+  //             </Select>
+  //           </div>
+  //         </div>
+  //         <DialogFooter>
+  //           <Button variant="outline" onClick={() => setShowAssignToTeamModal(false)} className="bg-transparent">Cancel</Button>
+  //           <Button onClick={handleAssignToTeam} className="bg-blue-600 hover:bg-blue-700">Assign</Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
 
-      {/* Delete Confirmation Modal */}
-      <Dialog open={showDeleteConfirmModal} onOpenChange={setShowDeleteConfirmModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete Process</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-gray-600">
-              Are you sure you want to delete "{selectedProcessForAction?.name}"? This action cannot be undone.
-            </p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowDeleteConfirmModal(false)} className="bg-transparent">Cancel</Button>
-            <Button onClick={handleDeleteProcess} className="bg-red-600 hover:bg-red-700 text-white">Delete</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  //     {/* Delete Confirmation Modal */}
+  //     <Dialog open={showDeleteConfirmModal} onOpenChange={setShowDeleteConfirmModal}>
+  //       <DialogContent>
+  //         <DialogHeader>
+  //           <DialogTitle>Delete Process</DialogTitle>
+  //         </DialogHeader>
+  //         <div className="py-4">
+  //           <p className="text-sm text-gray-600">
+  //             Are you sure you want to delete "{selectedProcessForAction?.name}"? This action cannot be undone.
+  //           </p>
+  //         </div>
+  //         <DialogFooter>
+  //           <Button variant="outline" onClick={() => setShowDeleteConfirmModal(false)} className="bg-transparent">Cancel</Button>
+  //           <Button onClick={handleDeleteProcess} className="bg-red-600 hover:bg-red-700 text-white">Delete</Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
 
-      {/* New Folder Modal */}
-      <Dialog open={showNewFolderModal} onOpenChange={setShowNewFolderModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Create New Folder</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Folder Name</Label>
-              <Input
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Enter folder name..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewFolderModal(false)} className="bg-transparent">Cancel</Button>
-            <Button onClick={handleCreateFolder} className="bg-blue-600 hover:bg-blue-700">Create Folder</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  //     {/* New Folder Modal */}
+  //     <Dialog open={showNewFolderModal} onOpenChange={setShowNewFolderModal}>
+  //       <DialogContent>
+  //         <DialogHeader>
+  //           <DialogTitle>Create New Folder</DialogTitle>
+  //         </DialogHeader>
+  //         <div className="space-y-4 py-4">
+  //           <div className="space-y-2">
+  //             <Label>Folder Name</Label>
+  //             <Input
+  //               value={newFolderName}
+  //               onChange={(e) => setNewFolderName(e.target.value)}
+  //               placeholder="Enter folder name..."
+  //             />
+  //           </div>
+  //         </div>
+  //         <DialogFooter>
+  //           <Button variant="outline" onClick={() => setShowNewFolderModal(false)} className="bg-transparent">Cancel</Button>
+  //           <Button onClick={handleCreateFolder} className="bg-blue-600 hover:bg-blue-700">Create Folder</Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
 
-      {/* Add Stage Modal */}
-      <Dialog open={showAddStageModal} onOpenChange={setShowAddStageModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New Stage</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Stage Name</Label>
-              <Input
-                value={newStageName}
-                onChange={(e) => setNewStageName(e.target.value)}
-                placeholder="Enter stage name..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowAddStageModal(false)
-                setNewStageName("")
-                setProcessForNewStage(null)
-              }}
-              className="bg-transparent"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleAddStage} className="bg-blue-600 hover:bg-blue-700">
-              Add Stage
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+  //     {/* Add Stage Modal */}
+  //     <Dialog open={showAddStageModal} onOpenChange={setShowAddStageModal}>
+  //       <DialogContent>
+  //         <DialogHeader>
+  //           <DialogTitle>Add New Stage</DialogTitle>
+  //         </DialogHeader>
+  //         <div className="space-y-4 py-4">
+  //           <div className="space-y-2">
+  //             <Label>Stage Name</Label>
+  //             <Input
+  //               value={newStageName}
+  //               onChange={(e) => setNewStageName(e.target.value)}
+  //               placeholder="Enter stage name..."
+  //             />
+  //           </div>
+  //         </div>
+  //         <DialogFooter>
+  //           <Button
+  //             variant="outline"
+  //             onClick={() => {
+  //               setShowAddStageModal(false)
+  //               setNewStageName("")
+  //               setProcessForNewStage(null)
+  //             }}
+  //             className="bg-transparent"
+  //           >
+  //             Cancel
+  //           </Button>
+  //           <Button onClick={handleAddStage} className="bg-blue-600 hover:bg-blue-700">
+  //             Add Stage
+  //           </Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
 
-      {/* Rename Stage Modal */}
-      <Dialog open={showRenameStageModal} onOpenChange={setShowRenameStageModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Rename Stage</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <p className="text-sm text-gray-500">
-              Renaming stage: {selectedStageForRename?.stageName}
-            </p>
-            <div className="space-y-2">
-              <Label>New Stage Name</Label>
-              <Input
-                value={newStageName}
-                onChange={(e) => setNewStageName(e.target.value)}
-                placeholder="Enter new stage name..."
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setShowRenameStageModal(false)
-                setNewStageName("")
-                setSelectedStageForRename(null)
-              }}
-              className="bg-transparent"
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleRenameStage} className="bg-blue-600 hover:bg-blue-700">
-              Rename
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
+  //     {/* Rename Stage Modal */}
+  //     <Dialog open={showRenameStageModal} onOpenChange={setShowRenameStageModal}>
+  //       <DialogContent>
+  //         <DialogHeader>
+  //           <DialogTitle>Rename Stage</DialogTitle>
+  //         </DialogHeader>
+  //         <div className="space-y-4 py-4">
+  //           <p className="text-sm text-gray-500">
+  //             Renaming stage: {selectedStageForRename?.stageName}
+  //           </p>
+  //           <div className="space-y-2">
+  //             <Label>New Stage Name</Label>
+  //             <Input
+  //               value={newStageName}
+  //               onChange={(e) => setNewStageName(e.target.value)}
+  //               placeholder="Enter new stage name..."
+  //             />
+  //           </div>
+  //         </div>
+  //         <DialogFooter>
+  //           <Button
+  //             variant="outline"
+  //             onClick={() => {
+  //               setShowRenameStageModal(false)
+  //               setNewStageName("")
+  //               setSelectedStageForRename(null)
+  //             }}
+  //             className="bg-transparent"
+  //           >
+  //             Cancel
+  //           </Button>
+  //           <Button onClick={handleRenameStage} className="bg-blue-600 hover:bg-blue-700">
+  //             Rename
+  //           </Button>
+  //         </DialogFooter>
+  //       </DialogContent>
+  //     </Dialog>
+  //   </div>
+  // )
 }

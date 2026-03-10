@@ -22,7 +22,12 @@ const CARD_BASE = "flex flex-col border rounded-lg shadow-sm cursor-pointer tran
 const CARD_ACTIVE = "ring-2 ring-primary bg-primary/5"
 const CARD_INACTIVE = "bg-background hover:bg-muted/50"
 
-export type OwnerTileFilter = "all" | "active" | "pending" | "terminations" | "tag"
+export type OwnerTileFilter = "none" | "collections" | "income-expenses" | "properties-status" | "maintenance"
+export type OwnerCollectionsSubFilter = "all" | "rent-collected" | "delinquent"
+export type OwnerIncomeExpenseSubFilter = "all" | "income" | "expenses"
+export type OwnerPropertiesStatusSubFilter = "all" | "occupied" | "vacant"
+export type OwnerMaintenanceSubFilter = "all" | "approved-wos" | "pending-approval"
+
 export type TenantTileFilter = "all" | "active" | "pending" | "moveout" | "evictions" | "type"
 
 export type ContactTabsStatsOwnersProps = {
@@ -30,12 +35,14 @@ export type ContactTabsStatsOwnersProps = {
   owners: Contact[]
   ownerTileFilter: OwnerTileFilter
   setOwnerTileFilter: (v: OwnerTileFilter) => void
-  pendingSubFilter: "all" | "tasks" | "processes"
-  setPendingSubFilter: (v: "all" | "tasks" | "processes") => void
-  terminationSubFilter: "all" | "under" | "hidden"
-  setTerminationSubFilter: (v: "all" | "under" | "hidden") => void
-  selectedTag: string
-  setSelectedTag: (v: string) => void
+  collectionsSubFilter: OwnerCollectionsSubFilter
+  setCollectionsSubFilter: (v: OwnerCollectionsSubFilter) => void
+  incomeExpenseSubFilter: OwnerIncomeExpenseSubFilter
+  setIncomeExpenseSubFilter: (v: OwnerIncomeExpenseSubFilter) => void
+  propertiesStatusSubFilter: OwnerPropertiesStatusSubFilter
+  setPropertiesStatusSubFilter: (v: OwnerPropertiesStatusSubFilter) => void
+  maintenanceSubFilter: OwnerMaintenanceSubFilter
+  setMaintenanceSubFilter: (v: OwnerMaintenanceSubFilter) => void
   onPageReset: () => void
 }
 
@@ -84,197 +91,197 @@ export function ContactTabsStats(props: ContactTabsStatsProps) {
   if (props.variant === "property-technician") return <PropertyTechnicianStatsCards {...props} />
   return <LeasingAgentStatsCards {...props} />
 }
-  
+
 function OwnerStatsCards({
   owners,
   ownerTileFilter,
   setOwnerTileFilter,
-  pendingSubFilter,
-  setPendingSubFilter,
-  terminationSubFilter,
-  setTerminationSubFilter,
-  selectedTag,
-  setSelectedTag,
+  collectionsSubFilter,
+  setCollectionsSubFilter,
+  incomeExpenseSubFilter,
+  setIncomeExpenseSubFilter,
+  propertiesStatusSubFilter,
+  setPropertiesStatusSubFilter,
+  maintenanceSubFilter,
+  setMaintenanceSubFilter,
   onPageReset,
 }: ContactTabsStatsOwnersProps) {
   const allOwners = owners
-  const activeOwnerCount = allOwners.filter((c) => c.status === "Active").length
-  const ownerPendingTasks = allOwners.reduce((sum, c) => sum + (c.pendingTasks || 0), 0)
-  const ownerPendingProcesses = allOwners.reduce((sum, c) => sum + (c.pendingProcesses || 0), 0)
-  const underTermination = allOwners.filter((c) => c.terminationStatus === "Under Termination").length
-  const terminatedHidden = allOwners.filter((c) => c.terminationStatus === "Terminated Hidden").length
-  const allTags = Array.from(new Set(allOwners.flatMap((c) => c.tags || []))).sort()
 
-  const getPendingCount = () => {
-    if (pendingSubFilter === "tasks") return ownerPendingTasks
-    if (pendingSubFilter === "processes") return ownerPendingProcesses
-    return ownerPendingTasks + ownerPendingProcesses
-  }
+  const totalRentCollected = allOwners.reduce((sum, c) => sum + (c.rentCollected || 0), 0)
+  const totalDelinquent = allOwners.reduce((sum, c) => sum + (c.delinquentAmount || 0), 0)
+  const ownersWithRent = allOwners.filter((c) => (c.rentCollected || 0) > 0).length
+  const ownersWithDelinquent = allOwners.filter((c) => (c.delinquentAmount || 0) > 0).length
 
-  const getTerminationCount = () => {
-    if (terminationSubFilter === "under") return underTermination
-    if (terminationSubFilter === "hidden") return terminatedHidden
-    return underTermination + terminatedHidden
-  }
+  const totalIncome = allOwners.reduce((sum, c) => sum + (c.ownerIncome || 0), 0)
+  const totalExpense = allOwners.reduce((sum, c) => sum + (c.ownerExpense || 0), 0)
+  const ownersWithIncome = allOwners.filter((c) => (c.ownerIncome || 0) > 0).length
+  const ownersWithExpense = allOwners.filter((c) => (c.ownerExpense || 0) > 0).length
 
-  const getTagCount = () => {
-    if (selectedTag === "all") return allOwners.length
-    return allOwners.filter((c) => c.tags?.includes(selectedTag)).length
-  }
+  const totalOccupied = allOwners.reduce((sum, c) => sum + (c.occupiedUnits || 0), 0)
+  const totalVacant = allOwners.reduce((sum, c) => sum + (c.vacantUnits || 0), 0)
+  const ownersWithOccupied = allOwners.filter((c) => (c.occupiedUnits || 0) > 0).length
+  const ownersWithVacant = allOwners.filter((c) => (c.vacantUnits || 0) > 0).length
+
+  const totalApprovedWOs = allOwners.reduce((sum, c) => sum + (c.approvedWOs || 0), 0)
+  const totalPendingWOs = allOwners.reduce((sum, c) => sum + (c.pendingApprovalWOs || 0), 0)
+  const ownersWithApprovedWOs = allOwners.filter((c) => (c.approvedWOs || 0) > 0).length
+  const ownersWithPendingWOs = allOwners.filter((c) => (c.pendingApprovalWOs || 0) > 0).length
+
+  const fmt = (n: number) => n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
   const apply = (fn: () => void) => {
     fn()
     onPageReset()
   }
 
+  const subBtnCls = (active: boolean) =>
+    `w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/80 text-muted-foreground"
+    }`
+
   return (
-    <div className="grid grid-cols-5 gap-3">
-      {/* Total Owners */}
-      <div
-        className={`${CARD_BASE} ${ownerTileFilter === "all" ? CARD_ACTIVE : CARD_INACTIVE}`}
-        onClick={() => apply(() => setOwnerTileFilter("all"))}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-success/5">
-          <div className="p-1 rounded bg-success/10">
-            <Building2 className="h-4 w-4 text-success" />
+    <div className="grid grid-cols-4 gap-3">
+      {/* Collections */}
+      <div className={`${CARD_BASE} ${ownerTileFilter === "collections" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-emerald-500/5">
+          <div className="p-1 rounded bg-emerald-500/10">
+            <Briefcase className="h-4 w-4 text-emerald-600" />
           </div>
-          <span className="text-xs font-medium text-foreground">Total Owners</span>
+          <span className="text-xs font-medium text-foreground">Collections</span>
         </div>
-        <div className="flex-1 flex items-center justify-center px-3 py-3">
-          <span className="text-muted-foreground text-2xl font-extrabold">{allOwners.length}</span>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "collections" && collectionsSubFilter === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("collections"); setCollectionsSubFilter("all") }) }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{fmt(totalRentCollected + totalDelinquent)}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "collections" && collectionsSubFilter === "rent-collected")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("collections"); setCollectionsSubFilter("rent-collected") }) }}
+          >
+            <span className="text-left">Rent Collected</span>
+            <span className="font-semibold">{fmt(totalRentCollected)}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "collections" && collectionsSubFilter === "delinquent")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("collections"); setCollectionsSubFilter("delinquent") }) }}
+          >
+            <span className="text-left">Delinquent Amount</span>
+            <span className="font-semibold">{fmt(totalDelinquent)}</span>
+          </button>
         </div>
       </div>
 
-      {/* Active Owners */}
-      <div
-        className={`${CARD_BASE} ${ownerTileFilter === "active" ? CARD_ACTIVE : CARD_INACTIVE}`}
-        onClick={() => apply(() => setOwnerTileFilter("active"))}
-      >
+      {/* Income & Expense */}
+      <div className={`${CARD_BASE} ${ownerTileFilter === "income-expenses" ? CARD_ACTIVE : "bg-background"}`}>
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-blue-500/5">
+          <div className="p-1 rounded bg-blue-500/10">
+            <Layers className="h-4 w-4 text-blue-600" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Income & Expenses</span>
+        </div>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "income-expenses" && incomeExpenseSubFilter === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("income-expenses"); setIncomeExpenseSubFilter("all") }) }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{fmt(totalIncome + totalExpense)}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "income-expenses" && incomeExpenseSubFilter === "income")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("income-expenses"); setIncomeExpenseSubFilter("income") }) }}
+          >
+            <span className="text-left">Income</span>
+            <span className="font-semibold">{fmt(totalIncome)}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "income-expenses" && incomeExpenseSubFilter === "expenses")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("income-expenses"); setIncomeExpenseSubFilter("expenses") }) }}
+          >
+            <span className="text-left">Expenses</span>
+            <span className="font-semibold">{fmt(totalExpense)}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Properties Status */}
+      <div className={`${CARD_BASE} ${ownerTileFilter === "properties-status" ? CARD_ACTIVE : "bg-background"}`}>
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-info/5">
           <div className="p-1 rounded bg-info/10">
-            <UserCheck className="h-4 w-4 text-info" />
+            <Home className="h-4 w-4 text-info" />
           </div>
-          <span className="text-xs font-medium text-foreground">Active Owners</span>
+          <span className="text-xs font-medium text-foreground">Properties Status</span>
         </div>
-        <div className="flex-1 flex items-center justify-center px-3 py-3">
-          <span className="text-muted-foreground font-extrabold text-2xl">{activeOwnerCount}</span>
+        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "properties-status" && propertiesStatusSubFilter === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("properties-status"); setPropertiesStatusSubFilter("all") }) }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{totalOccupied + totalVacant}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "properties-status" && propertiesStatusSubFilter === "occupied")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("properties-status"); setPropertiesStatusSubFilter("occupied") }) }}
+          >
+            <span className="text-left">Occupied Units</span>
+            <span className="font-semibold">{totalOccupied}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(ownerTileFilter === "properties-status" && propertiesStatusSubFilter === "vacant")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("properties-status"); setPropertiesStatusSubFilter("vacant") }) }}
+          >
+            <span className="text-left">Vacant Units</span>
+            <span className="font-semibold">{totalVacant}</span>
+          </button>
         </div>
       </div>
 
-      {/* Pending (Expanded) */}
-      <div className={`${CARD_BASE} ${ownerTileFilter === "pending" ? CARD_ACTIVE : "bg-background"}`}>
+      {/* Maintenance */}
+      <div className={`${CARD_BASE} ${ownerTileFilter === "maintenance" ? CARD_ACTIVE : "bg-background"}`}>
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
           <div className="p-1 rounded bg-warning/10">
-            <Clock className="h-4 w-4 text-warning" />
+            <Wrench className="h-4 w-4 text-warning" />
           </div>
-          <span className="text-xs font-medium text-foreground">Pending</span>
-          <span className="text-lg font-bold ml-auto">{getPendingCount()}</span>
+          <span className="text-xs font-medium text-foreground">Maintenance</span>
         </div>
         <div className="flex-1 flex flex-col px-2 py-2 gap-1">
           <button
             type="button"
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-              ownerTileFilter === "pending" && pendingSubFilter === "tasks"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-muted-foreground"
-            }`}
-            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("pending"); setPendingSubFilter("tasks") }) }}
+            className={subBtnCls(ownerTileFilter === "maintenance" && maintenanceSubFilter === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("maintenance"); setMaintenanceSubFilter("all") }) }}
           >
-            <span className="text-left">Pending Tasks</span>
-            <span className="font-semibold">{ownerPendingTasks}</span>
+            <span className="text-left">All</span>
+            <span className="font-semibold">{totalApprovedWOs + totalPendingWOs}</span>
           </button>
           <button
             type="button"
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-              ownerTileFilter === "pending" && pendingSubFilter === "processes"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-muted-foreground"
-            }`}
-            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("pending"); setPendingSubFilter("processes") }) }}
+            className={subBtnCls(ownerTileFilter === "maintenance" && maintenanceSubFilter === "approved-wos")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("maintenance"); setMaintenanceSubFilter("approved-wos") }) }}
           >
-            <span className="text-left">Pending Processes</span>
-            <span className="font-semibold">{ownerPendingProcesses}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Terminations (Expanded) */}
-      <div className={`${CARD_BASE} ${ownerTileFilter === "terminations" ? CARD_ACTIVE : "bg-background"}`}>
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-destructive/5">
-          <div className="p-1 rounded bg-destructive/10">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Terminations</span>
-          <span className="text-lg font-bold ml-auto">{getTerminationCount()}</span>
-        </div>
-        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          <button
-            type="button"
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-              ownerTileFilter === "terminations" && terminationSubFilter === "under"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-muted-foreground"
-            }`}
-            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("terminations"); setTerminationSubFilter("under") }) }}
-          >
-            <span className="text-left">Under Termination</span>
-            <span className="font-semibold">{underTermination}</span>
+            <span className="text-left">Approved WOs</span>
+            <span className="font-semibold">{totalApprovedWOs}</span>
           </button>
           <button
             type="button"
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-              ownerTileFilter === "terminations" && terminationSubFilter === "hidden"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-muted-foreground"
-            }`}
-            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("terminations"); setTerminationSubFilter("hidden") }) }}
+            className={subBtnCls(ownerTileFilter === "maintenance" && maintenanceSubFilter === "pending-approval")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("maintenance"); setMaintenanceSubFilter("pending-approval") }) }}
           >
-            <span className="text-left">Termination Hidden</span>
-            <span className="font-semibold">{terminatedHidden}</span>
+            <span className="text-left">Pending for Approval</span>
+            <span className="font-semibold">{totalPendingWOs}</span>
           </button>
-        </div>
-      </div>
-
-      {/* Tags (Expanded with scroll) */}
-      <div className={`${CARD_BASE} ${ownerTileFilter === "tag" ? CARD_ACTIVE : "bg-background"}`}>
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
-          <div className="p-1 rounded bg-accent">
-            <Tag className="h-4 w-4 text-accent-foreground" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Tags</span>
-          <span className="text-lg font-bold ml-auto">{getTagCount()}</span>
-        </div>
-        <div className="flex-1 flex flex-col px-2 py-2 gap-1 max-h-[90px] overflow-y-auto">
-          <button
-            type="button"
-            className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors shrink-0 ${
-              ownerTileFilter === "tag" && selectedTag === "all"
-                ? "bg-primary/10 text-primary font-medium"
-                : "hover:bg-muted/80 text-muted-foreground"
-            }`}
-            onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("tag"); setSelectedTag("all") }) }}
-          >
-            <span>All Owners</span>
-            <span className="font-semibold">{allOwners.length}</span>
-          </button>
-          {allTags.map((tag) => {
-            const tagOwnerCount = allOwners.filter((c) => c.tags?.includes(tag)).length
-            return (
-              <button
-                key={tag}
-                type="button"
-                className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors shrink-0 ${
-                  ownerTileFilter === "tag" && selectedTag === tag
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "hover:bg-muted/80 text-muted-foreground"
-                }`}
-                onClick={(e) => { e.stopPropagation(); apply(() => { setOwnerTileFilter("tag"); setSelectedTag(tag) }) }}
-              >
-                <span>{tag}</span>
-                <span className="font-semibold">{tagOwnerCount}</span>
-              </button>
-            )
-          })}
         </div>
       </div>
     </div>
@@ -386,11 +393,10 @@ function TenantStatsCards({
             <button
               key={item.value}
               type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-                tenantTileFilter === "pending" && tenantPendingSubFilter === item.value
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "pending" && tenantPendingSubFilter === item.value
                   ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/80 text-muted-foreground"
-              }`}
+                }`}
               onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("pending"); setTenantPendingSubFilter(item.value) }) }}
             >
               <span>{item.label}</span>
@@ -417,11 +423,10 @@ function TenantStatsCards({
             <button
               key={item.value}
               type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-                tenantTileFilter === "moveout" && tenantMoveoutSubFilter === item.value
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "moveout" && tenantMoveoutSubFilter === item.value
                   ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/80 text-muted-foreground"
-              }`}
+                }`}
               onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("moveout"); setTenantMoveoutSubFilter(item.value) }) }}
             >
               <span>{item.label}</span>
@@ -448,11 +453,10 @@ function TenantStatsCards({
             <button
               key={item.value}
               type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-                tenantTileFilter === "evictions" && tenantEvictionSubFilter === item.value
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "evictions" && tenantEvictionSubFilter === item.value
                   ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/80 text-muted-foreground"
-              }`}
+                }`}
               onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("evictions"); setTenantEvictionSubFilter(item.value) }) }}
             >
               <span>{item.label}</span>
@@ -479,11 +483,10 @@ function TenantStatsCards({
             <button
               key={item.value}
               type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${
-                tenantTileFilter === "type" && selectedTenantType === item.value
+              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "type" && selectedTenantType === item.value
                   ? "bg-primary/10 text-primary font-medium"
                   : "hover:bg-muted/80 text-muted-foreground"
-              }`}
+                }`}
               onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("type"); setSelectedTenantType(item.value) }) }}
             >
               <span>{item.label}</span>

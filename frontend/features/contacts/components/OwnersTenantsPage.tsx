@@ -14,8 +14,6 @@ import {
   ChevronUp,
   ChevronDown,
   RotateCcw,
-  Tag,
-  AlertTriangle,
   LogOut,
   Gavel,
   Layers,
@@ -132,10 +130,11 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
   const [csmSearchQuery, setCsmSearchQuery] = useState("")
 
   // Owner tile filter states
-  const [ownerTileFilter, setOwnerTileFilter] = useState<"all" | "active" | "pending" | "terminations" | "tag">("all")
-  const [pendingSubFilter, setPendingSubFilter] = useState<"all" | "tasks" | "processes">("all")
-  const [terminationSubFilter, setTerminationSubFilter] = useState<"all" | "under" | "hidden">("all")
-  const [selectedTag, setSelectedTag] = useState<string>("all")
+  const [ownerTileFilter, setOwnerTileFilter] = useState<"none" | "collections" | "income-expenses" | "properties-status" | "maintenance">("none")
+  const [collectionsSubFilter, setCollectionsSubFilter] = useState<"all" | "rent-collected" | "delinquent">("all")
+  const [incomeExpenseSubFilter, setIncomeExpenseSubFilter] = useState<"all" | "income" | "expenses">("all")
+  const [propertiesStatusSubFilter, setPropertiesStatusSubFilter] = useState<"all" | "occupied" | "vacant">("all")
+  const [maintenanceSubFilter, setMaintenanceSubFilter] = useState<"all" | "approved-wos" | "pending-approval">("all")
 
   // Tenant tile filter states
   const [tenantTileFilter, setTenantTileFilter] = useState<
@@ -239,21 +238,25 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
 
     // Owner tiles
     if (activeTab === "owners" && contact.type === "Owner") {
-      if (ownerTileFilter === "active" && contact.status !== "Active") return false
-      if (ownerTileFilter === "pending") {
-        const hasPendingTask = (contact.pendingTasks || 0) > 0
-        const hasPendingProcess = (contact.pendingProcesses || 0) > 0
-        if (pendingSubFilter === "all" && !hasPendingTask && !hasPendingProcess) return false
-        if (pendingSubFilter === "tasks" && !hasPendingTask) return false
-        if (pendingSubFilter === "processes" && !hasPendingProcess) return false
+      if (ownerTileFilter === "collections") {
+        if (collectionsSubFilter === "rent-collected" && (contact.rentCollected || 0) <= 0) return false
+        if (collectionsSubFilter === "delinquent" && (contact.delinquentAmount || 0) <= 0) return false
+        if (collectionsSubFilter === "all" && (contact.rentCollected || 0) <= 0 && (contact.delinquentAmount || 0) <= 0) return false
       }
-      if (ownerTileFilter === "terminations") {
-        if (terminationSubFilter === "all" && !contact.terminationStatus) return false
-        if (terminationSubFilter === "under" && contact.terminationStatus !== "Under Termination") return false
-        if (terminationSubFilter === "hidden" && contact.terminationStatus !== "Terminated Hidden") return false
+      if (ownerTileFilter === "income-expenses") {
+        if (incomeExpenseSubFilter === "income" && (contact.ownerIncome || 0) <= 0) return false
+        if (incomeExpenseSubFilter === "expenses" && (contact.ownerExpense || 0) <= 0) return false
+        if (incomeExpenseSubFilter === "all" && (contact.ownerIncome || 0) <= 0 && (contact.ownerExpense || 0) <= 0) return false
       }
-      if (ownerTileFilter === "tag" && selectedTag !== "all") {
-        if (!contact.tags || !contact.tags.includes(selectedTag)) return false
+      if (ownerTileFilter === "properties-status") {
+        if (propertiesStatusSubFilter === "occupied" && (contact.occupiedUnits || 0) <= 0) return false
+        if (propertiesStatusSubFilter === "vacant" && (contact.vacantUnits || 0) <= 0) return false
+        if (propertiesStatusSubFilter === "all" && (contact.occupiedUnits || 0) <= 0 && (contact.vacantUnits || 0) <= 0) return false
+      }
+      if (ownerTileFilter === "maintenance") {
+        if (maintenanceSubFilter === "approved-wos" && (contact.approvedWOs || 0) <= 0) return false
+        if (maintenanceSubFilter === "pending-approval" && (contact.pendingApprovalWOs || 0) <= 0) return false
+        if (maintenanceSubFilter === "all" && (contact.approvedWOs || 0) <= 0 && (contact.pendingApprovalWOs || 0) <= 0) return false
       }
     }
 
@@ -686,12 +689,14 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
           owners={MOCK_CONTACTS.filter((c) => c.type === "Owner")}
           ownerTileFilter={ownerTileFilter}
           setOwnerTileFilter={setOwnerTileFilter}
-          pendingSubFilter={pendingSubFilter}
-          setPendingSubFilter={setPendingSubFilter}
-          terminationSubFilter={terminationSubFilter}
-          setTerminationSubFilter={setTerminationSubFilter}
-          selectedTag={selectedTag}
-          setSelectedTag={setSelectedTag}
+          collectionsSubFilter={collectionsSubFilter}
+          setCollectionsSubFilter={setCollectionsSubFilter}
+          incomeExpenseSubFilter={incomeExpenseSubFilter}
+          setIncomeExpenseSubFilter={setIncomeExpenseSubFilter}
+          propertiesStatusSubFilter={propertiesStatusSubFilter}
+          setPropertiesStatusSubFilter={setPropertiesStatusSubFilter}
+          maintenanceSubFilter={maintenanceSubFilter}
+          setMaintenanceSubFilter={setMaintenanceSubFilter}
           onPageReset={() => setCurrentPage(1)}
         />
       ) : (

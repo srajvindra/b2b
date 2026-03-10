@@ -215,14 +215,8 @@ export const initialSavedViews: SavedView[] = [
 ]
 
 export const availableProcessTypes = [
-  "Property Onboarding Process",
-  "Owner Onboarding Process",
-  "Lease Renewal Process",
-  "Eviction Process",
-  "Make Ready Process",
-  "Property Termination Process",
-  "Delinquency Process",
-]
+  ...Array.from(new Set(initialProcessInstances.map((i) => i.processType))),
+].sort()
 
 export const availableProperties = [
   "1903 W Grand Ave, Dayton, OH, 45402",

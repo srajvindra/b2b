@@ -174,10 +174,10 @@ export function StageWorkflowPage({ categoryName, stage, backHref }: StageWorkfl
               <p className="text-sm text-gray-500">{categoryName}</p>
             </div>
           </div>
-          <Button className="bg-gray-800 hover:bg-gray-900 text-white gap-2">
+          {/* <Button className="bg-gray-800 hover:bg-gray-900 text-white gap-2">
             <Settings className="h-4 w-4" />
             Workflow Settings
-          </Button>
+          </Button> */}
         </div>
       </div>
 

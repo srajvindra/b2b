@@ -1298,3 +1298,24 @@ MOCK_CONTACTS.forEach((contact, idx) => {
   }
 })
 
+const RENT_AMOUNTS = [12500, 8900, 15600, 6200, 19800, 11400, 7300, 14100, 9700, 16800]
+const DELINQUENT_AMOUNTS = [0, 2300, 0, 1500, 0, 0, 800, 0, 3200, 0]
+const INCOME_AMOUNTS = [14000, 9500, 17200, 7800, 21000, 13200, 8500, 16000, 11000, 18500]
+const EXPENSE_AMOUNTS = [4200, 3100, 5600, 2400, 7800, 4100, 2900, 5200, 3600, 6100]
+const OCCUPIED = [6, 3, 8, 2, 10, 5, 4, 7, 3, 9]
+const VACANT = [2, 0, 1, 1, 0, 2, 0, 1, 0, 1]
+const APPROVED_WOS = [3, 1, 4, 0, 5, 2, 1, 3, 2, 4]
+const PENDING_WOS = [1, 0, 2, 1, 0, 1, 0, 1, 0, 2]
+
+MOCK_CONTACTS.filter((c) => c.type === "Owner").forEach((contact, idx) => {
+  const i = idx % 10
+  contact.rentCollected = RENT_AMOUNTS[i]
+  contact.delinquentAmount = DELINQUENT_AMOUNTS[i]
+  contact.ownerIncome = INCOME_AMOUNTS[i]
+  contact.ownerExpense = EXPENSE_AMOUNTS[i]
+  contact.occupiedUnits = OCCUPIED[i]
+  contact.vacantUnits = VACANT[i]
+  contact.approvedWOs = APPROVED_WOS[i]
+  contact.pendingApprovalWOs = PENDING_WOS[i]
+})
+
