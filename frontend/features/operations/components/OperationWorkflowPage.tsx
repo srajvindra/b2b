@@ -65,7 +65,7 @@ export function OperationWorkflowPage() {
                     </div>
                 </div>
 
-                <div className="py-2 flex-1 overflow-hidden">
+                <div className="py-2 flex-1 overflow-hidden ">
                     {tabs.map((tab, index) => {
                         const isActive = activeTab === tab.id
                         return (
@@ -73,11 +73,11 @@ export function OperationWorkflowPage() {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full text-left px-5 py-3 text-sm transition-colors ${
+                                className={`w-full text-left px-5 py-3 text-sm transition-colors cursor-pointer ${
                                     isActive
                                         ? "text-foreground font-medium bg-accent"
                                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                                } ${index === 0 ? "border-b border-border" : ""}`}
+                                }`}
                             >
                                 {tab.label}
                             </button>
@@ -100,7 +100,7 @@ export function OperationWorkflowPage() {
                         </div>
                     ) : activeTab === "overview" ? (
                         <div className="max-w-6xl mx-auto">
-                            <div className="w-full aspect-video bg-muted border border-border rounded-lg mb-8" />
+                            <div className="w-full aspect-video bg-blue-100 border border-border rounded-lg mb-8" />
                             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
                                 <p>
                                     Property Onboarding is the second major process in property management, where you will collect all
