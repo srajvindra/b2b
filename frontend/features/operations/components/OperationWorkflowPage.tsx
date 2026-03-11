@@ -5,8 +5,9 @@ import { useState, useMemo } from "react"
 import { ArrowLeft, Construction } from "lucide-react"
 import { PortfolioTab } from "@/features/settings/components/PortfolioTab"
 import { GeneralSettingsTab } from "@/features/settings/components/GeneralSettingsTab"
-import ManageProcessPage from "@/features/settings/components/ManageProcessPage"
-import { TemplateManagementPage } from "@/features/settings/components/TemplateManagementPage"
+import StageWorkflow from "@/features/operations/components/operationProcesses/stageWorkflow"
+import EmailTemplatePage from "@/features/operations/components/operationProcesses/EmailTemplatePage"
+import SMSTemplatePage from "@/features/operations/components/operationProcesses/SMSTemplatePage"
 import { CustomFieldsPage } from "@/features/settings/components/CustomFieldPage"
 import { initialProcessInstances } from "@/features/operations/data/processes"
 
@@ -73,11 +74,10 @@ export function OperationWorkflowPage() {
                                 key={tab.id}
                                 type="button"
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full text-left px-5 py-3 text-sm transition-colors cursor-pointer ${
-                                    isActive
+                                className={`w-full text-left px-5 py-3 text-sm transition-colors cursor-pointer ${isActive
                                         ? "text-foreground font-medium bg-accent"
                                         : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                                }`}
+                                    }`}
                             >
                                 {tab.label}
                             </button>
@@ -99,7 +99,7 @@ export function OperationWorkflowPage() {
                             <h2 className="text-xl font-semibold text-foreground mb-2">{currentTab.label} – Coming Soon</h2>
                         </div>
                     ) : activeTab === "overview" ? (
-                        <div className="max-w-6xl mx-auto">
+                        <div className="max-w-full mx-auto">
                             <div className="w-full aspect-video bg-blue-100 border border-border rounded-lg mb-8" />
                             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
                                 <p>
@@ -114,27 +114,27 @@ export function OperationWorkflowPage() {
                             </div>
                         </div>
                     ) : activeTab === "general" ? (
-                        <div className="max-w-6xl mx-auto">
+                        <div className="max-w-full mx-auto">
                             <GeneralSettingsTab />
                         </div>
                     ) : activeTab === "users-roles" ? (
-                        <div className="max-w-6xl mx-auto">
+                        <div className="max-w-full mx-auto">
                             <PortfolioTab />
                         </div>
                     ) : activeTab === "stages-workflows" ? (
-                        <div className="max-w-6xl mx-auto">
-                            <ManageProcessPage />
+                        <div className="max-w-full mx-auto">
+                            <StageWorkflow currentProcessName={processName} />
                         </div>
                     ) : activeTab === "email-templates" ? (
-                        <div className="max-w-6xl mx-auto">
-                            <TemplateManagementPage key="email" defaultTab="email" hideTabs hideHeader />
+                        <div className="max-w-full mx-auto">
+                            <EmailTemplatePage />
                         </div>
                     ) : activeTab === "text-templates" ? (
-                        <div className="max-w-6xl mx-auto">
-                            <TemplateManagementPage key="sms" defaultTab="sms" hideTabs hideHeader />
+                        <div className="max-w-full mx-auto">
+                            <SMSTemplatePage />
                         </div>
                     ) : activeTab === "custom-fields" ? (
-                        <div className="max-w-6xl mx-auto">
+                        <div className="max-w-full mx-auto">
                             <CustomFieldsPage />
                         </div>
                     ) : activeTab === "version-history" ? (

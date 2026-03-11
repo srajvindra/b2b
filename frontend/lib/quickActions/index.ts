@@ -304,6 +304,34 @@ export function getCalendarQuickActions(handlers: {
   return [{ id: "calendar", actions }]
 }
 
+// ----- Contact Directory -----
+export const contactDirectoryQuickActions: QuickActionGroup[] = [
+  {
+    id: "contact-directory",
+    title: "Quick Actions",
+    actions: [
+      { icon: Mail, label: "Bulk Email" },
+      { icon: MessageSquare, label: "Bulk SMS" },
+      { icon: UserPlus, label: "Add a Contact" },
+      { icon: Workflow, label: "Add to Process" },
+    ],
+  },
+]
+
+// ----- Property Directory -----
+export const propertyDirectoryQuickActions: QuickActionGroup[] = [
+  {
+    id: "property-directory",
+    title: "Quick Actions",
+    actions: [
+      { icon: Building2, label: "Add a Property" },
+      { icon: Home, label: "Add Address" },
+      { icon: Users, label: "Assign To" },
+      { icon: Workflow, label: "Add to Process" },
+    ],
+  },
+]
+
 // ----- Contacts list (owners tab) -----
 export const contactsOwnersQuickActions: QuickActionGroup[] = [
   {

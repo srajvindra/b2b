@@ -9,6 +9,7 @@ export const initialEmailTemplates: EmailTemplate[] = [
     content: "Dear {{name}},\n\nWelcome to Hero PM! We're excited to have you as part of our community...",
     createdBy: { name: "Nina Patel", role: "Admin" },
     createdOn: "2025-01-15",
+    files: 0, sends: 0, opened: 0, clicked: 0,
   },
   {
     id: "e2",
@@ -18,6 +19,7 @@ export const initialEmailTemplates: EmailTemplate[] = [
     content: "Hi {{name}},\n\nI wanted to follow up on our recent conversation about...",
     createdBy: { name: "John Smith", role: "Property Manager" },
     createdOn: "2025-01-10",
+    files: 0, sends: 0, opened: 0, clicked: 0,
   },
   {
     id: "e3",
@@ -27,6 +29,7 @@ export const initialEmailTemplates: EmailTemplate[] = [
     content: "Dear {{name}},\n\nTo proceed with your application, we need the following documents...",
     createdBy: { name: "Sarah Johnson", role: "Leasing Agent" },
     createdOn: "2025-01-08",
+    files: 0, sends: 0, opened: 0, clicked: 0,
   },
   {
     id: "e4",
@@ -36,6 +39,7 @@ export const initialEmailTemplates: EmailTemplate[] = [
     content: "Hi {{name}},\n\nThis is to confirm your meeting scheduled for {{date}} at {{time}}...",
     createdBy: { name: "Nina Patel", role: "Admin" },
     createdOn: "2025-01-05",
+    files: 0, sends: 0, opened: 0, clicked: 0,
   },
   {
     id: "e5",
@@ -45,6 +49,7 @@ export const initialEmailTemplates: EmailTemplate[] = [
     content: "Dear {{name}},\n\nYour current lease agreement will expire on {{date}}. We would like to offer you...",
     createdBy: { name: "Mike Davis", role: "Property Manager" },
     createdOn: "2024-12-20",
+    files: 0, sends: 0, opened: 0, clicked: 0,
   },
 ]
 
@@ -56,6 +61,7 @@ export const initialSmsTemplates: SmsTemplate[] = [
     content: "Hi {{name}}, this is a reminder for your appointment tomorrow at {{time}}. Reply Y to confirm or call us to reschedule.",
     createdBy: { name: "Nina Patel", role: "Admin" },
     createdOn: "2025-01-14",
+    sends: 0,
   },
   {
     id: "s2",
@@ -64,6 +70,7 @@ export const initialSmsTemplates: SmsTemplate[] = [
     content: "Hi {{name}}, just checking in to see if you have any questions about your property. Feel free to reach out!",
     createdBy: { name: "John Smith", role: "Property Manager" },
     createdOn: "2025-01-12",
+    sends: 0,
   },
   {
     id: "s3",
@@ -72,6 +79,7 @@ export const initialSmsTemplates: SmsTemplate[] = [
     content: "Hi {{name}}, we've received your documents. Our team will review them and get back to you within 24-48 hours.",
     createdBy: { name: "Sarah Johnson", role: "Leasing Agent" },
     createdOn: "2025-01-09",
+    sends: 0,
   },
   {
     id: "s4",
@@ -80,5 +88,6 @@ export const initialSmsTemplates: SmsTemplate[] = [
     content: "Hi {{name}}, your maintenance request #{{ticketId}} has been completed. Please let us know if you have any issues.",
     createdBy: { name: "Mike Davis", role: "Property Manager" },
     createdOn: "2025-01-06",
+    sends: 0,
   },
 ]

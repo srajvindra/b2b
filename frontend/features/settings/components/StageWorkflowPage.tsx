@@ -41,10 +41,11 @@ import { initialWorkflowSteps } from "../data/stageWorkflow"
 export interface StageWorkflowPageProps {
   categoryName: string
   stage: StageStatus
-  backHref: string
+  backHref?: string
+  onBack?: () => void
 }
 
-export function StageWorkflowPage({ categoryName, stage, backHref }: StageWorkflowPageProps) {
+export function StageWorkflowPage({ categoryName, stage, backHref, onBack }: StageWorkflowPageProps) {
   const router = useRouter()
 
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>(initialWorkflowSteps)
@@ -164,7 +165,7 @@ export function StageWorkflowPage({ categoryName, stage, backHref }: StageWorkfl
           <div className="flex items-center gap-4">
             <button
               type="button"
-              onClick={() => router.push(backHref)}
+              onClick={() => onBack ? onBack() : router.push(backHref ?? "/")}
               className="p-1 hover:bg-gray-100 rounded-md transition-colors"
             >
               <ArrowLeft className="h-5 w-5 text-gray-600" />

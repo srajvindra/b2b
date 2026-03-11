@@ -342,6 +342,9 @@ function TenantStatsCards({
   const selfPayingCount = allTenants.filter((c) => c.tenantType === "Self Paying").length
   const section8Count = allTenants.filter((c) => c.tenantType === "Section 8").length
 
+  const subBtnCls = (active: boolean) =>
+    `w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/80 text-muted-foreground"}`
+
   return (
     <div className="grid grid-cols-6 gap-3">
       {/* Total Tenants */}
@@ -376,123 +379,147 @@ function TenantStatsCards({
         </div>
       </div>
 
-      {/* Pending (Expanded) */}
+      {/* Pending */}
       <div className={`${CARD_BASE} ${tenantTileFilter === "pending" ? CARD_ACTIVE : "bg-background"}`}>
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
           <div className="p-1 rounded bg-warning/10">
             <Clock className="h-4 w-4 text-warning" />
           </div>
           <span className="text-xs font-medium text-foreground">Pending</span>
-          <span className="text-lg font-bold ml-auto">{getTenantPendingCount()}</span>
         </div>
         <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          {[
-            { label: "Pending Tasks", value: "tasks" as const, count: tenantPendingTasksTotal },
-            { label: "Pending Processes", value: "processes" as const, count: tenantPendingProcessesTotal },
-          ].map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "pending" && tenantPendingSubFilter === item.value
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-muted-foreground"
-                }`}
-              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("pending"); setTenantPendingSubFilter(item.value) }) }}
-            >
-              <span>{item.label}</span>
-              <span className="font-semibold">{item.count}</span>
-            </button>
-          ))}
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "pending" && tenantPendingSubFilter === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("pending"); setTenantPendingSubFilter("all") }) }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{tenantPendingTasksTotal + tenantPendingProcessesTotal}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "pending" && tenantPendingSubFilter === "tasks")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("pending"); setTenantPendingSubFilter("tasks") }) }}
+          >
+            <span className="text-left">Pending Tasks</span>
+            <span className="font-semibold">{tenantPendingTasksTotal}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "pending" && tenantPendingSubFilter === "processes")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("pending"); setTenantPendingSubFilter("processes") }) }}
+          >
+            <span className="text-left">Pending Processes</span>
+            <span className="font-semibold">{tenantPendingProcessesTotal}</span>
+          </button>
         </div>
       </div>
 
-      {/* Move-out (Expanded) */}
+      {/* Move-out */}
       <div className={`${CARD_BASE} ${tenantTileFilter === "moveout" ? CARD_ACTIVE : "bg-background"}`}>
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
           <div className="p-1 rounded bg-warning/10">
             <LogOut className="h-4 w-4 text-warning" />
           </div>
           <span className="text-xs font-medium text-foreground">Move-out</span>
-          <span className="text-lg font-bold ml-auto">{pendingMoveouts + completedMoveouts}</span>
         </div>
         <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          {[
-            { label: "Pending Move-outs", value: "pending" as const, count: pendingMoveouts },
-            { label: "Completed Move-outs", value: "completed" as const, count: completedMoveouts },
-          ].map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "moveout" && tenantMoveoutSubFilter === item.value
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-muted-foreground"
-                }`}
-              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("moveout"); setTenantMoveoutSubFilter(item.value) }) }}
-            >
-              <span>{item.label}</span>
-              <span className="font-semibold">{item.count}</span>
-            </button>
-          ))}
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "moveout" && tenantMoveoutSubFilter === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("moveout"); setTenantMoveoutSubFilter("all") }) }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{pendingMoveouts + completedMoveouts}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "moveout" && tenantMoveoutSubFilter === "pending")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("moveout"); setTenantMoveoutSubFilter("pending") }) }}
+          >
+            <span className="text-left">Pending Move-outs</span>
+            <span className="font-semibold">{pendingMoveouts}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "moveout" && tenantMoveoutSubFilter === "completed")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("moveout"); setTenantMoveoutSubFilter("completed") }) }}
+          >
+            <span className="text-left">Completed Move-outs</span>
+            <span className="font-semibold">{completedMoveouts}</span>
+          </button>
         </div>
       </div>
 
-      {/* Evictions (Expanded) */}
+      {/* Evictions */}
       <div className={`${CARD_BASE} ${tenantTileFilter === "evictions" ? CARD_ACTIVE : "bg-background"}`}>
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-destructive/5">
           <div className="p-1 rounded bg-destructive/10">
             <Gavel className="h-4 w-4 text-destructive" />
           </div>
           <span className="text-xs font-medium text-foreground">Evictions</span>
-          <span className="text-lg font-bold ml-auto">{pendingEvictions + completedEvictions}</span>
         </div>
         <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          {[
-            { label: "Pending Evictions", value: "pending" as const, count: pendingEvictions },
-            { label: "Completed Evictions", value: "completed" as const, count: completedEvictions },
-          ].map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "evictions" && tenantEvictionSubFilter === item.value
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-muted-foreground"
-                }`}
-              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("evictions"); setTenantEvictionSubFilter(item.value) }) }}
-            >
-              <span>{item.label}</span>
-              <span className="font-semibold">{item.count}</span>
-            </button>
-          ))}
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "evictions" && tenantEvictionSubFilter === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("evictions"); setTenantEvictionSubFilter("all") }) }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{pendingEvictions + completedEvictions}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "evictions" && tenantEvictionSubFilter === "pending")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("evictions"); setTenantEvictionSubFilter("pending") }) }}
+          >
+            <span className="text-left">Pending Evictions</span>
+            <span className="font-semibold">{pendingEvictions}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "evictions" && tenantEvictionSubFilter === "completed")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("evictions"); setTenantEvictionSubFilter("completed") }) }}
+          >
+            <span className="text-left">Completed Evictions</span>
+            <span className="font-semibold">{completedEvictions}</span>
+          </button>
         </div>
       </div>
 
-      {/* Type (Expanded) */}
+      {/* Type */}
       <div className={`${CARD_BASE} ${tenantTileFilter === "type" ? CARD_ACTIVE : "bg-background"}`}>
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
           <div className="p-1 rounded bg-accent">
             <Layers className="h-4 w-4 text-accent-foreground" />
           </div>
           <span className="text-xs font-medium text-foreground">Type</span>
-          <span className="text-lg font-bold ml-auto">{allTenants.length}</span>
         </div>
         <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          {[
-            { label: "Self Paying", value: "Self Paying" as const, count: selfPayingCount },
-            { label: "Section 8", value: "Section 8" as const, count: section8Count },
-          ].map((item) => (
-            <button
-              key={item.value}
-              type="button"
-              className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${tenantTileFilter === "type" && selectedTenantType === item.value
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "hover:bg-muted/80 text-muted-foreground"
-                }`}
-              onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("type"); setSelectedTenantType(item.value) }) }}
-            >
-              <span>{item.label}</span>
-              <span className="font-semibold">{item.count}</span>
-            </button>
-          ))}
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "type" && selectedTenantType === "all")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("type"); setSelectedTenantType("all") }) }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{allTenants.length}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "type" && selectedTenantType === "Self Paying")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("type"); setSelectedTenantType("Self Paying") }) }}
+          >
+            <span className="text-left">Self Paying</span>
+            <span className="font-semibold">{selfPayingCount}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantTileFilter === "type" && selectedTenantType === "Section 8")}
+            onClick={(e) => { e.stopPropagation(); apply(() => { setTenantTileFilter("type"); setSelectedTenantType("Section 8") }) }}
+          >
+            <span className="text-left">Section 8</span>
+            <span className="font-semibold">{section8Count}</span>
+          </button>
         </div>
       </div>
     </div>

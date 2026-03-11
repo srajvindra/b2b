@@ -503,7 +503,7 @@ export function StagesCategoriesPage({
                                   onClick={() => setAddingStatusToCategoryId(category.id)}
                                 >
                                   <Plus className="h-4 w-4 mr-2" />
-                                  Add Status
+                                  Add Stage
                                 </Button>
                               </div>
                             )}

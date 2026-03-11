@@ -1,17 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Building2, Search } from "lucide-react"
-
-// Property Directory Page Component
+import { useQuickActions } from "@/context/QuickActionsContext"
+import { propertyDirectoryQuickActions } from "@/lib/quickActions"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 
 export default function PropertyDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [visibleCount, setVisibleCount] = useState(10)
+
+  useQuickActions(propertyDirectoryQuickActions, { subtitle: "Property Directory" })
 
   // Mock data for properties related to inactive owners
   const properties = [
@@ -31,6 +35,12 @@ export default function PropertyDirectoryPage() {
     property.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
     property.type.toLowerCase().includes(searchQuery.toLowerCase())
   )
+
+  const visibleProperties = filteredProperties.slice(0, visibleCount)
+
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [searchQuery])
 
   const getPropertyTypeColor = (type: string) => {
     switch (type) {
@@ -89,7 +99,7 @@ export default function PropertyDirectoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProperties.map((property) => (
+              {visibleProperties.map((property) => (
                 <TableRow key={property.id} className="hover:bg-muted/50">
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -142,6 +152,13 @@ export default function PropertyDirectoryPage() {
           )}
         </CardContent>
       </Card>
+
+      <LoadMorePagination
+        total={filteredProperties.length}
+        visibleCount={visibleCount}
+        label="properties"
+        onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, filteredProperties.length))}
+      />
     </div>
   )
 }

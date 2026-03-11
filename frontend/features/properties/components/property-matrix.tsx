@@ -39,6 +39,7 @@ const CATEGORIES: CategoryTile[] = [
     iconColor: "text-blue-600",
     scrollable: true,
     items: [
+      { key: "wo-all", label: "All", value: 48 },
       { key: "wo-unassigned", label: "Unassigned", value: 6, highlight: true },
       { key: "wo-done", label: "Work Done", value: 11 },
       { key: "wo-bill", label: "Ready to Bill", value: 7 },
@@ -54,6 +55,7 @@ const CATEGORIES: CategoryTile[] = [
     iconColor: "text-green-600",
     scrollable: true,
     items: [
+      { key: "occ-all", label: "All", value: 157 },
       { key: "occ-delinquent", label: "Delinquent", value: 8, highlight: true },
       { key: "occ-eviction", label: "Under Eviction", value: 2, highlight: true },
       { key: "occ-moveout", label: "Move-Out", value: 5 },
@@ -69,6 +71,7 @@ const CATEGORIES: CategoryTile[] = [
     iconColor: "text-orange-600",
     scrollable: true,
     items: [
+      { key: "vac-all", label: "All", value: 15 },
       { key: "vac-owner", label: "Make Ready by Owner", value: 3 },
       { key: "vac-hold", label: "On Hold", value: 2 },
       { key: "vac-market", label: "Posted on Market", value: 6 },
@@ -83,6 +86,7 @@ const CATEGORIES: CategoryTile[] = [
     iconBg: "bg-teal-100",
     iconColor: "text-teal-600",
     items: [
+      { key: "col-all", label: "All", value: "94%" },
       { key: "col-pct", label: "Percentage", value: "94%" },
       { key: "col-delinquency", label: "Delinquency Amt", value: "$12,450", highlight: true },
     ],
@@ -96,6 +100,7 @@ const CATEGORIES: CategoryTile[] = [
     iconBg: "bg-purple-100",
     iconColor: "text-purple-600",
     items: [
+      { key: "proc-all", label: "All", value: 15 },
       { key: "proc-open", label: "Open", value: 12 },
       { key: "proc-overdue", label: "Overdue", value: 3, highlight: true },
     ],
@@ -109,6 +114,7 @@ const CATEGORIES: CategoryTile[] = [
     iconBg: "bg-orange-100",
     iconColor: "text-orange-600",
     items: [
+      { key: "task-all", label: "All", value: 37 },
       { key: "task-open", label: "Open", value: 32 },
       { key: "task-overdue", label: "Overdue", value: 5, highlight: true },
     ],

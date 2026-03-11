@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Plus, X, Trash2 } from "lucide-react"
 import { initialCustomFields, availableProcessTypes } from "../data/customField"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 
 export function CustomFieldsPage() {
     const [customFields, setCustomFields] = useState(initialCustomFields)
+    const [visibleCount, setVisibleCount] = useState(10)
 
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
     const [newFieldLabel, setNewFieldLabel] = useState("")
@@ -63,6 +65,12 @@ export function CustomFieldsPage() {
       setNewFieldChoices([""])
       setNewFieldProcessTypes([])
     }
+
+    const visibleFields = customFields.slice(0, visibleCount)
+
+    useEffect(() => {
+      setVisibleCount(10)
+    }, [customFields.length])
   
     return (
       <div className="p-6">
@@ -186,8 +194,8 @@ export function CustomFieldsPage() {
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
-              {customFields.map((field) => (
+          <TableBody>
+              {visibleFields.map((field) => (
                 <TableRow key={field.id} className="hover:bg-muted/20">
                   <TableCell className="font-medium text-foreground">{field.label}</TableCell>
                   <TableCell className="text-muted-foreground">{field.dataType}</TableCell>
@@ -222,6 +230,13 @@ export function CustomFieldsPage() {
             </TableBody>
           </Table>
         </div>
+
+        <LoadMorePagination
+          total={customFields.length}
+          visibleCount={visibleCount}
+          label="fields"
+          onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, customFields.length))}
+        />
       </div>
     )
-  }
+  } 

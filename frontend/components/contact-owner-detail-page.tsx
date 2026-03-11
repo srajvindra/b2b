@@ -3198,13 +3198,13 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
             {/* Details Tab - Owner Configuration Sections */}
             <TabsContent value="details" className="mt-4 space-y-4">
               {/* Reporting Awareness Banner */}
-              <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+              {/* <div className="flex items-center gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <FileBarChart className="h-5 w-5 text-blue-600 flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-medium text-blue-800">All fields are report-ready</p>
                   <p className="text-xs text-blue-600">When generating the Owner Directory report, you can choose which mandatory and optional fields to include.</p>
                 </div>
-              </div>
+              </div> */}
 
               {/* Federal Tax */}
               <CollapsibleSection

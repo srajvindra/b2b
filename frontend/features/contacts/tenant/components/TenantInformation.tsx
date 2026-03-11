@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import {
-  Button } from "@/components/ui/button"
+  Button
+} from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ChevronRight, ChevronDown, HelpCircle, Plus, Download, Pencil, Trash2, Upload, Info } from "lucide-react"
@@ -15,8 +16,8 @@ export interface TenantInformationTabProps {
 }
 
 export function TenantInformationTab({ notes, letters, onNoteClick }: TenantInformationTabProps) {
-  const [screeningExpanded, setScreeningExpanded] = useState(false)
-  const [emergencyContactExpanded, setEmergencyContactExpanded] = useState(false)
+  const [screeningExpanded, setScreeningExpanded] = useState(true)
+  const [emergencyContactExpanded, setEmergencyContactExpanded] = useState(true)
 
   return (
     <div className="space-y-6">

@@ -72,7 +72,7 @@ export default function MessagesPage() {
   const [expandedCommEmails, setExpandedCommEmails] = useState<Set<string>>(new Set())
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null)
   // Conversation filters
-  const [msgTypeFilter, setMsgTypeFilter] = useState<"all" | "email" | "sms">("all")
+  const [msgTypeFilter, setMsgTypeFilter] = useState<"all" | "email" | "sms" | "call">("all")
   const [msgDateRange, setMsgDateRange] = useState<DateRange | undefined>(undefined)
   const [msgDatePopoverOpen, setMsgDatePopoverOpen] = useState(false)
   const [msgSearchQuery, setMsgSearchQuery] = useState("")
@@ -684,7 +684,7 @@ export default function MessagesPage() {
                   <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-lg border border-slate-200 bg-white">
                     {/* Type radio buttons */}
                     <div className="flex items-center gap-1">
-                      {(["all", "email", "sms"] as const).map((t) => (
+                      {(["all", "email", "sms", "call"] as const).map((t) => (
                         <button
                           key={t}
                           type="button"
@@ -695,11 +695,13 @@ export default function MessagesPage() {
                                 ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
                                 : t === "sms"
                                   ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
-                                  : "bg-teal-50 text-teal-700 border border-teal-200"
+                                  : t === "call"
+                                    ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]"
+                                    : "bg-teal-50 text-teal-700 border border-teal-200"
                               : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
                           }`}
                         >
-                          {t === "all" ? "All" : t === "email" ? "Emails" : "SMS"}
+                          {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Call"}
                         </button>
                       ))}
                     </div>
@@ -840,7 +842,7 @@ export default function MessagesPage() {
                     {/* Type / Date / Search Filters */}
                     <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-lg border border-slate-200 bg-white">
                       <div className="flex items-center gap-1">
-                        {(["all", "email", "sms"] as const).map((t) => (
+                        {(["all", "email", "sms", "call"] as const).map((t) => (
                           <button
                             key={t}
                             type="button"
@@ -851,11 +853,13 @@ export default function MessagesPage() {
                                   ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
                                   : t === "sms"
                                     ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
-                                    : "bg-teal-50 text-teal-700 border border-teal-200"
+                                    : t === "call"
+                                      ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]"
+                                      : "bg-teal-50 text-teal-700 border border-teal-200"
                                 : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
                             }`}
                           >
-                            {t === "all" ? "All" : t === "email" ? "Emails" : "SMS"}
+                            {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Call"}
                           </button>
                         ))}
                       </div>

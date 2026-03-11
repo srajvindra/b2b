@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
@@ -11,10 +11,12 @@ import { Plus, Pencil, Trash2, MoreVertical } from "lucide-react"
 import { INITIAL_PROPERTY_TAGS } from "@/features/settings/data/propertyTag"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import type { PropertyTag } from "../types"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 
 export function PropertyTagsPage() {
     const [tags, setTags] = useState<PropertyTag[]>(INITIAL_PROPERTY_TAGS)
     const [searchQuery, setSearchQuery] = useState("")
+    const [visibleCount, setVisibleCount] = useState(10)
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
     const [editingTag, setEditingTag] = useState<PropertyTag | null>(null)
     const [newTag, setNewTag] = useState({ name: "", description: "" })
@@ -25,6 +27,12 @@ export function PropertyTagsPage() {
         tag.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
     })
+
+    const visibleTags = filteredTags.slice(0, visibleCount)
+
+    useEffect(() => {
+      setVisibleCount(10)
+    }, [searchQuery, tags.length])
   
     const handleAddTag = () => {
       if (newTag.name.trim()) {
@@ -137,7 +145,7 @@ export function PropertyTagsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTags.map((tag, index) => (
+                {visibleTags.map((tag, index) => (
                   <TableRow key={tag.id}>
                     <TableCell>
                       <div className="w-7 h-7 rounded-full bg-foreground text-background flex items-center justify-center text-xs font-medium">
@@ -202,6 +210,13 @@ export function PropertyTagsPage() {
             </Table>
           </CardContent>
         </Card>
+
+        <LoadMorePagination
+          total={filteredTags.length}
+          visibleCount={visibleCount}
+          label="tags"
+          onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, filteredTags.length))}
+        />
       </div>
     )
   }

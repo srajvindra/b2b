@@ -1,15 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, X, Trash2, Mail, MessageSquare, Search, Eye, Pencil, AlertTriangle } from "lucide-react"
+import { Plus, X, Trash2, Mail, MessageSquare, Search, Eye, Pencil, AlertTriangle, Send, Code, Bold, Italic, Underline, Strikethrough, AlignLeft, List, ListOrdered, Link, ImageIcon, Smartphone, Video, Printer, Copy } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import type { DateFilterType, EmailTemplate, SmsTemplate, Template } from "../types"
 import { initialEmailTemplates, initialSmsTemplates } from "../data/templateManagement"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 
 interface TemplateManagementPageProps {
     defaultTab?: "email" | "sms"
@@ -27,8 +28,16 @@ export function TemplateManagementPage({ defaultTab = "email", hideTabs = false,
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
     const [templateToDelete, setTemplateToDelete] = useState<string | null>(null)
 
+    const [isCreating, setIsCreating] = useState(false)
+    const [newName, setNewName] = useState("")
+    const [newSubject, setNewSubject] = useState("")
+    const [newContent, setNewContent] = useState("")
+
     const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(initialEmailTemplates)
     const [smsTemplates, setSmsTemplates] = useState<SmsTemplate[]>(initialSmsTemplates)
+
+    const [visibleEmailCount, setVisibleEmailCount] = useState(10)
+    const [visibleSmsCount, setVisibleSmsCount] = useState(10)
   
     // Get unique creators for filter
     const allCreators = [...new Set([...emailTemplates, ...smsTemplates].map((t) => t.createdBy.name))]
@@ -67,6 +76,14 @@ export function TemplateManagementPage({ defaultTab = "email", hideTabs = false,
   
     const filteredEmailTemplates = filterTemplates(emailTemplates)
     const filteredSmsTemplates = filterTemplates(smsTemplates)
+
+    const visibleEmailTemplates = filteredEmailTemplates.slice(0, visibleEmailCount)
+    const visibleSmsTemplates = filteredSmsTemplates.slice(0, visibleSmsCount)
+
+    useEffect(() => {
+      setVisibleEmailCount(10)
+      setVisibleSmsCount(10)
+    }, [searchQuery, creatorFilter, dateFilter])
   
 const handleViewTemplate = (template: Template) => {
       setEditingTemplate(template)
@@ -110,6 +127,32 @@ const handleViewTemplate = (template: Template) => {
       setTemplateToDelete(null)
     }
   
+    const resetCreateForm = () => {
+      setNewName("")
+      setNewSubject("")
+      setNewContent("")
+      setIsCreating(false)
+    }
+
+    const handleCreateTemplate = () => {
+      if (!newName.trim()) return
+      const createdOn = new Date().toISOString().slice(0, 10)
+      if (activeTab === "email") {
+        setEmailTemplates((prev) => [...prev, {
+          id: `e-${Date.now()}`, name: newName, type: "email", subject: newSubject,
+          content: newContent, createdBy: { name: "Nina Patel", role: "Admin" },
+          createdOn, files: 0, sends: 0, opened: 0, clicked: 0,
+        }])
+      } else {
+        setSmsTemplates((prev) => [...prev, {
+          id: `s-${Date.now()}`, name: newName, type: "sms",
+          content: newContent, createdBy: { name: "Nina Patel", role: "Admin" },
+          createdOn, sends: 0,
+        }])
+      }
+      resetCreateForm()
+    }
+
     const formatDate = (dateString: string) => {
       return new Date(dateString).toLocaleDateString("en-US", {
         year: "numeric",
@@ -129,7 +172,7 @@ const handleViewTemplate = (template: Template) => {
                 Create and manage email and SMS templates for your workflows.
               </p>
             </div>
-            <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+            <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => setIsCreating(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Create Template
             </Button>
@@ -244,13 +287,24 @@ const handleViewTemplate = (template: Template) => {
                 <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Created On
                 </th>
+                {activeTab === "email" && (
+                  <>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Files</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sends</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Opened</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clicked</th>
+                  </>
+                )}
+                {activeTab === "sms" && (
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sends</th>
+                )}
                 <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {(activeTab === "email" ? filteredEmailTemplates : filteredSmsTemplates).map((template) => (
+              {(activeTab === "email" ? visibleEmailTemplates : visibleSmsTemplates).map((template) => (
                 <tr key={template.id} className="hover:bg-muted transition-colors">
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
@@ -275,6 +329,32 @@ const handleViewTemplate = (template: Template) => {
                   <td className="px-4 py-4 text-muted-foreground">
                     {formatDate(template.createdOn)}
                   </td>
+                  {activeTab === "email" && template.type === "email" && (
+                    <>
+                      <td className="px-4 py-4 text-center">
+                        <div className="text-sm font-semibold text-foreground">{template.files}</div>
+                        <div className="text-xs text-muted-foreground">files</div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="text-sm font-semibold text-foreground">{template.sends}</div>
+                        <div className="text-xs text-muted-foreground">sends</div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="text-sm font-semibold text-foreground">{template.opened} %</div>
+                        <div className="text-xs text-muted-foreground">opened</div>
+                      </td>
+                      <td className="px-4 py-4 text-center">
+                        <div className="text-sm font-semibold text-foreground">{template.clicked} %</div>
+                        <div className="text-xs text-muted-foreground">clicked</div>
+                      </td>
+                    </>
+                  )}
+                  {activeTab === "sms" && (
+                    <td className="px-4 py-4 text-center">
+                      <div className="text-sm font-semibold text-foreground">{template.sends}</div>
+                      <div className="text-xs text-muted-foreground">sends</div>
+                    </td>
+                  )}
                   <td className="px-4 py-4">
                     <div className="flex items-center justify-end gap-1">
                       <Button
@@ -293,6 +373,15 @@ const handleViewTemplate = (template: Template) => {
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
+                      {activeTab === "email" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-primary hover:text-primary/80"
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -307,7 +396,7 @@ const handleViewTemplate = (template: Template) => {
               ))}
               {(activeTab === "email" ? filteredEmailTemplates : filteredSmsTemplates).length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-12 text-center">
+                  <td colSpan={activeTab === "email" ? 8 : 5} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center gap-2">
                       {activeTab === "email" ? (
                         <Mail className="h-8 w-8 text-muted-foreground/30" />
@@ -323,7 +412,110 @@ const handleViewTemplate = (template: Template) => {
             </tbody>
           </table>
         </div>
+
+        <LoadMorePagination
+          total={activeTab === "email" ? filteredEmailTemplates.length : filteredSmsTemplates.length}
+          visibleCount={activeTab === "email" ? visibleEmailCount : visibleSmsCount}
+          label="templates"
+          onLoadMore={() => {
+            if (activeTab === "email") {
+              setVisibleEmailCount((prev) => Math.min(prev + 10, filteredEmailTemplates.length))
+            } else {
+              setVisibleSmsCount((prev) => Math.min(prev + 10, filteredSmsTemplates.length))
+            }
+          }}
+        />
   
+        {/* Create Template Dialog */}
+        <Dialog open={isCreating} onOpenChange={(open) => { if (!open) resetCreateForm() }}>
+          <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {activeTab === "email" ? (
+                  <Mail className="h-5 w-5 text-chart-1" />
+                ) : (
+                  <MessageSquare className="h-5 w-5 text-chart-2" />
+                )}
+                Create {activeTab === "email" ? "Email" : "SMS"} Template
+              </DialogTitle>
+              <DialogDescription>
+                Fill in the details for your new {activeTab === "email" ? "email" : "SMS"} template.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground/80">Template Name</Label>
+                <Input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Enter template name..."
+                />
+              </div>
+              {activeTab === "email" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground/80">Subject Line</Label>
+                  <Input
+                    value={newSubject}
+                    onChange={(e) => setNewSubject(e.target.value)}
+                    placeholder="Enter subject..."
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-foreground/80">
+                  {activeTab === "email" ? "Content" : "Message Content"}
+                </Label>
+                <div className="border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent overflow-hidden">
+                  <textarea
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    className="w-full min-h-[200px] p-3 text-sm resize-none focus:outline-none border-none"
+                    placeholder={activeTab === "email" ? "Write your email content..." : "Write your SMS content..."}
+                  />
+                  <div className="flex items-center gap-1 px-3 py-2 border-t border-border bg-muted/30">
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Code className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Bold className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Italic className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Underline className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Strikethrough className="h-4 w-4" /></button>
+                    <div className="w-px h-5 bg-border mx-1" />
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><AlignLeft className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><List className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><ListOrdered className="h-4 w-4" /></button>
+                    <div className="w-px h-5 bg-border mx-1" />
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Link className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><ImageIcon className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Smartphone className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Video className="h-4 w-4" /></button>
+                    <div className="w-px h-5 bg-border mx-1" />
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Printer className="h-4 w-4" /></button>
+                    <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Copy className="h-4 w-4" /></button>
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <p className="text-xs text-muted-foreground">
+                    Use {"{{variable}}"} syntax for dynamic content.
+                  </p>
+                  {activeTab === "sms" && (
+                    <p className="text-xs text-muted-foreground">{newContent.length}/160 characters</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={resetCreateForm} className="bg-transparent">
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateTemplate}
+                className="bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                Create Template
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* View/Edit Template Dialog */}
         <Dialog open={!!editingTemplate} onOpenChange={() => setEditingTemplate(null)}>
           <DialogContent className="sm:max-w-2xl">
@@ -371,16 +563,39 @@ const handleViewTemplate = (template: Template) => {
   
                 <div className="space-y-2">
                   <Label className="text-sm font-medium text-foreground/80">Content</Label>
-                  <textarea
-                    value={editingTemplate.content}
-                    onChange={(e) =>
-                      setEditingTemplate({ ...editingTemplate, content: e.target.value })
-                    }
-                    disabled={isViewMode}
-                    className={`w-full min-h-[200px] p-3 border border-border rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
-                      isViewMode ? "bg-muted" : ""
-                    }`}
-                  />
+                  <div className={`border border-border rounded-lg focus-within:ring-2 focus-within:ring-primary focus-within:border-transparent overflow-hidden ${isViewMode ? "bg-muted" : ""}`}>
+                    <textarea
+                      value={editingTemplate.content}
+                      onChange={(e) =>
+                        setEditingTemplate({ ...editingTemplate, content: e.target.value })
+                      }
+                      disabled={isViewMode}
+                      className={`w-full min-h-[200px] p-3 text-sm resize-none focus:outline-none border-none ${
+                        isViewMode ? "bg-muted" : ""
+                      }`}
+                    />
+                    {!isViewMode && (
+                      <div className="flex items-center gap-1 px-3 py-2 border-t border-border bg-muted/30">
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Code className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Bold className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Italic className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Underline className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Strikethrough className="h-4 w-4" /></button>
+                        <div className="w-px h-5 bg-border mx-1" />
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><AlignLeft className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><List className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><ListOrdered className="h-4 w-4" /></button>
+                        <div className="w-px h-5 bg-border mx-1" />
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Link className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><ImageIcon className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Smartphone className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Video className="h-4 w-4" /></button>
+                        <div className="w-px h-5 bg-border mx-1" />
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Printer className="h-4 w-4" /></button>
+                        <button type="button" className="p-1.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"><Copy className="h-4 w-4" /></button>
+                      </div>
+                    )}
+                  </div>
                   {!isViewMode && (
                     <p className="text-xs text-muted-foreground">
                       Use {"{{variable}}"} syntax for dynamic content. E.g., {"{{name}}"}, {"{{date}}"}, {"{{time}}"}

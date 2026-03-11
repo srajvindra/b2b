@@ -215,7 +215,7 @@ export function GeneralSettingsTab() {
     }
 
     return (
-        <div className="max-w-4xl space-y-8">
+        <div className="max-w-full space-y-8">
             {/* General Settings Card */}
             <div className="bg-card border border-border rounded-lg">
                 <div className="px-6 py-4 border-b border-border">
@@ -419,14 +419,14 @@ export function GeneralSettingsTab() {
                             Set a default start date that will be applied to every new process you create.
                         </p>
                     </div>
-                    <Button
+                    {/* <Button
                         variant="ghost"
                         size="sm"
                         className="text-muted-foreground hover:text-destructive"
                         onClick={() => setShowStartDate(false)}
                     >
                         <X className="h-4 w-4" />
-                    </Button>
+                    </Button> */}
                 </div>
 
                 <div className="px-6 py-4">
@@ -481,8 +481,17 @@ export function GeneralSettingsTab() {
                             </Select>
                         </div>
                     </div>
+                    
                 </div>
             </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setShowStartDate(false)} className="bg-transparent">
+                    Cancel
+                </Button>
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                    Save
+                </Button>
+            </DialogFooter>
 
 
             {/* ─── Edit Name Dialog ─── */}
@@ -536,7 +545,7 @@ export function GeneralSettingsTab() {
                         </div>
 
                         {/* Info card */}
-                        <div className="border border-border rounded-lg p-4 text-center space-y-2">
+                        {/* <div className="border border-border rounded-lg p-4 text-center space-y-2">
                             <div className="flex justify-center">
                                 <Trophy className="h-10 w-10 text-warning" />
                             </div>
@@ -551,7 +560,7 @@ export function GeneralSettingsTab() {
                                 <p className="text-xs text-muted-foreground mt-1">0% complete</p>
                             </div>
                             <a href="#" className="text-xs text-blue-600 underline">Learn more</a>
-                        </div>
+                        </div> */}
                     </div>
 
                     <DialogFooter>

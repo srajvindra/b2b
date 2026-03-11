@@ -18,7 +18,18 @@ export function OwnerPropertyTab({
   getPropertyStatusBadge,
   onNavigateToProperty,
 }: OwnerPropertyTabProps) {
-  const [expandedEntities, setExpandedEntities] = useState<Set<string>>(new Set())
+  const [expandedEntities, setExpandedEntities] = useState<Set<string>>(() => {
+    const ids = new Set<string>()
+    for (const prop of properties) {
+      const oType = prop.ownershipType || "Personal"
+      if (oType === "Personal" || !prop.ownershipEntity) {
+        ids.add(`personal-${prop.id}`)
+      } else {
+        ids.add(prop.ownershipEntity)
+      }
+    }
+    return ids
+  })
   const [expandedOwnershipTypes, setExpandedOwnershipTypes] = useState<Set<string>>(new Set())
 
   const toggleEntity = (entityId: string) => {

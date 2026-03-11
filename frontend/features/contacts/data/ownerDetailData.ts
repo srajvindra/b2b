@@ -466,6 +466,18 @@ export const getTasks = (): OwnerTask[] => [
     isOverdue: true,
   },
   {
+    id: "task112",
+    title: "Follow up with tenant - Unit 204 lease renewal",
+    processName: "Lease Renewal Process",
+    relatedEntityType: "Tenant",
+    relatedEntityName: "John Smith",
+    assignee: "Nina Patel",
+    status: "Pending",
+    priority: "High",
+    dueDate: "2025-12-20",
+    isOverdue: true,
+  },
+  {
     id: "task2",
     title: "Finish Move-out tenant in Appfolio and update property",
     processName: "Move Out for 123 Oak Street",

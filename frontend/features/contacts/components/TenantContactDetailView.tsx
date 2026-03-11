@@ -855,33 +855,6 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
         {/* Header Card - Tenant Information */}
         <Card>
           <CardContent className="p-4">
-            {/* Stage Color Bar */}
-            <div className="flex items-center gap-1 mb-4">
-              {[
-                { id: "move-in", label: "Move-in", color: "bg-orange-300" },
-                { id: "current", label: "Current", color: "bg-amber-500" },
-                { id: "delinquent", label: "Delinquent", color: "bg-lime-600" },
-                { id: "eviction", label: "Eviction", color: "bg-green-500" },
-                { id: "move-out", label: "Move-out", color: "bg-emerald-400" },
-                { id: "past-tenant", label: "Past Tenant", color: "bg-rose-300" },
-              ].map((stage) => (
-                null
-              ))}
-              <Select value={tenantStage} onValueChange={setTenantStage}>
-                <SelectTrigger className="h-8 w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="move-in">Move-in</SelectItem>
-                  <SelectItem value="current">Current</SelectItem>
-                  <SelectItem value="delinquent">Delinquent</SelectItem>
-                  <SelectItem value="eviction">Eviction</SelectItem>
-                  <SelectItem value="move-out">Move-out</SelectItem>
-                  <SelectItem value="past-tenant">Past Tenant</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center text-lg font-medium text-slate-700">
@@ -928,6 +901,32 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               </div>
               {/* Assigned Team Button */}
               <div className="flex items-center gap-3">
+
+                {/* Stage Color Bar */}
+                {[
+                  { id: "move-in", label: "Move-in", color: "bg-orange-300" },
+                  { id: "current", label: "Current", color: "bg-amber-500" },
+                  { id: "delinquent", label: "Delinquent", color: "bg-lime-600" },
+                  { id: "eviction", label: "Eviction", color: "bg-green-500" },
+                  { id: "move-out", label: "Move-out", color: "bg-emerald-400" },
+                  { id: "past-tenant", label: "Past Tenant", color: "bg-rose-300" },
+                ].map((stage) => (
+                  null
+                ))}
+                <Select value={tenantStage} onValueChange={setTenantStage}>
+                  <SelectTrigger className="h-8 w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="move-in">Move-in</SelectItem>
+                    <SelectItem value="current">Current</SelectItem>
+                    <SelectItem value="delinquent">Delinquent</SelectItem>
+                    <SelectItem value="eviction">Eviction</SelectItem>
+                    <SelectItem value="move-out">Move-out</SelectItem>
+                    <SelectItem value="past-tenant">Past Tenant</SelectItem>
+                  </SelectContent>
+                </Select>
+
                 <Button
                   variant="outline"
                   onClick={() => setShowTeamModal(true)}
@@ -1142,8 +1141,8 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`flex-1 px-3 py-2.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${activeTab === tab.id
-                  ? "border border-success text-foreground bg-background"
-                  : "border border-transparent text-muted-foreground hover:text-foreground"
+                ? "border border-success text-foreground bg-background"
+                : "border border-transparent text-muted-foreground hover:text-foreground"
                 }`}
             >
               {tab.label}
@@ -1227,10 +1226,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                               <Badge
                                 variant="outline"
                                 className={`text-xs ${task.priority === "High"
-                                    ? "bg-red-50 text-red-700 border-red-200"
-                                    : task.priority === "Medium"
-                                      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                      : "bg-gray-50 text-gray-600 border-gray-200"
+                                  ? "bg-red-50 text-red-700 border-red-200"
+                                  : task.priority === "Medium"
+                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                    : "bg-gray-50 text-gray-600 border-gray-200"
                                   }`}
                               >
                                 {task.priority}
@@ -1240,12 +1239,12 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                               <Badge
                                 variant="outline"
                                 className={`text-xs ${task.status === "In Progress"
-                                    ? "bg-teal-50 text-teal-700 border-teal-200"
-                                    : task.status === "Pending"
-                                      ? "bg-teal-50 text-teal-600 border-teal-200"
-                                      : task.status === "Skipped"
-                                        ? "bg-gray-100 text-gray-600 border-gray-300"
-                                        : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  ? "bg-teal-50 text-teal-700 border-teal-200"
+                                  : task.status === "Pending"
+                                    ? "bg-teal-50 text-teal-600 border-teal-200"
+                                    : task.status === "Skipped"
+                                      ? "bg-gray-100 text-gray-600 border-gray-300"
+                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
                                   }`}
                               >
                                 {task.status}

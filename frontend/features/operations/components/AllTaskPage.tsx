@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -69,10 +69,24 @@ const getPriorityBadgeStyle = (priority: OwnerTask["priority"]) => {
 export function AllTaskPage() {
   const [tasks, setTasks] = useState<OwnerTask[]>(getTasks())
   const [searchQuery, setSearchQuery] = useState("")
+  const [visibleCount, setVisibleCount] = useState(10)
+
+  // Column filter state
+  const [entityFilterOpen, setEntityFilterOpen] = useState(false)
+  const [dueDateFilterOpen, setDueDateFilterOpen] = useState(false)
+  const [priorityFilterOpen, setPriorityFilterOpen] = useState(false)
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false)
+  const [assigneeFilterOpen, setAssigneeFilterOpen] = useState(false)
+
   const [selectedEntities, setSelectedEntities] = useState<EntityType[]>([])
-  const [selectedStaff, setSelectedStaff] = useState<string[]>([])
-  const [entityPopoverOpen, setEntityPopoverOpen] = useState(false)
-  const [staffPopoverOpen, setStaffPopoverOpen] = useState(false)
+  const [selectedPriorities, setSelectedPriorities] = useState<OwnerTask["priority"][]>([])
+  const [selectedStatuses, setSelectedStatuses] = useState<OwnerTask["status"][]>([])
+  const [selectedAssignees, setSelectedAssignees] = useState<string[]>([])
+
+  const [entityFilterSearch, setEntityFilterSearch] = useState("")
+  const [assigneeFilterSearch, setAssigneeFilterSearch] = useState("")
+  const [dueDateFrom, setDueDateFrom] = useState("")
+  const [dueDateTo, setDueDateTo] = useState("")
 
   const [viewTaskModalOpen, setViewTaskModalOpen] = useState(false)
   const [editTaskModalOpen, setEditTaskModalOpen] = useState(false)
@@ -94,10 +108,50 @@ export function AllTaskPage() {
     )
   }
 
-  const toggleStaff = (staff: string) => {
-    setSelectedStaff((prev) =>
-      prev.includes(staff) ? prev.filter((s) => s !== staff) : [...prev, staff],
+  const togglePriority = (priority: OwnerTask["priority"]) => {
+    setSelectedPriorities((prev) =>
+      prev.includes(priority) ? prev.filter((p) => p !== priority) : [...prev, priority],
     )
+  }
+
+  const toggleStatus = (status: OwnerTask["status"]) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status) ? prev.filter((s) => s !== status) : [...prev, status],
+    )
+  }
+
+  const toggleAssignee = (assignee: string) => {
+    setSelectedAssignees((prev) =>
+      prev.includes(assignee) ? prev.filter((a) => a !== assignee) : [...prev, assignee],
+    )
+  }
+
+  const clearEntityFilter = () => {
+    setSelectedEntities([])
+    setEntityFilterSearch("")
+  }
+
+  const clearDueDateFilter = () => {
+    setDueDateFrom("")
+    setDueDateTo("")
+  }
+
+  const clearPriorityFilter = () => {
+    setSelectedPriorities([])
+  }
+
+  const clearStatusFilter = () => {
+    setSelectedStatuses([])
+  }
+
+  const clearAssigneeFilter = () => {
+    setSelectedAssignees([])
+    setAssigneeFilterSearch("")
+  }
+
+  const parseDueDate = (value: string) => {
+    const d = new Date(value)
+    return Number.isNaN(d.getTime()) ? null : d
   }
 
   const filteredTasks = useMemo(() => {
@@ -112,23 +166,62 @@ export function AllTaskPage() {
         if (!matchesSearch) return false
       }
 
-      if (selectedEntities.length > 0 && task.relatedEntityType) {
-        if (!selectedEntities.includes(task.relatedEntityType as EntityType)) return false
+      if (selectedEntities.length > 0) {
+        if (!task.relatedEntityType || !selectedEntities.includes(task.relatedEntityType as EntityType)) {
+          return false
+        }
       }
 
-      if (selectedStaff.length > 0) {
-        if (!selectedStaff.includes(task.assignee)) return false
+      if (selectedPriorities.length > 0 && !selectedPriorities.includes(task.priority)) {
+        return false
+      }
+
+      if (selectedStatuses.length > 0 && !selectedStatuses.includes(task.status)) {
+        return false
+      }
+
+      if (selectedAssignees.length > 0 && !selectedAssignees.includes(task.assignee)) {
+        return false
+      }
+
+      if (dueDateFrom || dueDateTo) {
+        const taskDate = parseDueDate(task.dueDate)
+        if (!taskDate) return false
+
+        if (dueDateFrom) {
+          const from = parseDueDate(dueDateFrom)
+          if (from && taskDate < from) return false
+        }
+
+        if (dueDateTo) {
+          const to = parseDueDate(dueDateTo)
+          if (to && taskDate > to) return false
+        }
       }
 
       return true
     })
-  }, [tasks, searchQuery, selectedEntities, selectedStaff])
+  }, [tasks, searchQuery, selectedEntities, selectedPriorities, selectedStatuses, selectedAssignees, dueDateFrom, dueDateTo])
 
-  const hasActiveFilters = selectedEntities.length > 0 || selectedStaff.length > 0
+  const hasActiveFilters =
+    selectedEntities.length > 0 ||
+    selectedPriorities.length > 0 ||
+    selectedStatuses.length > 0 ||
+    selectedAssignees.length > 0 ||
+    !!dueDateFrom ||
+    !!dueDateTo
+
+  // Reset visible rows when filters or search change
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [searchQuery, selectedEntities, selectedPriorities, selectedStatuses, selectedAssignees, dueDateFrom, dueDateTo])
 
   const clearFilters = () => {
-    setSelectedEntities([])
-    setSelectedStaff([])
+    clearEntityFilter()
+    clearDueDateFilter()
+    clearPriorityFilter()
+    clearStatusFilter()
+    clearAssigneeFilter()
     setSearchQuery("")
   }
 
@@ -189,7 +282,7 @@ export function AllTaskPage() {
             </Button> */}
           </div>
 
-          {/* Search & Filters */}
+          {/* Search */}
           <div className="flex items-center gap-2 mb-4">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -200,92 +293,13 @@ export function AllTaskPage() {
                 className="pl-9 h-9"
               />
             </div>
-
-            {/* Staff Filter */}
-            <Popover open={staffPopoverOpen} onOpenChange={setStaffPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={`h-9 gap-1.5 ${selectedStaff.length > 0 ? "border-teal-500 text-teal-700 bg-teal-50" : ""}`}>
-                  <Filter className="h-3.5 w-3.5" />
-                  Staff
-                  {selectedStaff.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                      {selectedStaff.length}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="start">
-                <div className="space-y-1">
-                  {ALL_STAFF.map((staff) => (
-                    <label key={staff} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
-                      <Checkbox
-                        checked={selectedStaff.includes(staff)}
-                        onCheckedChange={() => toggleStaff(staff)}
-                      />
-                      {staff}
-                    </label>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            {/* Entity Filter */}
-            <Popover open={entityPopoverOpen} onOpenChange={setEntityPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className={`h-9 gap-1.5 ${selectedEntities.length > 0 ? "border-teal-500 text-teal-700 bg-teal-50" : ""}`}>
-                  <Filter className="h-3.5 w-3.5" />
-                  Entities
-                  {selectedEntities.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                      {selectedEntities.length}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-56 p-2" align="start">
-                <div className="space-y-1">
-                  {ENTITY_OPTIONS.map((entity) => (
-                    <label key={entity} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-sm">
-                      <Checkbox
-                        checked={selectedEntities.includes(entity)}
-                        onCheckedChange={() => toggleEntity(entity)}
-                      />
-                      {entity}
-                    </label>
-                  ))}
-                </div>
-              </PopoverContent>
-            </Popover>
-
             {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground gap-1" onClick={clearFilters}>
+              <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground gap-1 ml-auto" onClick={clearFilters}>
                 <X className="h-3.5 w-3.5" />
-                Clear
+                Clear all filters
               </Button>
             )}
           </div>
-
-          {/* Active filter badges */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {selectedStaff.map((staff) => (
-                <Badge key={staff} variant="secondary" className="text-xs gap-1 bg-teal-50 text-teal-700 border border-teal-200">
-                  {staff}
-                  <button onClick={() => toggleStaff(staff)} className="hover:text-teal-900">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-              {selectedEntities.map((entity) => (
-                <Badge key={entity} variant="secondary" className="text-xs gap-1 bg-blue-50 text-blue-700 border border-blue-200">
-                  {entity}
-                  <button onClick={() => toggleEntity(entity)} className="hover:text-blue-900">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
 
           {/* Tasks Table */}
           <div className="border rounded-lg overflow-hidden">
@@ -293,17 +307,295 @@ export function AllTaskPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b sticky top-0 z-10">
                   <tr>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Related Entity</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Due Date</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Priority</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Assigned To</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <div className="p-3">Task</div>
+                    </th>
+                    {/* Related Entity column filter */}
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <Popover open={entityFilterOpen} onOpenChange={setEntityFilterOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                            <span>Related Entity</span>
+                            <Filter className={`h-3 w-3 ${selectedEntities.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                            {selectedEntities.length > 0 && (
+                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                {selectedEntities.length}
+                              </span>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-60 p-2" align="start">
+                          <div className="mb-2">
+                            <Input
+                              placeholder="Search entity types..."
+                              value={entityFilterSearch}
+                              onChange={(e) => setEntityFilterSearch(e.target.value)}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="max-h-48 overflow-y-auto space-y-1">
+                            {ENTITY_OPTIONS.filter((entity) =>
+                              entity.toLowerCase().includes(entityFilterSearch.toLowerCase()),
+                            ).map((entity) => (
+                              <label
+                                key={entity}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                              >
+                                <Checkbox
+                                  checked={selectedEntities.includes(entity)}
+                                  onCheckedChange={() => toggleEntity(entity)}
+                                />
+                                {entity}
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={clearEntityFilter}
+                              disabled={selectedEntities.length === 0 && !entityFilterSearch}
+                            >
+                              Clear
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setEntityFilterOpen(false)}
+                            >
+                              Close
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </th>
+                    {/* Due Date column filter */}
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <Popover open={dueDateFilterOpen} onOpenChange={setDueDateFilterOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                            <span>Due Date</span>
+                            <Filter className={`h-3 w-3 ${(dueDateFrom || dueDateTo) ? "text-teal-600" : "text-slate-400"}`} />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3" align="start">
+                          <div className="space-y-2">
+                            <div className="text-xs font-medium text-muted-foreground">Date range</div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <Label className="text-[10px] text-muted-foreground">From</Label>
+                                <Input
+                                  type="date"
+                                  value={dueDateFrom}
+                                  onChange={(e) => setDueDateFrom(e.target.value)}
+                                  className="h-8 text-xs mt-0.5"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[10px] text-muted-foreground">To</Label>
+                                <Input
+                                  type="date"
+                                  value={dueDateTo}
+                                  onChange={(e) => setDueDateTo(e.target.value)}
+                                  className="h-8 text-xs mt-0.5"
+                                />
+                              </div>
+                            </div>
+                            <div className="flex items-center justify-between pt-2 border-t">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs px-2"
+                                onClick={clearDueDateFilter}
+                                disabled={!dueDateFrom && !dueDateTo}
+                              >
+                                Clear
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs px-2"
+                                onClick={() => setDueDateFilterOpen(false)}
+                              >
+                                Close
+                              </Button>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </th>
+                    {/* Priority column filter */}
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <Popover open={priorityFilterOpen} onOpenChange={setPriorityFilterOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                            <span>Priority</span>
+                            <Filter className={`h-3 w-3 ${selectedPriorities.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                            {selectedPriorities.length > 0 && (
+                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                {selectedPriorities.length}
+                              </span>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-52 p-2" align="start">
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {(["High", "Medium", "Low"] as OwnerTask["priority"][]).map((priority) => (
+                              <label
+                                key={priority}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                              >
+                                <Checkbox
+                                  checked={selectedPriorities.includes(priority)}
+                                  onCheckedChange={() => togglePriority(priority)}
+                                />
+                                {priority}
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={clearPriorityFilter}
+                              disabled={selectedPriorities.length === 0}
+                            >
+                              Clear
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setPriorityFilterOpen(false)}
+                            >
+                              Close
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </th>
+                    {/* Status column filter */}
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                            <span>Status</span>
+                            <Filter className={`h-3 w-3 ${selectedStatuses.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                            {selectedStatuses.length > 0 && (
+                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                {selectedStatuses.length}
+                              </span>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="start">
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {(["Pending", "In Progress", "Completed", "Skipped"] as OwnerTask["status"][]).map((status) => (
+                              <label
+                                key={status}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                              >
+                                <Checkbox
+                                  checked={selectedStatuses.includes(status)}
+                                  onCheckedChange={() => toggleStatus(status)}
+                                />
+                                {status}
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={clearStatusFilter}
+                              disabled={selectedStatuses.length === 0}
+                            >
+                              Clear
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setStatusFilterOpen(false)}
+                            >
+                              Close
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </th>
+                    {/* Assigned To column filter */}
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <Popover open={assigneeFilterOpen} onOpenChange={setAssigneeFilterOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                            <span>Assigned To</span>
+                            <Filter className={`h-3 w-3 ${selectedAssignees.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                            {selectedAssignees.length > 0 && (
+                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                {selectedAssignees.length}
+                              </span>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-60 p-2" align="start">
+                          <div className="mb-2">
+                            <Input
+                              placeholder="Search staff..."
+                              value={assigneeFilterSearch}
+                              onChange={(e) => setAssigneeFilterSearch(e.target.value)}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="max-h-48 overflow-y-auto space-y-1">
+                            {Array.from(new Set(tasks.map((t) => t.assignee)))
+                              .filter((name) =>
+                                name.toLowerCase().includes(assigneeFilterSearch.toLowerCase()),
+                              )
+                              .map((name) => (
+                                <label
+                                  key={name}
+                                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                >
+                                  <Checkbox
+                                    checked={selectedAssignees.includes(name)}
+                                    onCheckedChange={() => toggleAssignee(name)}
+                                  />
+                                  {name}
+                                </label>
+                              ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={clearAssigneeFilter}
+                              disabled={selectedAssignees.length === 0 && !assigneeFilterSearch}
+                            >
+                              Clear
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setAssigneeFilterOpen(false)}
+                            >
+                              Close
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </th>
                     <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredTasks.map((task) => (
+                  {filteredTasks.slice(0, visibleCount).map((task) => (
                     <tr key={task.id} className="hover:bg-gray-50">
                       <td className="p-3">
                         <div className="flex flex-col gap-1">
@@ -371,6 +663,25 @@ export function AllTaskPage() {
               </table>
             </div>
           </div>
+
+          {/* Load more pagination */}
+          {filteredTasks.length > 0 && (
+            <div className="flex flex-col items-center mt-3 gap-1">
+              <span className="text-xs text-muted-foreground">
+                Showing {Math.min(visibleCount, filteredTasks.length)} of {filteredTasks.length} tasks
+              </span>
+              {filteredTasks.length > visibleCount && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setVisibleCount((prev) => Math.min(prev + 10, filteredTasks.length))}
+                >
+                  View More
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

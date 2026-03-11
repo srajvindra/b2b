@@ -12,6 +12,10 @@ export interface EmailTemplate {
   content: string
   createdBy: TemplateCreatedBy
   createdOn: string
+  files: number
+  sends: number
+  opened: number
+  clicked: number
 }
 
 export interface SmsTemplate {
@@ -21,6 +25,7 @@ export interface SmsTemplate {
   content: string
   createdBy: TemplateCreatedBy
   createdOn: string
+  sends: number
 }
 
 export type Template = EmailTemplate | SmsTemplate

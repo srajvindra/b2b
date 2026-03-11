@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, ChevronDown, ChevronUp, Bell, Settings, X, AlertTriangle, CheckCircle, Filter, Download, Calendar, Search, Eye } from "lucide-react"
+import { Plus, ChevronDown, ChevronUp, Bell, Settings, X, AlertTriangle, CheckCircle, Filter, Download, Calendar, Search } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -180,16 +180,29 @@ export function ProcessesDashboardView({
     [],
   )
 
+  const [processFilterSearch, setProcessFilterSearch] = useState("")
+
   const activeProcessTypeFilters = activeFilters
     .map((f, index) => ({ ...f, index }))
     .filter((f) => f.type === "processType")
+
+  const selectedProcessNames = activeProcessTypeFilters.map((f) => f.value)
+  const isAllSelected = activeProcessTypeFilters.length === 0
 
   const clearProcessTypeFilters = () => {
     const indices = activeProcessTypeFilters.map((f) => f.index).sort((a, b) => b - a)
     for (const idx of indices) onRemoveFilter(idx)
   }
 
+  const selectAll = () => {
+    clearProcessTypeFilters()
+  }
+
   const toggleProcessTypeFilter = (processTypeName: string) => {
+    if (isAllSelected) {
+      onQuickAddFilter({ type: "processType", value: processTypeName, label: processTypeName })
+      return
+    }
     const idx = activeFilters.findIndex((f) => f.type === "processType" && f.value === processTypeName)
     if (idx >= 0) {
       onRemoveFilter(idx)
@@ -197,6 +210,10 @@ export function ProcessesDashboardView({
     }
     onQuickAddFilter({ type: "processType", value: processTypeName, label: processTypeName })
   }
+
+  const filteredProcessTypes = processFilterSearch.trim()
+    ? availableProcessTypes.filter((p) => p.toLowerCase().includes(processFilterSearch.toLowerCase()))
+    : availableProcessTypes
 
   const handleExportCsv = () => {
     const headers = ["Name", "Property", "On Track", "Stage", "Assignee", "Due", "Created", "Status"]
@@ -237,19 +254,80 @@ export function ProcessesDashboardView({
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-gray-900">All Processes</h1>
-            <DropdownMenu>
+            <h1 className="text-xl font-semibold text-gray-900">Processes</h1>
+            <DropdownMenu onOpenChange={(open) => { if (!open) setProcessFilterSearch("") }}>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                  <Filter className="h-4 w-4" />
-                  Filter Processes
-                </Button>
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1.5 min-w-[220px] max-w-[420px] rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm shadow-sm hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <div className="flex flex-1 items-center gap-1.5 flex-wrap overflow-hidden">
+                    {isAllSelected ? (
+                      <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs font-medium">
+                        All Processes
+                      </span>
+                    ) : (
+                      <>
+                        {activeProcessTypeFilters.slice(0, 2).map((f) => (
+                          <span key={f.value} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs font-medium">
+                            {f.value}
+                            <span
+                              role="button"
+                              className="ml-0.5 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); onRemoveFilter(f.index) }}
+                            >
+                              <X className="h-3 w-3" />
+                            </span>
+                          </span>
+                        ))}
+                        {activeProcessTypeFilters.length > 2 && (
+                          <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium">
+                            +{activeProcessTypeFilters.length - 2} more
+                          </span>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-auto">
+                    {!isAllSelected && (
+                      <span
+                        role="button"
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={(e) => { e.stopPropagation(); selectAll() }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </span>
+                    )}
+                    <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
+                  </div>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-72">
-                <div className="px-3 py-2 text-xs font-medium text-muted-foreground">Processes</div>
-
-                {availableProcessTypes.map((p) => {
-                  const checked = activeFilters.some((f) => f.type === "processType" && f.value === p)
+                <div className="px-3 py-2 border-b">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <input
+                      value={processFilterSearch}
+                      onChange={(e) => setProcessFilterSearch(e.target.value)}
+                      placeholder="Search processes..."
+                      className="w-full text-sm outline-none bg-transparent placeholder:text-muted-foreground"
+                    />
+                  </div>
+                </div>
+                {!processFilterSearch.trim() && (
+                  <DropdownMenuItem
+                    className="flex items-center gap-2"
+                    onSelect={(e) => {
+                      e.preventDefault()
+                      selectAll()
+                    }}
+                  >
+                    <Checkbox checked={isAllSelected} onCheckedChange={() => selectAll()} className="data-[state=checked]:!bg-transparent data-[state=checked]:!border-blue-600 data-[state=checked]:!text-blue-600" />
+                    <span className="text-sm font-medium">All Processes</span>
+                  </DropdownMenuItem>
+                )}
+                {filteredProcessTypes.map((p) => {
+                  const checked = !isAllSelected && selectedProcessNames.includes(p)
                   return (
                     <DropdownMenuItem
                       key={p}
@@ -259,55 +337,16 @@ export function ProcessesDashboardView({
                         toggleProcessTypeFilter(p)
                       }}
                     >
-                      <Checkbox checked={checked} onCheckedChange={() => toggleProcessTypeFilter(p)} />
+                      <Checkbox checked={checked} onCheckedChange={() => toggleProcessTypeFilter(p)} className="data-[state=checked]:!bg-transparent data-[state=checked]:!border-blue-600 data-[state=checked]:!text-blue-600" />
                       <span className="text-sm">{p}</span>
                     </DropdownMenuItem>
                   )
                 })}
+                {filteredProcessTypes.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">No processes found</div>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
-            {activeProcessTypeFilters.length > 0 && (
-              <div className="flex items-center gap-2 max-w-[520px]">
-                {/* Show first selected chip + compact “+N” summary to avoid huge header */}
-                {(() => {
-                  const first = activeProcessTypeFilters[0]
-                  const extraCount = activeProcessTypeFilters.length - 1
-                  return (
-                    <>
-                      <div
-                        key={`${first.type}-${first.value}`}
-                        className="inline-flex items-center gap-1.5 px-2 py-1 bg-orange-50 border border-orange-200 rounded-full max-w-[340px]"
-                        title={first.label}
-                      >
-                        <span className="text-xs text-orange-700 font-medium truncate">{first.label}</span>
-                        <button
-                          type="button"
-                          className="text-orange-400 hover:text-orange-600 shrink-0"
-                          onClick={() => onRemoveFilter(first.index)}
-                          aria-label={`Remove ${first.label}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                      {extraCount > 0 && (
-                        <>
-                          <div className="text-xs text-muted-foreground px-2 py-1 border border-gray-200 rounded-full bg-white">
-                            +{extraCount} more
-                          </div>
-                          <button
-                            type="button"
-                            className="text-xs text-gray-500 hover:text-gray-700 underline underline-offset-2"
-                            onClick={clearProcessTypeFilters}
-                          >
-                            Clear All
-                          </button>
-                        </>
-                      )}
-                    </>
-                  )
-                })()}
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -331,10 +370,11 @@ export function ProcessesDashboardView({
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <Bell className="h-4 w-4" />
             </Button>
-            {/* <Button className="bg-gray-800 hover:bg-gray-900 text-white gap-2" onClick={() => router.push("/operations/processes-workflow")}>
-              <Settings className="h-4 w-4" />
-              Workflow Settings
-            </Button> */}
+            { selectedProcessNames.length === 1 && <Button className="bg-gray-800 hover:bg-gray-900 text-white gap-2" onClick={() => router.push(`/operations/processes/${selectedProcessNames[0]}?name=${encodeURIComponent(selectedProcessNames[0])}`)}>
+                <Settings className="h-4 w-4" />
+              </Button>
+            }
+            
           </div>
         </div>
       </div>
@@ -379,46 +419,6 @@ export function ProcessesDashboardView({
         </div>
       </div>
 
-      {/* Filter Pills */}
-      <div className="px-6 py-3 border-b border-gray-200 flex items-center gap-3">
-        {activeFilters
-          .map((filter, index) => ({ filter, index }))
-          .filter(({ filter }) => filter.type !== "processType")
-          .map(({ filter, index }) => (
-            <div
-              key={index}
-              className="flex items-center gap-2 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-full"
-            >
-              <span className="text-sm text-gray-700">{FILTER_TYPE_LABELS[filter.type]}:</span>
-              <span className="text-sm text-orange-600 font-medium">{filter.label}</span>
-              <button
-                type="button"
-                className="text-orange-400 hover:text-orange-600"
-                onClick={() => onRemoveFilter(index)}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1 bg-transparent"
-          onClick={() => setShowAddFilterModal(true)}
-        >
-          <Filter className="h-3 w-3" />
-          Add Filter
-        </Button>
-        {activeFilters.some((f) => f.type !== "processType") && (
-          <button
-            type="button"
-            className="text-sm text-gray-500 hover:text-gray-700"
-            onClick={onClearBottomFilters}
-          >
-            Clear All
-          </button>
-        )}
-      </div>
 
       {/* Data Table */}
       <div className="px-6">
@@ -482,9 +482,10 @@ export function ProcessesDashboardView({
                   )}
                 </button>
               </th>
-              <th className="py-3 px-2 text-center w-10">
-                <Settings className="h-4 w-4 text-gray-400" />
-              </th>
+              {(isAllSelected || selectedProcessNames.length >= 1) && selectedProcessNames.length !== 1 && <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              }
             </tr>
           </thead>
           <tbody>
@@ -576,11 +577,11 @@ export function ProcessesDashboardView({
                 <td className="py-3 px-2">
                   <span className="text-sm text-gray-600">{instance.createdAt}</span>
                 </td>
-                <td className="py-3 px-2">
-                  <Button variant="outline" onClick={() => router.push(`/operations/processes-workflow?processId=${instance.id}&name=${encodeURIComponent(instance.processType)}`)}>
-                    <Eye className="h-4 w-4" />
+                {(isAllSelected || selectedProcessNames.length >= 1) && selectedProcessNames.length !== 1 && <td className="py-3 px-2">
+                  <Button variant="outline" onClick={() => router.push(`/operations/processes/${instance.id}?name=${encodeURIComponent(instance.processType)}`)}>
+                    <Settings className="h-4 w-4" />
                   </Button>
-                </td>
+                </td>}
               </tr>
             ))}
           </tbody>
