@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
-
+import { unassignedProcesses } from "@/features/operations/data/processes"
 // Merge tags & categories reused from GeneralSettingsTab
 const MERGE_TAGS = [
   "Property.Name",
@@ -167,42 +167,17 @@ interface ProcessGroup {
 
 export default function ManageProcessPage() {
   const [expandedProcesses, setExpandedProcesses] = useState<Set<string>>(new Set())
-  const [processData, setProcessData] = useState<ProcessGroup[]>([
-    {
-      name: "Unassigned Processes",
-      processes: [
-        {
-          id: "process-1",
-          icon: "clipboard",
-          name: "2 Property Onboarding Process",
-          stages: [
-            { id: "stage-1", name: "Initial Contact", steps: 3, days: 2, processes: 2 },
-            { id: "stage-2", name: "Document Collection", steps: 5, days: 5, processes: 3 },
-            { id: "stage-3", name: "Property Inspection", steps: 2, days: 3, processes: 1 },
-            { id: "stage-4", name: "System Setup", steps: 8, days: 14, processes: 4 },
-            { id: "stage-5", name: "Final Review", steps: 4, days: 9, processes: 2 },
-            { id: "stage-6", name: "Go Live", steps: 1, days: 1, processes: 1 },
-            { id: "stage-7", name: "Post Launch", steps: 2, days: 7, processes: 1 },
-          ],
-          stageCount: 7,
-        },
-        { id: "process-2", icon: "clipboard", name: "Accounting Mistakes", badge: "Draft", stages: [], stageCount: 4 },
-        { id: "process-3", icon: "clipboard", name: "Applications screening process", stages: [], stageCount: 11 },
-        { id: "process-4", icon: "clipboard", name: "Delinquency Process", stages: [], stageCount: 10 },
-        { id: "process-5", icon: "clipboard", name: "Employee Onboarding Process", stages: [], stageCount: 5 },
-        { id: "process-6", icon: "clipboard", name: "Employee Termination Process", badge: "Draft", stages: [], stageCount: 3 },
-        { id: "process-7", icon: "clipboard", name: "Employee Training Process", badge: "Draft", stages: [], stageCount: 21 },
-        { id: "process-8", icon: "clipboard", name: "EOM Accounting Process for Month", badge: "Draft", stages: [], stageCount: 4 },
-        { id: "process-9", icon: "clipboard", name: "Escalated Owner Funds Collection Process", badge: "Draft", stages: [], stageCount: 5 },
-        { id: "process-10", icon: "clipboard", name: "Eviction Process", stages: [], stageCount: 10 },
-        { id: "process-11", icon: "clipboard", name: "Haro PM", badge: "Draft", stages: [], stageCount: 3 },
-        { id: "process-12", icon: "clipboard", name: "Hiring Requisition Process", badge: "Draft", stages: [], stageCount: 8 },
-        { id: "process-13", icon: "clipboard", name: "Lease Renewal Process", stages: [], stageCount: 10 },
-        { id: "process-14", icon: "clipboard", name: "Legal Cases Complaints and Notices", badge: "Draft", stages: [], stageCount: 8 },
-        { id: "process-15", icon: "clipboard", name: "Make Ready Process", stages: [], stageCount: 9 },
-      ],
-    },
-  ])
+  const [processData, setProcessData] = useState<ProcessGroup[]>(unassignedProcesses.map((process) => ({
+    name: "Unassigned Processes",
+    processes: process.processes.map((process) => ({
+      id: process.id,
+      icon: "clipboard",
+      name: process.name,
+      stages: process.stages,
+      stageCount: process.stageCount,
+    })),
+  })))
+
 
   const router = useRouter()
   const [editingStageId, setEditingStageId] = useState<string | null>(null)
@@ -242,19 +217,19 @@ export default function ManageProcessPage() {
       prev.map((group) =>
         group.name === "Unassigned Processes"
           ? {
-              ...group,
-              processes: [
-                {
-                  id: `process-new-${Date.now()}`,
-                  icon: "clipboard",
-                  name: newProcessTypeName.trim(),
-                  badge: "Draft",
-                  stages: [],
-                  stageCount: 0,
-                },
-                ...group.processes,
-              ],
-            }
+            ...group,
+            processes: [
+              {
+                id: `process-new-${Date.now()}`,
+                icon: "clipboard",
+                name: newProcessTypeName.trim(),
+                badge: "Draft",
+                stages: [],
+                stageCount: 0,
+              },
+              ...group.processes,
+            ],
+          }
           : group,
       ),
     )
@@ -359,162 +334,163 @@ export default function ManageProcessPage() {
         {processData.map((group) => {
           const visibleProcesses = group.processes.slice(0, visibleCount)
           return (
-          <div key={group.name} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold text-foreground">{group.name}</h2>
-              <span className="text-sm text-muted-foreground">{group.processes.length} processes</span>
-            </div>
+            <div key={group.name} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="font-semibold text-foreground">{group.name}</h2>
+                <span className="text-sm text-muted-foreground">{group.processes.length} processes</span>
+              </div>
 
-            <div className="space-y-2">
-              {visibleProcesses.map((process) => {
-                const isExpanded = expandedProcesses.has(process.id)
+              <div className="space-y-2">
+                {visibleProcesses.map((process) => {
+                  const isExpanded = expandedProcesses.has(process.id)
 
-                return (
-                  <div key={process.id} className="border rounded-lg">
-                    <button
-                      onClick={() => toggleProcess(process.id)}
-                      className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        {isExpanded ? (
-                          <ChevronDown className="h-5 w-5 text-primary shrink-0" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                        )}
-                        <div className="h-10 w-10 rounded-lg bg-teal-500 flex items-center justify-center text-white shrink-0">
-                          <ClipboardList className="h-5 w-5" />
-                        </div>
-                        <div className="text-left">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">{process.name}</span>
-                            {process.badge && (
-                              <Badge variant="secondary" className="text-xs">
-                                {process.badge}
-                              </Badge>
-                            )}
+                  return (
+                    <div key={process.id} className="border rounded-lg">
+                      <button
+                        onClick={() => toggleProcess(process.id)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 flex-1">
+                          {isExpanded ? (
+                            <ChevronDown className="h-5 w-5 text-primary shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                          )}
+                          <div className="h-10 w-10 rounded-lg bg-teal-500 flex items-center justify-center text-white shrink-0">
+                            <ClipboardList className="h-5 w-5" />
+                          </div>
+                          <div className="text-left">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-foreground">{process.name}</span>
+                              {process.badge && (
+                                <Badge variant="secondary" className="text-xs">
+                                  {process.badge}
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>{process.stageCount} stages</span>
-                      </div>
-                    </button>
-
-                    {isExpanded && (
-                      <div className="border-t bg-muted/30 p-4 space-y-3">
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="font-semibold text-sm text-foreground">Stages</span>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
-                            onClick={() => { setAddingStageForProcess(process.id); setEditingStageId(null) }}
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add Stage
-                          </Button>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <span>{process.stageCount} stages</span>
                         </div>
+                      </button>
 
-                        {process.stages.length === 0 && addingStageForProcess !== process.id && (
-                          <p className="text-sm text-muted-foreground text-center py-4">No stages yet. Click &quot;Add Stage&quot; to create one.</p>
-                        )}
-
-                        <div className="space-y-2">
-                          {process.stages.map((stage, idx) => (
-                            <div
-                              key={stage.id}
-                              draggable={editingStageId !== stage.id}
-                              onDragStart={() => handleDragStart(process.id, idx)}
-                              onDragEnter={() => handleDragEnter(idx)}
-                              onDragEnd={() => handleDragEnd(process.id, process.stages)}
-                              onDragOver={(e) => e.preventDefault()}
-                              className="flex items-center justify-between p-3 bg-background border rounded hover:bg-muted/50 transition-colors group"
+                      {isExpanded && (
+                        <div className="border-t bg-muted/30 p-4 space-y-3">
+                          <div className="flex items-center justify-between mb-4">
+                            <span className="font-semibold text-sm text-foreground">Stages</span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                              onClick={() => { setAddingStageForProcess(process.id); setEditingStageId(null) }}
                             >
-                              {editingStageId === stage.id ? (
-                                <div className="flex items-center gap-3 flex-1">
-                                  <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
-                                    {idx + 1}
-                                  </div>
-                                  <Input
-                                    value={editName}
-                                    onChange={(e) => setEditName(e.target.value)}
-                                    className="h-8 text-sm flex-1"
-                                    autoFocus
-                                    onKeyDown={(e) => { if (e.key === "Enter") saveEdit(process.id, process.stages); if (e.key === "Escape") cancelEdit() }}
-                                  />
-                                  <Button size="sm" variant="ghost" className="text-xs" onClick={cancelEdit}>Cancel</Button>
-                                  <Button size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => saveEdit(process.id, process.stages)}>Save</Button>
-                                </div>
-                              ) : (
-                                <>
-                                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab shrink-0" />
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add Stage
+                            </Button>
+                          </div>
+
+                          {process.stages.length === 0 && addingStageForProcess !== process.id && (
+                            <p className="text-sm text-muted-foreground text-center py-4">No stages yet. Click &quot;Add Stage&quot; to create one.</p>
+                          )}
+
+                          <div className="space-y-2">
+                            {process.stages.map((stage, idx) => (
+                              <div
+                                key={stage.id}
+                                draggable={editingStageId !== stage.id}
+                                onDragStart={() => handleDragStart(process.id, idx)}
+                                onDragEnter={() => handleDragEnter(idx)}
+                                onDragEnd={() => handleDragEnd(process.id, process.stages)}
+                                onDragOver={(e) => e.preventDefault()}
+                                className="flex items-center justify-between p-3 bg-background border rounded hover:bg-muted/50 transition-colors group"
+                              >
+                                {editingStageId === stage.id ? (
+                                  <div className="flex items-center gap-3 flex-1">
                                     <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
                                       {idx + 1}
                                     </div>
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation()
-                                        router.push(`/settings/manage-processes/${process.id}/${stage.id}`)
-                                      }}
-                                      className="text-sm font-medium text-blue-600 hover:underline text-left"
-                                    >
-                                      {stage.name}
-                                    </button>
+                                    <Input
+                                      value={editName}
+                                      onChange={(e) => setEditName(e.target.value)}
+                                      className="h-8 text-sm flex-1"
+                                      autoFocus
+                                      onKeyDown={(e) => { if (e.key === "Enter") saveEdit(process.id, process.stages); if (e.key === "Escape") cancelEdit() }}
+                                    />
+                                    <Button size="sm" variant="ghost" className="text-xs" onClick={cancelEdit}>Cancel</Button>
+                                    <Button size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => saveEdit(process.id, process.stages)}>Save</Button>
                                   </div>
-                                  <div className="flex items-center gap-4 text-xs text-muted-foreground ml-2 shrink-0">
-                                    <span>{stage.steps} Steps</span>
-                                    <span>{stage.days} Days</span>
-                                    <span>{stage.processes} Processes</span>
-                                  </div>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button size="icon" variant="ghost" className="h-8 w-8 ml-2 shrink-0">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => startEdit(stage)}>
-                                        <Pencil className="h-3.5 w-3.5 mr-2" />
-                                        Edit
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => deleteStage(process.id, stage.id, process.stages)} className="text-red-600 focus:text-red-600">
-                                        <Trash2 className="h-3.5 w-3.5 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </>
-                              )}
-                            </div>
-                          ))}
-
-                          {addingStageForProcess === process.id && (
-                            <div className="flex items-center gap-3 p-3 bg-background border rounded border-blue-300">
-                              <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
-                                {process.stages.length + 1}
+                                ) : (
+                                  <>
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                      <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab shrink-0" />
+                                      <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
+                                        {idx + 1}
+                                      </div>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          router.push(`/settings/manage-processes/${process.id}/${stage.id}`)
+                                        }}
+                                        className="text-sm font-medium text-blue-600 hover:underline text-left"
+                                      >
+                                        {stage.name}
+                                      </button>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-xs text-muted-foreground ml-2 shrink-0">
+                                      <span>{stage.steps} Steps</span>
+                                      <span>{stage.days} Days</span>
+                                      <span>{stage.processes} Processes</span>
+                                    </div>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button size="icon" variant="ghost" className="h-8 w-8 ml-2 shrink-0">
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => startEdit(stage)}>
+                                          <Pencil className="h-3.5 w-3.5 mr-2" />
+                                          Edit
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => deleteStage(process.id, stage.id, process.stages)} className="text-red-600 focus:text-red-600">
+                                          <Trash2 className="h-3.5 w-3.5 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </>
+                                )}
                               </div>
-                              <Input
-                                value={newStageName}
-                                onChange={(e) => setNewStageName(e.target.value)}
-                                placeholder="Stage name"
-                                className="h-8 text-sm flex-1"
-                                autoFocus
-                                onKeyDown={(e) => { if (e.key === "Enter") addStage(process.id, process.stages); if (e.key === "Escape") setAddingStageForProcess(null) }}
-                              />
-                              <Button size="sm" variant="ghost" className="text-xs" onClick={() => setAddingStageForProcess(null)}>Cancel</Button>
-                              <Button size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => addStage(process.id, process.stages)}>Save</Button>
-                            </div>
-                          )}
+                            ))}
+
+                            {addingStageForProcess === process.id && (
+                              <div className="flex items-center gap-3 p-3 bg-background border rounded border-blue-300">
+                                <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
+                                  {process.stages.length + 1}
+                                </div>
+                                <Input
+                                  value={newStageName}
+                                  onChange={(e) => setNewStageName(e.target.value)}
+                                  placeholder="Stage name"
+                                  className="h-8 text-sm flex-1"
+                                  autoFocus
+                                  onKeyDown={(e) => { if (e.key === "Enter") addStage(process.id, process.stages); if (e.key === "Escape") setAddingStageForProcess(null) }}
+                                />
+                                <Button size="sm" variant="ghost" className="text-xs" onClick={() => setAddingStageForProcess(null)}>Cancel</Button>
+                                <Button size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => addStage(process.id, process.stages)}>Save</Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
-          </div>
-        )})}
+          )
+        })}
       </div>
 
       {/* Add Process Type Dialog */}

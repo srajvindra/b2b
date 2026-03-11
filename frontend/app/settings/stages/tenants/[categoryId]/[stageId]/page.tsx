@@ -1,24 +1,21 @@
+'use client'
 import { StageWorkflowPage } from "@/features/settings/components/StageWorkflowPage"
 import { initialLeaseProspectCategories } from "@/features/settings/data/leaseProspectStages"
 
-interface PageProps {
-  params: {
-    categoryId: string
-    stageId: string
-  }
-}
+import { useParams } from "next/navigation"
 
-export default function Page({ params }: PageProps) {
-  const category = initialLeaseProspectCategories.find((c) => c.id === params.categoryId)
-  const stage = category?.statuses.find((s) => s.id === params.stageId)
+export default function Page() {
+  const paramsData = useParams()
+  const category = initialLeaseProspectCategories.find((c) => c.id === paramsData?.categoryId as string)
+  const stage = category?.statuses.find((s) => s.id === paramsData?.stageId as string)
 
   return (
     <StageWorkflowPage
       categoryName={category?.name ?? "Unknown category"}
       stage={
         stage ?? {
-          id: params.stageId,
-          name: "Unknown stage",
+          id: paramsData?.stageId as string,
+          name: "Unknown lead",
           steps: 0,
           days: 0,
           processes: 0,

@@ -171,7 +171,7 @@ export function StageWorkflowPage({ categoryName, stage, backHref, onBack }: Sta
               <ArrowLeft className="h-5 w-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">{stage.name}</h1>
+              <h1 className="text-lg font-semibold text-gray-900">{stage.name }</h1>
               <p className="text-sm text-gray-500">{categoryName}</p>
             </div>
           </div>

@@ -1,24 +1,19 @@
-import { initialProcessTypes } from "@/features/operations/data/processes"
+'use client'
+import { unassignedProcesses } from "@/features/operations/data/processes"
 import { StageWorkflowPage } from "@/features/settings/components/StageWorkflowPage"
-import { initialOwnerCategories } from "@/features/settings/data/ownerStages"
+import { useParams } from "next/navigation"
 
-interface PageProps {
-  params: {
-    categoryId: string
-    stageId: string
-  }
-}
-
-export default function Page({ params }: PageProps) {
-  const process = initialProcessTypes.find((p) => p.id === params.categoryId)
-  const stage = process?.stagesList.find((s) => s.id === params.stageId)
+export default function Page() {
+  const paramsData = useParams()
+  const process = unassignedProcesses?.[0]?.processes.find((p) => p.id == paramsData?.categoryId as string)
+  const stage = process?.stages.find((s) => s.id == paramsData?.stageId as string)
 
   return (
     <StageWorkflowPage
       categoryName={process?.name ?? "Unknown process"}
       stage={
         stage ?? {
-          id: params.stageId,
+          id: paramsData?.stageId as string,
           name: "Unknown stage",
           steps: 0,
           days: 0,
