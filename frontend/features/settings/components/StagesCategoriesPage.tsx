@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,6 +20,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Plus, X, Check, FolderOpen, Search, ChevronRight, GripVertical, Pencil, Trash2, MoreVertical, AlertTriangle, Settings } from "lucide-react"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 import type { StageCategory, StageStatus } from "../types"
 
 export interface StagesCategoriesPageProps {
@@ -52,6 +53,7 @@ export function StagesCategoriesPage({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [visibleCount, setVisibleCount] = useState(10)
 
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) =>
@@ -160,6 +162,12 @@ export function StagesCategoriesPage({
     ? categories.filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : categories
 
+  const paginatedCategories = filteredCategories.slice(0, visibleCount)
+
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [searchQuery])
+
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -239,7 +247,7 @@ export function StagesCategoriesPage({
                 </tr>
               </thead>
               <tbody>
-                {filteredCategories.map((category) => (
+                {paginatedCategories.map((category) => (
                   <React.Fragment key={category.id}>
                     <tr
                       className="border-b hover:bg-muted/50 cursor-pointer transition-colors"
@@ -526,6 +534,13 @@ export function StagesCategoriesPage({
           )}
         </CardContent>
       </Card>
+
+      <LoadMorePagination
+        total={filteredCategories.length}
+        visibleCount={visibleCount}
+        label="categories"
+        onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, filteredCategories.length))}
+      />
 
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
         <DialogContent>

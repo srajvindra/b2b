@@ -48,6 +48,7 @@ import {
   Workflow,
   PlayCircle,
   Trash2,
+  Lightbulb,
   FolderOpen,
   Search,
   Paperclip,
@@ -93,6 +94,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Switch } from "@/components/ui/switch"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -1113,6 +1115,16 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     }
   }
 
+  // AI Chat state
+  const [aiChatInput, setAiChatInput] = useState("")
+
+  const handleAiChatSubmit = (query: string) => {
+    // Handle AI chat submission - this would integrate with an AI service
+    console.log("AI Chat query:", query)
+    setAiChatInput("")
+    // In a real implementation, this would call an AI API and display the response
+  }
+
   // Start new process modal
   const [showStartProcessModal, setShowStartProcessModal] = useState(false)
   const [processSearchQuery, setProcessSearchQuery] = useState("")
@@ -1124,6 +1136,31 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     status: string
     tasks: Array<{ id: string; name: string; startDate: string | null; completedDate: string | null; staffName: string; staffEmail: string }>
   }>>([])
+
+  // Add Custom Field Modal state
+  const [showAddFieldModal, setShowAddFieldModal] = useState(false)
+  const [addFieldSection, setAddFieldSection] = useState<string>("")
+  const [fieldName, setFieldName] = useState("")
+  const [fieldType, setFieldType] = useState("text")
+  const [isFieldRequired, setIsFieldRequired] = useState(false)
+
+  const openAddFieldModal = (section: string) => {
+    setAddFieldSection(section)
+    setFieldName("")
+    setFieldType("text")
+    setIsFieldRequired(false)
+    setShowAddFieldModal(true)
+  }
+
+  const handleAddField = () => {
+    if (fieldName.trim()) {
+      setShowAddFieldModal(false)
+      setFieldName("")
+      setFieldType("text")
+      setIsFieldRequired(false)
+      setAddFieldSection("")
+    }
+  }
 
   const toggleProcessExpanded = (processId: string) => {
     setExpandedProcesses((prev) =>
@@ -2099,33 +2136,6 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
         {/* Header Card - Tenant Information */}
         <Card>
           <CardContent className="p-4">
-            {/* Stage Color Bar */}
-            <div className="flex items-center gap-1 mb-4">
-              {[
-                { id: "move-in", label: "Move-in", color: "bg-orange-300" },
-                { id: "current", label: "Current", color: "bg-amber-500" },
-                { id: "delinquent", label: "Delinquent", color: "bg-lime-600" },
-                { id: "eviction", label: "Eviction", color: "bg-green-500" },
-                { id: "move-out", label: "Move-out", color: "bg-emerald-400" },
-                { id: "past-tenant", label: "Past Tenant", color: "bg-rose-300" },
-              ].map((stage) => (
-                null
-              ))}
-              <Select value={tenantStage} onValueChange={setTenantStage}>
-                <SelectTrigger className="h-8 w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="move-in">Move-in</SelectItem>
-                  <SelectItem value="current">Current</SelectItem>
-                  <SelectItem value="delinquent">Delinquent</SelectItem>
-                  <SelectItem value="eviction">Eviction</SelectItem>
-                  <SelectItem value="move-out">Move-out</SelectItem>
-                  <SelectItem value="past-tenant">Past Tenant</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex items-start justify-between">
               <div className="flex items-start gap-4">
                 <div className="h-12 w-12 rounded-full bg-slate-200 flex items-center justify-center text-lg font-medium text-slate-700">
@@ -2187,6 +2197,23 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </div>
+            </div>
+
+            {/* Stage Dropdown - below tenant info */}
+            <div className="flex items-center gap-2 mt-4">
+              <Select value={tenantStage} onValueChange={setTenantStage}>
+                <SelectTrigger className="h-8 w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="move-in">Move-in</SelectItem>
+                  <SelectItem value="current">Current</SelectItem>
+                  <SelectItem value="delinquent">Delinquent</SelectItem>
+                  <SelectItem value="eviction">Eviction</SelectItem>
+                  <SelectItem value="move-out">Move-out</SelectItem>
+                  <SelectItem value="past-tenant">Past Tenant</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -2795,7 +2822,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 <Card>
                   <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                     <CardTitle className="text-base font-semibold text-slate-800">Status</CardTitle>
-                    <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Status")}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Field
+                      </Button>
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="space-y-3 text-sm">
@@ -2844,7 +2877,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 <Card>
                   <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                     <CardTitle className="text-base font-semibold text-slate-800">Tags</CardTitle>
-                    <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Tags")}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Field
+                      </Button>
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="bg-slate-50 rounded-lg p-4 border">
@@ -2865,7 +2904,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 <Card>
                   <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                     <CardTitle className="text-base font-semibold text-slate-800">Contact</CardTitle>
-                    <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Contact")}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Field
+                      </Button>
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="p-4 space-y-4">
                     <div>
@@ -2904,7 +2949,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                 <Card>
                   <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                     <CardTitle className="text-base font-semibold text-slate-800">Tenant Status</CardTitle>
-                    <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    <div className="flex items-center gap-2">
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Tenant Status")}>
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add Field
+                      </Button>
+                      <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                    </div>
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="space-y-2 text-sm">
@@ -2954,13 +3005,22 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   <ChevronRight className={`h-4 w-4 transition-transform ${screeningExpanded ? "rotate-90" : ""}`} />
                   Screening
                 </CardTitle>
-                <Button 
-                  variant="link" 
-                  className="text-teal-600 h-auto p-0 text-sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Edit
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={(e) => {
+                    e.stopPropagation()
+                    openAddFieldModal("Screening")
+                  }}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button 
+                    variant="link" 
+                    className="text-teal-600 h-auto p-0 text-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Edit
+                  </Button>
+                </div>
               </CardHeader>
               {screeningExpanded && (
                 <CardContent className="p-4">
@@ -3004,13 +3064,22 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   <ChevronRight className={`h-4 w-4 transition-transform ${emergencyContactExpanded ? "rotate-90" : ""}`} />
                   Emergency Contact
                 </CardTitle>
-                <Button 
-                  variant="link" 
-                  className="text-teal-600 h-auto p-0 text-sm"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Edit
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={(e) => {
+                    e.stopPropagation()
+                    openAddFieldModal("Emergency Contact")
+                  }}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button 
+                    variant="link" 
+                    className="text-teal-600 h-auto p-0 text-sm"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Edit
+                  </Button>
+                </div>
               </CardHeader>
               {emergencyContactExpanded && (
                 <CardContent className="p-4">
@@ -3047,7 +3116,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                 <CardTitle className="text-base font-semibold text-slate-800">Insurance Coverage</CardTitle>
-                <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Insurance Coverage")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2 text-sm">
@@ -3078,14 +3153,11 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
                   Notes <HelpCircle className="h-4 w-4 text-slate-400" />
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent">
-                    <Download className="h-3 w-3 mr-1" />
-                    Download Notes
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Notes")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
                   </Button>
-                  <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent">
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Note
-                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent" onClick={() => setShowAddNoteModal(true)}>+ Note</Button>
                 </div>
               </CardHeader>
               <CardContent className="p-4">
@@ -3127,10 +3199,15 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                 <CardTitle className="text-base font-semibold text-slate-800">Letters</CardTitle>
-                <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent">
-                  <Upload className="h-3 w-3 mr-1" />
-                  Upload Document
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Letters")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button variant="outline" size="sm" className="h-7 text-xs bg-transparent">
+                    + Letter
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="p-4">
                 <div className="divide-y">
@@ -3156,7 +3233,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             {/* Monthly Charges Section */}
             <Card>
               <CardHeader className="py-3 px-4 border-b bg-slate-50">
-                <CardTitle className="text-base font-semibold text-slate-800">Monthly Charges</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-semibold text-slate-800">Monthly Charges</CardTitle>
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Monthly Charges")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 <div className="flex items-center justify-between">
@@ -3204,7 +3287,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                 <CardTitle className="text-base font-semibold text-slate-800">Lease Information</CardTitle>
-                <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Lease Information")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                </div>
               </CardHeader>
               <CardContent className="p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -3240,7 +3329,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                 <CardTitle className="text-base font-semibold text-slate-800">Financials</CardTitle>
-                <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Financials")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                </div>
               </CardHeader>
               <CardContent className="p-4">
                 <div className="space-y-2 text-sm">
@@ -3268,7 +3363,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                 <CardTitle className="text-base font-semibold text-slate-800">Late Fee Policy</CardTitle>
-                <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Late Fee Policy")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                </div>
               </CardHeader>
               <CardContent className="p-4">
                 <h4 className="font-medium text-sm mb-3">Current Late Fee Policy</h4>
@@ -3287,7 +3388,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                 <CardTitle className="text-base font-semibold text-slate-800">Animals</CardTitle>
-                <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Animals")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -3315,7 +3422,13 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             <Card>
               <CardHeader className="py-3 px-4 flex flex-row items-center justify-between border-b bg-slate-50">
                 <CardTitle className="text-base font-semibold text-slate-800">Vehicles</CardTitle>
-                <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm" onClick={() => openAddFieldModal("Vehicles")}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Field
+                  </Button>
+                  <Button variant="link" className="text-teal-600 h-auto p-0 text-sm">Edit</Button>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -5034,111 +5147,175 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
       </div>
 
       {/* Quick Actions Sidebar */}
-      <div className="w-full lg:w-56 shrink-0 sticky top-0 self-start max-h-[calc(100vh-5rem)] overflow-y-auto">
-        <Card>
-          <CardContent className="p-5">
-            <h3 className="text-base font-semibold text-foreground mb-5">Quick Actions</h3>
+      <div className="w-full lg:w-56 shrink-0 sticky top-0 self-start">
+        <Card className="flex flex-col" style={{ height: 'calc(100vh - 6rem)' }}>
+          {/* Upper Section - 55% - Quick Actions */}
+          <div className="flex flex-col" style={{ height: '55%' }}>
+            <CardContent className="p-5 pb-0 flex flex-col h-full">
+              <h3 className="text-base font-semibold text-foreground mb-5 flex-shrink-0">Quick Actions</h3>
 
-            {/* Tasks subsection */}
-            <div className="mb-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Star className="h-4 w-4 text-primary fill-primary" />
-                <span className="text-sm font-semibold text-foreground">Tasks</span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {[
-                  { icon: ArrowLeftRight, label: "Transfer Tenant", disabled: false },
-                  { icon: FileText, label: "Send Lease or Addendum", disabled: false },
-                  { icon: FileText, label: "NYC Lease Renewal", disabled: true },
-                  { icon: TrendingUp, label: "Increase Rent", disabled: false },
-                  { icon: Wrench, label: "New Service Request", disabled: false },
-                  { icon: Wrench, label: "Work Orders", disabled: false },
-                  { icon: Receipt, label: "Tenant Payable", disabled: false },
-                  { icon: UserPlus, label: "Add Additional Tenant", disabled: false },
-                  { icon: EyeOff, label: "Hide Tenant", disabled: false },
-                  { icon: SearchCheck, label: "New Inspection", disabled: false },
-                  { icon: SearchCheck, label: "View Inspections", disabled: false },
-                  { icon: Layers, label: "View Unit Turn Board", disabled: false },
-                  { icon: Building, label: "Manage Subsidy Programs", disabled: false, isNew: true },
-                  { icon: Mail, label: "Send Email", disabled: false },
-                  { icon: MessageSquare, label: "Send SMS", disabled: false },
-                  { icon: Phone, label: "Make Call", disabled: false },
-                  { icon: Globe, label: "View Online Portal", disabled: false },
-                  { icon: Download, label: "Download Text History", disabled: false },
-                  { icon: Send, label: "Send Resident Form to Unit", disabled: false },
-                ].map(({ icon: Icon, label, disabled, isNew }) => (
-                  <button
-                    key={label}
-                    disabled={disabled}
-                    className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border text-sm text-left transition-colors ${
-                      disabled
-                        ? "border-border bg-muted/30 text-muted-foreground/50 cursor-not-allowed"
-                        : "border-border bg-background font-medium text-foreground hover:bg-muted/50 hover:border-primary/30 cursor-pointer"
-                    }`}
-                  >
-                    <Icon className={`h-4 w-4 shrink-0 ${disabled ? "text-muted-foreground/40" : "text-muted-foreground"}`} />
-                    <span className="flex items-center gap-1.5">
-                      {label}
-                      {isNew && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700">
-                          NEW
+              <div className="overflow-y-auto flex-1">
+                {/* Tasks subsection */}
+                <div className="mb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Star className="h-4 w-4 text-primary fill-primary" />
+                    <span className="text-sm font-semibold text-foreground">Tasks</span>
+                  </div>
+                  <div className="flex flex-col gap-0">
+                    {[
+                      { icon: ArrowLeftRight, label: "Transfer Tenant", disabled: false },
+                      { icon: FileText, label: "Send Lease or Addendum", disabled: false },
+                      { icon: FileText, label: "NYC Lease Renewal", disabled: true },
+                      { icon: TrendingUp, label: "Increase Rent", disabled: false },
+                      { icon: Wrench, label: "New Service Request", disabled: false },
+                      { icon: Wrench, label: "Work Orders", disabled: false },
+                      { icon: Receipt, label: "Tenant Payable", disabled: false },
+                      { icon: UserPlus, label: "Add Additional Tenant", disabled: false },
+                      { icon: EyeOff, label: "Hide Tenant", disabled: false },
+                      { icon: SearchCheck, label: "New Inspection", disabled: false },
+                      { icon: SearchCheck, label: "View Inspections", disabled: false },
+                      { icon: Layers, label: "View Unit Turn Board", disabled: false },
+                      { icon: Building, label: "Manage Subsidy Programs", disabled: false, isNew: true },
+                      { icon: Mail, label: "Send Email", disabled: false },
+                      { icon: MessageSquare, label: "Send SMS", disabled: false },
+                      { icon: Phone, label: "Make Call", disabled: false },
+                      { icon: Globe, label: "View Online Portal", disabled: false },
+                      { icon: Download, label: "Download Text History", disabled: false },
+                      { icon: Send, label: "Send Resident Form to Unit", disabled: false },
+                    ].map(({ icon: Icon, label, disabled, isNew }) => (
+                      <button
+                        key={label}
+                        disabled={disabled}
+                        className={`flex items-center gap-3 w-full px-3 py-2 text-sm text-left border-b border-border/50 transition-colors last:border-b-0 ${
+                          disabled
+                            ? "text-muted-foreground/50 cursor-not-allowed bg-background/50"
+                            : "text-foreground hover:bg-muted/30 cursor-pointer"
+                        }`}
+                      >
+                        <Icon className={`h-4 w-4 shrink-0 ${disabled ? "text-muted-foreground/40" : "text-muted-foreground"}`} />
+                        <span className="flex items-center gap-1.5">
+                          {label}
+                          {isNew && (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700">
+                              NEW
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Reports subsection */}
-            <div className="pt-4 border-t border-border mb-5">
-              <div className="flex items-center gap-2 mb-3">
-                <ClipboardList className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold text-foreground">Reports</span>
-              </div>
-              <div className="flex flex-col gap-3">
-                {[
-                  { icon: FileText, label: "Tenant Ledger" },
-                  { icon: DollarSign, label: "Tenant Unpaid Charges" },
-                  { icon: Wrench, label: "Work Order" },
-                  { icon: BarChart3, label: "Activities Summary" },
-                  { icon: AlertTriangle, label: "Debt Collections Status" },
-                  { icon: Shield, label: "Tenant Insurance Coverage" },
-                ].map(({ icon: Icon, label }) => (
-                  <button
-                    key={label}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-muted/50 hover:border-primary/30 transition-colors text-left cursor-pointer"
-                  >
-                    <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
+                {/* Reports subsection */}
+                <div className="pt-4 border-t border-border mb-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ClipboardList className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">Reports</span>
+                  </div>
+                  <div className="flex flex-col gap-0">
+                    {[
+                      { icon: FileText, label: "Tenant Ledger" },
+                      { icon: DollarSign, label: "Tenant Unpaid Charges" },
+                      { icon: Wrench, label: "Work Order" },
+                      { icon: BarChart3, label: "Activities Summary" },
+                      { icon: AlertTriangle, label: "Debt Collections Status" },
+                      { icon: Shield, label: "Tenant Insurance Coverage" },
+                    ].map(({ icon: Icon, label }) => (
+                      <button
+                        key={label}
+                        className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted/30 transition-colors text-left cursor-pointer border-b border-border/50 last:border-b-0"
+                      >
+                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-            {/* Letters subsection */}
-            <div className="pt-4 border-t border-border">
-              <div className="flex items-center gap-2 mb-3">
-                <Lock className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold text-foreground">Letters</span>
+                {/* Letters subsection */}
+                <div className="pt-4 border-t border-border">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">Letters</span>
+                  </div>
+                  <div className="flex flex-col gap-0">
+                    {[
+                      { icon: FileText, label: "3-Day Notice" },
+                      { icon: Printer, label: "Print Envelope" },
+                      { icon: Send, label: "Send Statement" },
+                    ].map(({ icon: Icon, label }) => (
+                      <button
+                        key={label}
+                        className="flex items-center gap-3 w-full px-3 py-2 text-sm text-foreground hover:bg-muted/30 transition-colors text-left cursor-pointer border-b border-border/50 last:border-b-0"
+                      >
+                        <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col gap-3">
-                {[
-                  { icon: FileText, label: "3-Day Notice" },
-                  { icon: Printer, label: "Print Envelope" },
-                  { icon: Send, label: "Send Statement" },
-                ].map(({ icon: Icon, label }) => (
-                  <button
-                    key={label}
-                    className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm font-medium text-foreground hover:bg-muted/50 hover:border-primary/30 transition-colors text-left cursor-pointer"
-                  >
-                    <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                    {label}
-                  </button>
-                ))}
+            </CardContent>
+          </div>
+
+          {/* Lower Section - 45% - AI Chat */}
+          <div className="flex flex-col border-t border-gray-200" style={{ height: '45%' }}>
+            <div className="px-4 pt-4 pb-2 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-semibold text-foreground">AI Assistant</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Ask..."
+                  value={aiChatInput}
+                  onChange={(e) => setAiChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && aiChatInput.trim()) {
+                      handleAiChatSubmit(aiChatInput)
+                    }
+                  }}
+                  className="flex-1 h-9 text-sm"
+                />
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className={`h-9 w-9 p-0 flex-shrink-0 transition-colors ${
+                    aiChatInput.trim() 
+                      ? "bg-blue-600 hover:bg-blue-700" 
+                      : "bg-blue-100 hover:bg-blue-200"
+                  }`}
+                  onClick={() => {
+                    if (aiChatInput.trim()) {
+                      handleAiChatSubmit(aiChatInput)
+                    }
+                  }}
+                >
+                  <Send className={`h-4 w-4 ${aiChatInput.trim() ? "text-white" : "text-blue-400"}`} />
+                </Button>
               </div>
             </div>
-          </CardContent>
+            <div className="px-4 pb-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
+              <button
+                className="text-left text-sm text-primary hover:underline"
+                onClick={() => handleAiChatSubmit("What's the tenant's payment history?")}
+              >
+                {"What's the tenant's payment history?"}
+              </button>
+              <button
+                className="text-left text-sm text-primary hover:underline"
+                onClick={() => handleAiChatSubmit("Show lease renewal options")}
+              >
+                Show lease renewal options
+              </button>
+              <button
+                className="text-left text-sm text-primary hover:underline"
+                onClick={() => handleAiChatSubmit("What are the outstanding charges?")}
+              >
+                What are the outstanding charges?
+              </button>
+            </div>
+          </div>
         </Card>
       </div>
 
@@ -6190,6 +6367,111 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Custom Field Modal */}
+      <Dialog open={showAddFieldModal} onOpenChange={setShowAddFieldModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-teal-600" />
+              Add Custom Field
+            </DialogTitle>
+          </DialogHeader>
+          <DialogDescription className="text-sm text-slate-600">
+            Add a new custom field to the {addFieldSection} section. All custom fields are available for reporting.
+          </DialogDescription>
+
+          <div className="space-y-6 py-4">
+            {/* Section Dropdown */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-slate-700">Section</Label>
+              <Select value={addFieldSection} onValueChange={setAddFieldSection}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Status">Status</SelectItem>
+                  <SelectItem value="Tags">Tags</SelectItem>
+                  <SelectItem value="Contact">Contact</SelectItem>
+                  <SelectItem value="Tenant Status">Tenant Status</SelectItem>
+                  <SelectItem value="Screening">Screening</SelectItem>
+                  <SelectItem value="Emergency Contact">Emergency Contact</SelectItem>
+                  <SelectItem value="Insurance Coverage">Insurance Coverage</SelectItem>
+                  <SelectItem value="Notes">Notes</SelectItem>
+                  <SelectItem value="Letters">Letters</SelectItem>
+                  <SelectItem value="Monthly Charges">Monthly Charges</SelectItem>
+                  <SelectItem value="Lease Information">Lease Information</SelectItem>
+                  <SelectItem value="Financials">Financials</SelectItem>
+                  <SelectItem value="Late Fee Policy">Late Fee Policy</SelectItem>
+                  <SelectItem value="Animals">Animals</SelectItem>
+                  <SelectItem value="Vehicles">Vehicles</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Field Name */}
+            <div className="space-y-2">
+              <Label htmlFor="fieldName" className="text-sm font-medium text-slate-700">Field Name</Label>
+              <Input
+                id="fieldName"
+                placeholder="Enter field name..."
+                value={fieldName}
+                onChange={(e) => setFieldName(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* Field Type */}
+            <div className="space-y-2">
+              <Label htmlFor="fieldType" className="text-sm font-medium text-slate-700">Field Type</Label>
+              <Select value={fieldType} onValueChange={setFieldType}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select field type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="text">Text</SelectItem>
+                  <SelectItem value="number">Number</SelectItem>
+                  <SelectItem value="date">Date</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                  <SelectItem value="phone">Phone</SelectItem>
+                  <SelectItem value="url">URL</SelectItem>
+                  <SelectItem value="checkbox">Checkbox</SelectItem>
+                  <SelectItem value="dropdown">Dropdown</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Required Field Toggle */}
+            <div className="flex items-center justify-between p-3 border border-slate-200 rounded-lg bg-slate-50">
+              <div className="flex flex-col">
+                <Label className="text-sm font-medium text-slate-700">Required Field</Label>
+                <p className="text-xs text-slate-500 mt-0.5">Mark this field as mandatory</p>
+              </div>
+              <Switch checked={isFieldRequired} onCheckedChange={setIsFieldRequired} />
+            </div>
+
+            {/* Info Banner */}
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex gap-2">
+              <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700">This field will be available in Tenant reports</p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setShowAddFieldModal(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+              onClick={handleAddField}
+              disabled={!fieldName.trim()}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Field
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

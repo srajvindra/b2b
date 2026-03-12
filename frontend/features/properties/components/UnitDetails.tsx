@@ -72,6 +72,29 @@ import {
   MessageSquare,
 } from "lucide-react"
 
+const UNIT_CUSTOM_FIELD_SECTIONS = [
+  { id: "overview-unit-information", name: "Unit Information" },
+  { id: "overview-tags", name: "Tags" },
+  { id: "overview-amenities", name: "Amenities" },
+  { id: "overview-maintenance-information", name: "Maintenance Information" },
+  { id: "overview-fixed-assets", name: "Fixed Assets" },
+  { id: "overview-vacancy-analysis", name: "Vacancy Analysis" },
+  { id: "rental-rental-information", name: "Rental Information" },
+  { id: "rental-current-tenants", name: "Current Tenants" },
+  { id: "rental-past-tenants", name: "Past Tenants" },
+  { id: "rental-access-information", name: "Access Information" },
+  { id: "rental-notes", name: "Notes" },
+]
+
+interface UnitCustomField {
+  id: string
+  sectionId: string
+  name: string
+  type: string
+  options?: string[]
+  required: boolean
+}
+
 interface UnitDetailsProps {
   unitId?: string
   propertyId?: string
@@ -87,7 +110,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
   const [showMojoEndDate, setShowMojoEndDate] = useState("")
   const [showMojoAccessOption, setShowMojoAccessOption] = useState("one-day")
   const [showMojoCodeDate, setShowMojoCodeDate] = useState("Feb 23, 2026")
-  
+
   const [showShareLinksDialog, setShowShareLinksDialog] = useState(false)
   const [shareLinksRecipients, setShareLinksRecipients] = useState<string[]>([])
   const [shareLinksMessage, setShareLinksMessage] = useState("")
@@ -95,7 +118,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
   const [shareViaSMS, setShareViaSMS] = useState(false)
 
   const toggleShareLinksRecipient = (id: string) => {
-    setShareLinksRecipients(prev => 
+    setShareLinksRecipients(prev =>
       prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id]
     )
   }
@@ -105,11 +128,12 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(true)
   const [vacancyAnalysisExpanded, setVacancyAnalysisExpanded] = useState(true)
   const [showAddCustomFieldDialog, setShowAddCustomFieldDialog] = useState(false)
-  const [customFieldSection, setCustomFieldSection] = useState("Federal Tax")
+  const [customFieldSection, setCustomFieldSection] = useState(UNIT_CUSTOM_FIELD_SECTIONS[0]?.id || "")
   const [customFieldName, setCustomFieldName] = useState("")
   const [customFieldType, setCustomFieldType] = useState("dropdown-multi")
   const [customFieldOptions, setCustomFieldOptions] = useState("")
   const [customFieldRequired, setCustomFieldRequired] = useState(false)
+  const [unitCustomFields, setUnitCustomFields] = useState<UnitCustomField[]>([])
 
   // Documents tab state
   const [showUploadDocumentDialog, setShowUploadDocumentDialog] = useState(false)
@@ -385,7 +409,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
               <CardHeader className="border-b bg-slate-50 py-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base font-semibold text-slate-800">
-                    Task Summary 
+                    Task Summary
                   </CardTitle>
                   <Button
                     size="sm"
@@ -444,29 +468,27 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                             </div>
                           </TableCell>
                           <TableCell className="py-4">
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs font-medium ${
-                                activity.priority === "High" 
-                                  ? "bg-red-50 text-red-600 border-red-200" 
+                            <Badge
+                              variant="outline"
+                              className={`text-xs font-medium ${activity.priority === "High"
+                                  ? "bg-red-50 text-red-600 border-red-200"
                                   : activity.priority === "Medium"
                                     ? "bg-yellow-50 text-yellow-600 border-yellow-200"
                                     : "bg-slate-50 text-slate-500 border-slate-200"
-                              }`}
+                                }`}
                             >
                               {activity.priority}
                             </Badge>
                           </TableCell>
                           <TableCell className="py-4">
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs font-medium ${
-                                activity.status === "Pending" 
-                                  ? "bg-yellow-50 text-yellow-600 border-yellow-300" 
+                            <Badge
+                              variant="outline"
+                              className={`text-xs font-medium ${activity.status === "Pending"
+                                  ? "bg-yellow-50 text-yellow-600 border-yellow-300"
                                   : activity.status === "In Progress"
                                     ? "bg-teal-50 text-teal-600 border-teal-300"
                                     : "bg-slate-50 text-slate-500 border-slate-300"
-                              }`}
+                                }`}
                             >
                               {activity.status}
                             </Badge>
@@ -534,6 +556,25 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     </Button>
                   )}
                 </div>
+                {unitCustomFields.filter((field) => field.sectionId === "overview-task-summary").length > 0 && (
+                  <div className="px-6 pb-4 space-y-1 border-t border-slate-100">
+                    {unitCustomFields
+                      .filter((field) => field.sectionId === "overview-task-summary")
+                      .map((field) => (
+                        <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                          <span className="text-slate-500 flex items-center gap-2">
+                            {field.name}
+                            {field.required && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">
+                                Required
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-medium text-slate-800">--</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -545,10 +586,24 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     <Home className="h-5 w-5 text-blue-600" />
                     Unit Information
                   </CardTitle>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                    <Edit2 className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("overview-unit-information")
+                        setShowAddCustomFieldDialog(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Field
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
@@ -584,10 +639,24 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
             {/* Tags */}
             <Card className="border-0 shadow-md">
               <CardHeader className="border-b bg-slate-50 py-4">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800">
-                  <Tag className="h-5 w-5 text-purple-600" />
-                  Tags
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800">
+                    <Tag className="h-5 w-5 text-purple-600" />
+                    Tags
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                    onClick={() => {
+                      setCustomFieldSection("overview-tags")
+                      setShowAddCustomFieldDialog(true)
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add Field
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="p-4">
                 <div className="flex flex-wrap gap-2">
@@ -605,6 +674,25 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     <span className="text-slate-400">—</span>
                   )}
                 </div>
+                {unitCustomFields.filter((field) => field.sectionId === "overview-tags").length > 0 && (
+                  <div className="mt-4 space-y-1 border-t border-slate-100 pt-3">
+                    {unitCustomFields
+                      .filter((field) => field.sectionId === "overview-tags")
+                      .map((field) => (
+                        <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                          <span className="text-slate-500 flex items-center gap-2">
+                            {field.name}
+                            {field.required && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">
+                                Required
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-medium text-slate-800">--</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -617,6 +705,18 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     Amenities
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("overview-amenities")
+                        setShowAddCustomFieldDialog(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Field
+                    </Button>
                     <Button variant="outline" size="sm" className="text-slate-600 border-slate-200 hover:bg-slate-50 h-8">
                       Edit
                     </Button>
@@ -647,6 +747,25 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                       </Badge>
                     ))}
                   </div>
+                  {unitCustomFields.filter((field) => field.sectionId === "overview-amenities").length > 0 && (
+                    <div className="mt-4 space-y-1 border-t border-slate-100 pt-3">
+                      {unitCustomFields
+                        .filter((field) => field.sectionId === "overview-amenities")
+                        .map((field) => (
+                          <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                            <span className="text-slate-500 flex items-center gap-2">
+                              {field.name}
+                              {field.required && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">
+                                  Required
+                                </span>
+                              )}
+                            </span>
+                            <span className="font-medium text-slate-800">--</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </CardContent>
               )}
             </Card>
@@ -659,10 +778,24 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     <Wrench className="h-5 w-5 text-slate-600" />
                     Maintenance Information
                   </CardTitle>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                    <Edit2 className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("overview-maintenance-information")
+                        setShowAddCustomFieldDialog(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Field
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
@@ -678,18 +811,51 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
               <CardHeader className="border-b bg-slate-50 py-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold text-slate-800">Fixed Assets</CardTitle>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Asset
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("overview-fixed-assets")
+                        setShowAddCustomFieldDialog(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Field
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Asset
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
                 <p className="text-center text-slate-500 py-4">Click Add Asset to add a fixed asset.</p>
+                {unitCustomFields.filter((field) => field.sectionId === "overview-fixed-assets").length > 0 && (
+                  <div className="mt-4 space-y-1 border-t border-slate-100 pt-3">
+                    {unitCustomFields
+                      .filter((field) => field.sectionId === "overview-fixed-assets")
+                      .map((field) => (
+                        <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                          <span className="text-slate-500 flex items-center gap-2">
+                            {field.name}
+                            {field.required && (
+                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">
+                                Required
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-medium text-slate-800">--</span>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -702,14 +868,17 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     Vacancy Analysis
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent h-8"
-                      onClick={() => setShowAddCustomFieldDialog(true)}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("overview-vacancy-analysis")
+                        setShowAddCustomFieldDialog(true)
+                      }}
                     >
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Custom Field
+                      <Plus className="h-3 w-3" />
+                      Add Field
                     </Button>
                     <button
                       type="button"
@@ -728,6 +897,25 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
               {vacancyAnalysisExpanded && (
                 <CardContent className="p-6">
                   <p className="text-center text-slate-500 py-4">Click Add Custom Field to add custom fields for vacancy analysis.</p>
+                  {unitCustomFields.filter((field) => field.sectionId === "overview-vacancy-analysis").length > 0 && (
+                    <div className="mt-4 space-y-1 border-t border-slate-100 pt-3">
+                      {unitCustomFields
+                        .filter((field) => field.sectionId === "overview-vacancy-analysis")
+                        .map((field) => (
+                          <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                            <span className="text-slate-500 flex items-center gap-2">
+                              {field.name}
+                              {field.required && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">
+                                  Required
+                                </span>
+                              )}
+                            </span>
+                            <span className="font-medium text-slate-800">--</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </CardContent>
               )}
             </Card>
@@ -743,10 +931,24 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     <DollarSign className="h-5 w-5 text-emerald-600" />
                     Rental Information
                   </CardTitle>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                    <Edit2 className="h-4 w-4 mr-1" />
-                    Edit
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("rental-rental-information")
+                        setShowAddCustomFieldDialog(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Field
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                      <Edit2 className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
@@ -825,10 +1027,24 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
             {/* Current Tenants */}
             <Card className="border-0 shadow-md">
               <CardHeader className="border-b bg-slate-50 py-4">
-                <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800">
-                  <User className="h-5 w-5 text-blue-600" />
-                  Current Tenants
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold flex items-center gap-2 text-slate-800">
+                    <User className="h-5 w-5 text-blue-600" />
+                    Current Tenants
+                  </CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                    onClick={() => {
+                      setCustomFieldSection("rental-current-tenants")
+                      setShowAddCustomFieldDialog(true)
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add Field
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -879,7 +1095,21 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
             {/* Past Tenants */}
             <Card className="border-0 shadow-md">
               <CardHeader className="border-b bg-slate-50 py-4">
-                <CardTitle className="text-lg font-semibold text-slate-800">Past Tenants</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold text-slate-800">Past Tenants</CardTitle>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                    onClick={() => {
+                      setCustomFieldSection("rental-past-tenants")
+                      setShowAddCustomFieldDialog(true)
+                    }}
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add Field
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="p-0">
                 <Table>
@@ -915,14 +1145,28 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     <Key className="h-5 w-5 text-amber-600" />
                     Access Information
                   </CardTitle>
-                  <button
-                    type="button"
-                    className="flex items-center justify-center transition-colors cursor-pointer text-blue-600 hover:text-blue-700"
-                    title="Share Access Information"
-                    onClick={() => setShowShareLinksDialog(true)}
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("rental-access-information")
+                        setShowAddCustomFieldDialog(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Field
+                    </Button>
+                    <button
+                      type="button"
+                      className="flex items-center justify-center transition-colors cursor-pointer text-blue-600 hover:text-blue-700"
+                      title="Share Access Information"
+                      onClick={() => setShowShareLinksDialog(true)}
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-6">
@@ -961,6 +1205,18 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     <CheckCircle2 className="h-4 w-4 text-blue-500" />
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                      onClick={() => {
+                        setCustomFieldSection("rental-notes")
+                        setShowAddCustomFieldDialog(true)
+                      }}
+                    >
+                      <Plus className="h-3 w-3" />
+                      Add Field
+                    </Button>
                     <Button
                       size="sm"
                       variant="outline"
@@ -1188,11 +1444,10 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                           <button
                             key={key}
                             onClick={() => toggleRecipient(recipient.name, index)}
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-colors ${
-                              isSelected
+                            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-colors ${isSelected
                                 ? "border-green-400 bg-green-50"
                                 : "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
-                            }`}
+                              }`}
                           >
                             <div className={`h-6 w-6 rounded-full ${recipient.color} flex items-center justify-center shrink-0`}>
                               <span className="text-white text-xs font-medium">{recipient.name.charAt(0)}</span>
@@ -1308,13 +1563,12 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${
-                              order.status === "Completed"
+                            className={`text-xs ${order.status === "Completed"
                                 ? "border-green-300 bg-green-50 text-green-700"
                                 : order.status === "In Progress"
-                                ? "border-blue-300 bg-blue-50 text-blue-700"
-                                : "border-amber-300 bg-amber-50 text-amber-700"
-                            }`}
+                                  ? "border-blue-300 bg-blue-50 text-blue-700"
+                                  : "border-amber-300 bg-amber-50 text-amber-700"
+                              }`}
                           >
                             {order.status}
                           </Badge>
@@ -1322,13 +1576,12 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                         <TableCell>
                           <Badge
                             variant="outline"
-                            className={`text-xs ${
-                              order.priority === "High"
+                            className={`text-xs ${order.priority === "High"
                                 ? "border-red-300 bg-red-50 text-red-700"
                                 : order.priority === "Medium"
-                                ? "border-amber-300 bg-amber-50 text-amber-700"
-                                : "border-gray-300 bg-gray-50 text-gray-700"
-                            }`}
+                                  ? "border-amber-300 bg-amber-50 text-amber-700"
+                                  : "border-gray-300 bg-gray-50 text-gray-700"
+                              }`}
                           >
                             {order.priority}
                           </Badge>
@@ -1373,7 +1626,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   <div className="col-span-2">Received Time</div>
                   <div className="col-span-2 text-right">Actions</div>
                 </div>
-                
+
                 {/* Table Rows */}
                 <div className="divide-y divide-slate-100">
                   {documentsData.map((doc, idx) => (
@@ -1638,15 +1891,14 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4 space-y-6">
               {/* Lockbox Code Section */}
               <div className="space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      accessCodeType === "lockbox" ? "border-green-600" : "border-slate-300"
-                    }`}
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${accessCodeType === "lockbox" ? "border-green-600" : "border-slate-300"
+                      }`}
                     onClick={() => setAccessCodeType("lockbox")}
                   >
                     {accessCodeType === "lockbox" && (
@@ -1655,7 +1907,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   </div>
                   <span className="text-sm font-medium text-slate-700">Lockbox Code</span>
                 </label>
-                
+
                 {accessCodeType === "lockbox" && (
                   <div className="flex items-center gap-3">
                     <div className="flex-1 flex items-center border border-slate-200 rounded-lg overflow-hidden">
@@ -1677,7 +1929,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     </div>
                   </div>
                 )}
-                
+
                 {accessCodeType === "lockbox" && (
                   <Button
                     className="w-auto gap-1.5 bg-green-600 hover:bg-green-700 text-white"
@@ -1688,14 +1940,13 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   </Button>
                 )}
               </div>
-              
+
               {/* ShowMojo Code Section */}
               <div className="space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      accessCodeType === "showmojo" ? "border-green-600" : "border-slate-300"
-                    }`}
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${accessCodeType === "showmojo" ? "border-green-600" : "border-slate-300"
+                      }`}
                     onClick={() => setAccessCodeType("showmojo")}
                   >
                     {accessCodeType === "showmojo" && (
@@ -1704,7 +1955,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   </div>
                   <span className="text-sm font-medium text-slate-700">ShowMojo Code</span>
                 </label>
-                
+
                 {accessCodeType === "showmojo" && (
                   <div className="space-y-3 pl-6">
                     {/* Get a one-time-use code link */}
@@ -1714,7 +1965,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                     >
                       Get a one-time-use code (in EST)
                     </button>
-                    
+
                     {/* Other Access Options dropdown */}
                     <div className="space-y-1">
                       <label className="text-xs text-slate-500">Other access options</label>
@@ -1730,7 +1981,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                         ))}
                       </select>
                     </div>
-                    
+
                     {/* Get a code for date */}
                     <div className="space-y-1">
                       <label className="text-xs text-slate-500">Get a code (in EST) for</label>
@@ -1744,7 +1995,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                         <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       </div>
                     </div>
-                    
+
                     {/* Clear All Access Codes link */}
                     <button
                       type="button"
@@ -1756,7 +2007,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 )}
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="flex items-center justify-between px-6 py-4 border-t bg-slate-50">
               <Button
@@ -1792,7 +2043,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4 space-y-4">
               <div className="space-y-3">
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Email To:</label>
@@ -1802,11 +2053,10 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                       key={option.id}
                       type="button"
                       onClick={() => toggleShareLinksRecipient(option.id)}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${
-                        shareLinksRecipients.includes(option.id)
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-lg border transition-colors cursor-pointer ${shareLinksRecipients.includes(option.id)
                           ? "border-green-500 bg-green-50"
                           : "border-slate-200 hover:border-slate-300"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2">
                         <div className={`w-6 h-6 rounded-full ${option.color} flex items-center justify-center`}>
@@ -1814,11 +2064,10 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                         </div>
                         <span className="text-sm text-slate-700 text-left">{option.label}</span>
                       </div>
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                        shareLinksRecipients.includes(option.id)
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${shareLinksRecipients.includes(option.id)
                           ? "border-green-500 bg-green-500"
                           : "border-slate-300"
-                      }`}>
+                        }`}>
                         {shareLinksRecipients.includes(option.id) && (
                           <Check className="h-3 w-3 text-white" />
                         )}
@@ -1835,19 +2084,17 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   <button
                     type="button"
                     onClick={() => setShareViaEmail(!shareViaEmail)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors cursor-pointer ${
-                      shareViaEmail
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors cursor-pointer ${shareViaEmail
                         ? "border-green-500 bg-green-50"
                         : "border-slate-200 hover:border-slate-300"
-                    }`}
+                      }`}
                   >
                     <Mail className="h-4 w-4 text-slate-600" />
                     <span className="text-sm text-slate-700">Email</span>
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                      shareViaEmail
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${shareViaEmail
                         ? "border-green-500 bg-green-500"
                         : "border-slate-300"
-                    }`}>
+                      }`}>
                       {shareViaEmail && (
                         <Check className="h-3 w-3 text-white" />
                       )}
@@ -1856,19 +2103,17 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   <button
                     type="button"
                     onClick={() => setShareViaSMS(!shareViaSMS)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors cursor-pointer ${
-                      shareViaSMS
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors cursor-pointer ${shareViaSMS
                         ? "border-green-500 bg-green-50"
                         : "border-slate-200 hover:border-slate-300"
-                    }`}
+                      }`}
                   >
                     <MessageSquare className="h-4 w-4 text-slate-600" />
                     <span className="text-sm text-slate-700">SMS</span>
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                      shareViaSMS
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center ${shareViaSMS
                         ? "border-green-500 bg-green-500"
                         : "border-slate-300"
-                    }`}>
+                      }`}>
                       {shareViaSMS && (
                         <Check className="h-3 w-3 text-white" />
                       )}
@@ -1876,7 +2121,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   </button>
                 </div>
               </div>
-              
+
               <div>
                 <textarea
                   placeholder="Add message..."
@@ -1886,7 +2131,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 />
               </div>
             </div>
-            
+
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t bg-slate-50">
               <Button
                 variant="outline"
@@ -1933,29 +2178,33 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="px-6 pb-2">
               <p className="text-sm text-slate-400">
-                Add a new custom field to the Federal Tax section. All custom fields are available for reporting.
+                Add a new custom field to the{" "}
+                {UNIT_CUSTOM_FIELD_SECTIONS.find((s) => s.id === customFieldSection)?.name || "selected"}{" "}
+                section. All custom fields are available for reporting.
               </p>
             </div>
-            
+
             <div className="px-6 py-4 space-y-5">
               {/* Section */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Section</Label>
                 <Select value={customFieldSection} onValueChange={setCustomFieldSection}>
-                  <SelectTrigger className="w-36 border-teal-500 focus:ring-teal-500">
+                  <SelectTrigger className="w-48 border-teal-500 focus:ring-teal-500">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Federal Tax">Federal Tax</SelectItem>
-                    <SelectItem value="State Tax">State Tax</SelectItem>
-                    <SelectItem value="Local Tax">Local Tax</SelectItem>
+                    {UNIT_CUSTOM_FIELD_SECTIONS.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {/* Field Name */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Field Name</Label>
@@ -1966,7 +2215,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   className="text-sm"
                 />
               </div>
-              
+
               {/* Field Type */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Field Type</Label>
@@ -1983,7 +2232,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {/* Options (for dropdown) */}
               {(customFieldType === "dropdown-multi") && (
                 <div className="space-y-2">
@@ -1996,7 +2245,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   />
                 </div>
               )}
-              
+
               {/* Required Field Toggle */}
               <div className="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-lg">
                 <div>
@@ -2006,25 +2255,23 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <button
                   type="button"
                   onClick={() => setCustomFieldRequired(!customFieldRequired)}
-                  className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${
-                    customFieldRequired ? "bg-teal-600" : "bg-slate-300"
-                  }`}
+                  className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${customFieldRequired ? "bg-teal-600" : "bg-slate-300"
+                    }`}
                 >
                   <span
-                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                      customFieldRequired ? "translate-x-5" : "translate-x-0"
-                    }`}
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${customFieldRequired ? "translate-x-5" : "translate-x-0"
+                      }`}
                   />
                 </button>
               </div>
-              
+
               {/* Info Box */}
               <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 rounded-lg">
                 <FileText className="h-4 w-4 text-blue-500 shrink-0" />
                 <p className="text-sm text-blue-500">This field will be available in Owner Directory reports</p>
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
               <Button
@@ -2040,7 +2287,24 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
               </Button>
               <Button
                 className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                disabled={!customFieldName.trim() || !customFieldSection}
                 onClick={() => {
+                  if (!customFieldName.trim() || !customFieldSection) return
+                  const newField: UnitCustomField = {
+                    id: `unit_cf_${Date.now()}`,
+                    sectionId: customFieldSection,
+                    name: customFieldName.trim(),
+                    type: customFieldType,
+                    options:
+                      customFieldType === "dropdown-multi"
+                        ? customFieldOptions
+                          .split(",")
+                          .map((opt) => opt.trim())
+                          .filter(Boolean)
+                        : undefined,
+                    required: customFieldRequired,
+                  }
+                  setUnitCustomFields((prev) => [...prev, newField])
                   setShowAddCustomFieldDialog(false)
                   setCustomFieldName("")
                   setCustomFieldOptions("")
@@ -2070,7 +2334,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4 space-y-5">
               {/* Upload File Area */}
               <div className="space-y-2">
@@ -2081,7 +2345,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   <p className="text-xs text-slate-400 mt-1">PDF, DOC, DOCX, JPG, PNG</p>
                 </div>
               </div>
-              
+
               {/* Document Type */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Document Type</Label>
@@ -2098,7 +2362,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {/* Assignee (Optional) */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Assignee (Optional)</Label>
@@ -2113,7 +2377,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               {/* Comments (Optional) */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Comments (Optional)</Label>
@@ -2125,7 +2389,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 />
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
               <Button
@@ -2175,29 +2439,27 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             {/* Tabs */}
             <div className="px-6 border-b">
               <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={() => setMissingInfoTab("fields")}
-                  className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
-                    missingInfoTab === "fields"
+                  className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${missingInfoTab === "fields"
                       ? "bg-teal-50 text-teal-700 border border-b-0 border-teal-200"
                       : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   Missing Fields ({missingFields.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setMissingInfoTab("documents")}
-                  className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
-                    missingInfoTab === "documents"
+                  className={`px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${missingInfoTab === "documents"
                       ? "bg-teal-50 text-teal-700 border border-b-0 border-teal-200"
                       : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
-                  }`}
+                    }`}
                 >
                   Missing Documents ({missingDocuments.length})
                 </button>
@@ -2286,7 +2548,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="px-6 py-4 space-y-5">
               {/* Upload File Area */}
               <div className="space-y-2">
@@ -2297,7 +2559,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                   <p className="text-xs text-slate-400 mt-1">PDF, DOC, DOCX, JPG, PNG</p>
                 </div>
               </div>
-              
+
               {/* Comments (Optional) */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Comments (Optional)</Label>
@@ -2307,7 +2569,7 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 />
               </div>
             </div>
-            
+
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
               <Button

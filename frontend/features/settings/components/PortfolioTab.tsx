@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search } from "lucide-react"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 import type { CSRPortfolio } from "../types"
 import { PORTFOLIO_STAFF } from "../data/staffMembers"
 import { ROLE_COLUMNS, INITIAL_CSR_DATA } from "../data/portfolio"
@@ -59,6 +60,7 @@ function StaffSelectorCell({
 export function PortfolioTab() {
   const [csrData, setCsrData] = useState<CSRPortfolio[]>(INITIAL_CSR_DATA)
   const [portfolioSearchQuery, setPortfolioSearchQuery] = useState("")
+  const [visibleCount, setVisibleCount] = useState(10)
 
   const handleAssignmentChange = (csrId: string, role: string, staffId: string | null) => {
     setCsrData((prev) =>
@@ -79,6 +81,12 @@ export function PortfolioTab() {
   const filteredCSRs = csrData.filter((csr) =>
     csr.name.toLowerCase().includes(portfolioSearchQuery.toLowerCase())
   )
+
+  const paginatedCSRs = filteredCSRs.slice(0, visibleCount)
+
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [portfolioSearchQuery])
 
   return (
     <div className="space-y-4">
@@ -114,7 +122,7 @@ export function PortfolioTab() {
               </tr>
             </thead>
             <tbody>
-              {filteredCSRs.map((csr, index) => (
+              {paginatedCSRs.map((csr, index) => (
                 <tr
                   key={csr.id}
                   className={`border-b border-border ${index % 2 === 0 ? "bg-background" : "bg-muted/50"}`}
@@ -147,11 +155,14 @@ export function PortfolioTab() {
             <p>No CSR portfolios found matching your search.</p>
           </div>
         )}
+        <LoadMorePagination
+          total={filteredCSRs.length}
+          visibleCount={visibleCount}
+          label="CSR portfolios"
+          onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, filteredCSRs.length))}
+        />
       </Card>
       <div className="flex items-center justify-between text-sm text-muted-foreground">
-        <span>
-          Showing {filteredCSRs.length} of {csrData.length} CSR portfolios
-        </span>
         <span>{ROLE_COLUMNS.length} roles configured</span>
       </div>
     </div>

@@ -6,10 +6,6 @@ export {
   type ContactTabsStatsVendorsProps,
   type ContactTabsStatsPropertyTechnicianProps,
   type ContactTabsStatsLeasingAgentProps,
-  type OwnerTileFilter,
-  type OwnerCollectionsSubFilter,
-  type OwnerIncomeExpenseSubFilter,
-  type OwnerPropertiesStatusSubFilter,
-  type OwnerMaintenanceSubFilter,
-  type TenantTileFilter,
+  type OwnerStatsKey,
+  type TenantStatsKey,
 } from "./ContactTabsStats"

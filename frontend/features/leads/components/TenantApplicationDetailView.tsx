@@ -183,6 +183,16 @@ export function TenantApplicationDetailView({
   const [assignedTeam, setAssignedTeam] = useState<StaffListItem[]>([STAFF_LIST[0]])
   const [teamPopoverOpen, setTeamPopoverOpen] = useState(false)
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
+
+  const toDateInputValue = (s: string | undefined): string => {
+    if (!s) return ""
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+    const d = new Date(s)
+    if (Number.isNaN(d.getTime())) return ""
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  }
+  const [editableCreatedAt, setEditableCreatedAt] = useState(toDateInputValue(lead?.createdAt ?? ""))
+  const [editableClosedAt, setEditableClosedAt] = useState(toDateInputValue(lead?.lastTouch ?? ""))
   const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
   const [missingInfoTab, setMissingInfoTab] = useState<"fields" | "documents">("fields")
   const router = useRouter()
@@ -378,6 +388,8 @@ export function TenantApplicationDetailView({
     primaryPhone: lead.phone,
     location: "San Francisco, CA",
     source: "Zillow",
+    startDate: editableCreatedAt,
+    closeDate: editableClosedAt,
   }
 
   const togglePin = (activityId: number) => {
@@ -909,9 +921,32 @@ export function TenantApplicationDetailView({
                     <span>Add Field</span>
                   </button>
                 </div>
+                <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm items-center">
+
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground shrink-0">Created at:</span>
+                    <Input
+                      type="date"
+                      value={editableCreatedAt}
+                      onChange={(e) => setEditableCreatedAt(e.target.value)}
+                      className="h-9 w-[140px] text-blue-600"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <span className="text-muted-foreground shrink-0">Closed at:</span>
+                    <Input
+                      type="date"
+                      value={editableClosedAt}
+                      onChange={(e) => setEditableClosedAt(e.target.value)}
+                      className="h-9 w-[140px] text-blue-600"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
-            
+
             {/* Assigned Staff Dropdown */}
             <Popover open={teamPopoverOpen} onOpenChange={setTeamPopoverOpen}>
               <PopoverTrigger asChild>
@@ -943,7 +978,7 @@ export function TenantApplicationDetailView({
                       </Button>
                     )}
                   </div>
-                  
+
                   {/* Currently Assigned */}
                   {assignedTeam.length > 0 ? (
                     <div className="space-y-2">
@@ -973,7 +1008,7 @@ export function TenantApplicationDetailView({
                     <p className="text-sm text-muted-foreground py-2">No team members assigned</p>
                   )}
                 </div>
-                
+
                 {/* Add Team Member */}
                 <div className="p-3">
                   <div className="flex items-center justify-between mb-2">
@@ -1024,7 +1059,7 @@ export function TenantApplicationDetailView({
               </PopoverContent>
             </Popover>
           </div>
-          
+
           {/* Stage Progress Rectangles */}
           <div className="flex items-center gap-3 mt-4">
             <div className="flex items-center gap-1 flex-1">
@@ -1058,7 +1093,7 @@ export function TenantApplicationDetailView({
                 </TooltipProvider>
               ))}
             </div>
-            
+
             {/* Stage Dropdown */}
             <Select value={currentStage.toString()} onValueChange={(value) => setCurrentStage(Number.parseInt(value))}>
               <SelectTrigger className="w-[160px] h-9 bg-white border-slate-200">
@@ -4251,8 +4286,8 @@ export function TenantApplicationDetailView({
                     type="button"
                     onClick={() => handleShareLinkRecipientToggle(id)}
                     className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md border transition-all text-left ${shareLinkRecipients[id]
-                        ? "border-green-500/40 bg-green-50 shadow-sm"
-                        : "border-border bg-white hover:border-muted-foreground/20 hover:bg-muted/30"
+                      ? "border-green-500/40 bg-green-50 shadow-sm"
+                      : "border-border bg-white hover:border-muted-foreground/20 hover:bg-muted/30"
                       }`}
                   >
                     <div className={`h-7 w-7 rounded-full ${color} flex items-center justify-center shrink-0`}>
@@ -4411,14 +4446,12 @@ export function TenantApplicationDetailView({
                 onClick={() =>
                   setCustomFieldData({ ...customFieldData, isRequired: !customFieldData.isRequired })
                 }
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  customFieldData.isRequired ? "bg-teal-600" : "bg-gray-200"
-                }`}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${customFieldData.isRequired ? "bg-teal-600" : "bg-gray-200"
+                  }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    customFieldData.isRequired ? "translate-x-6" : "translate-x-1"
-                  }`}
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${customFieldData.isRequired ? "translate-x-6" : "translate-x-1"
+                    }`}
                 />
               </button>
             </div>

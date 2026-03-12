@@ -65,7 +65,7 @@ export default function AllPropertiesPage() {
   const [hasMoreProperties, setHasMoreProperties] = useState(true)
 
   // Filter states
-  const [metricsFilter, setMetricsFilter] = useState<string | null>(null)
+  const [metricsFilters, setMetricsFilters] = useState<string[]>([])
   const [appliedFilters, setAppliedFilters] = useState<{ field: string; values: string[] }[]>([])
   const [showAddFilterModal, setShowAddFilterModal] = useState(false)
   const [modalFilterField, setModalFilterField] = useState("")
@@ -74,11 +74,11 @@ export default function AllPropertiesPage() {
   const [modalFieldSearch, setModalFieldSearch] = useState("")
   const [showFieldDropdown, setShowFieldDropdown] = useState(false)
 
-  const hasActiveFilters = appliedFilters.length > 0 || metricsFilter !== null
+  const hasActiveFilters = appliedFilters.length > 0 || metricsFilters.length > 0
 
   const resetAllFilters = () => {
     setAppliedFilters([])
-    setMetricsFilter(null)
+    setMetricsFilters([])
     setCurrentPage(1)
   }
 
@@ -135,18 +135,24 @@ export default function AllPropertiesPage() {
       }
     }
 
-    // Metrics summary tile filters
-    if (metricsFilter) {
-      if (metricsFilter.startsWith("occ-") && property.hasVacancy) return false
-      if (metricsFilter.startsWith("vac-") && !property.hasVacancy) return false
-      if (metricsFilter === "occ-delinquent" && Number(property.id) % 5 !== 0) return false
-      if (metricsFilter === "occ-eviction" && Number(property.id) % 7 !== 0) return false
-      if (metricsFilter === "occ-moveout" && Number(property.id) % 4 !== 0) return false
-      if (metricsFilter === "vac-market" && Number(property.id) % 3 !== 0) return false
-      if (metricsFilter === "vac-hold" && Number(property.id) % 6 !== 0) return false
-      if (metricsFilter === "wo-unassigned" && Number(property.id) % 4 !== 1) return false
-      if (metricsFilter === "task-overdue" && Number(property.id) % 5 !== 2) return false
-      if (metricsFilter === "proc-overdue" && Number(property.id) % 6 !== 1) return false
+    // Metrics summary tile filters (multi-select, OR across keys)
+    if (metricsFilters.length > 0) {
+      const idNum = Number(property.id)
+      const matchesAny = metricsFilters.some((key) => {
+        if (key.startsWith("occ-") && property.hasVacancy) return false
+        if (key.startsWith("vac-") && !property.hasVacancy) return false
+        if (key === "occ-delinquent") return idNum % 5 === 0
+        if (key === "occ-eviction") return idNum % 7 === 0
+        if (key === "occ-moveout") return idNum % 4 === 0
+        if (key === "vac-market") return idNum % 3 === 0
+        if (key === "vac-hold") return idNum % 6 === 0
+        if (key === "wo-unassigned") return idNum % 4 === 1
+        if (key === "task-overdue") return idNum % 5 === 2
+        if (key === "proc-overdue") return idNum % 6 === 1
+        // Keys like occ-all, vac-all, col-* just pass through when selected
+        return true
+      })
+      if (!matchesAny) return false
     }
 
     return true
@@ -194,7 +200,13 @@ export default function AllPropertiesPage() {
           </div>
         </div>
 
-        <PropertyMetricsSummary activeFilter={metricsFilter} onFilterChange={(key) => { setMetricsFilter(key); setCurrentPage(1) }} />
+        <PropertyMetricsSummary
+          activeFilters={metricsFilters}
+          onFilterChange={(keys) => {
+            setMetricsFilters(keys)
+            setCurrentPage(1)
+          }}
+        />
 
         <div className="border-b bg-card px-6 py-3">
           <div className="flex items-center justify-between gap-3">

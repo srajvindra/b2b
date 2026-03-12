@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Search, MoreVertical, Mail, Phone, Calendar, Eye, UserX, UserCheck } from "lucide-react"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 import { STAFF_MEMBERS_DATA } from "../data/staffMembers"
 
 function getRoleBadgeColor(role: string): string {
@@ -32,6 +33,7 @@ function getRoleBadgeColor(role: string): string {
 export function StaffMemberTab() {
   const [staffMembers, setStaffMembers] = useState(STAFF_MEMBERS_DATA)
   const [staffSearchQuery, setStaffSearchQuery] = useState("")
+  const [visibleCount, setVisibleCount] = useState(10)
 
   const handleStatusToggle = (staffId: string) => {
     setStaffMembers((prev) =>
@@ -49,6 +51,12 @@ export function StaffMemberTab() {
       staff.email.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
       staff.role.toLowerCase().includes(staffSearchQuery.toLowerCase())
   )
+
+  const paginatedStaff = filteredStaff.slice(0, visibleCount)
+
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [staffSearchQuery])
 
   return (
     <div className="space-y-4">
@@ -78,7 +86,7 @@ export function StaffMemberTab() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredStaff.map((staff) => (
+            {paginatedStaff.map((staff) => (
               <TableRow key={staff.id} className="hover:bg-muted/50">
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -163,9 +171,12 @@ export function StaffMemberTab() {
           </div>
         )}
       </Card>
-      <div className="text-sm text-muted-foreground">
-        Showing {filteredStaff.length} of {staffMembers.length} staff members
-      </div>
+      <LoadMorePagination
+        total={filteredStaff.length}
+        visibleCount={visibleCount}
+        label="staff members"
+        onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, filteredStaff.length))}
+      />
     </div>
   )
 }

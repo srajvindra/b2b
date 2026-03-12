@@ -24,6 +24,7 @@ export type Lead = {
   source?: string // Lead source
   lastTouch?: string // Last touch date
   interestedUnits?: { address: string; unit: string }[] // Unit addresses for lease prospects
+  address?: string // Location / address (e.g. "San Francisco, CA" or full address)
 }
 
 // Tenant application / lease prospect detail

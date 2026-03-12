@@ -122,24 +122,66 @@ const CATEGORIES: CategoryTile[] = [
 ]
 
 interface PropertyMetricsSummaryProps {
-  activeFilter?: string | null
-  onFilterChange?: (filterKey: string | null) => void
+  activeFilters?: string[]
+  onFilterChange?: (filterKeys: string[]) => void
 }
 
-export function PropertyMetricsSummary({ activeFilter, onFilterChange }: PropertyMetricsSummaryProps) {
+export function PropertyMetricsSummary({ activeFilters = [], onFilterChange }: PropertyMetricsSummaryProps) {
   const handleItemClick = (key: string) => {
-    if (activeFilter === key) {
-      onFilterChange?.(null)
-    } else {
-      onFilterChange?.(key)
+    const category = CATEGORIES.find((c) => c.items.some((i) => i.key === key))
+    if (!category) {
+      onFilterChange?.(activeFilters)
+      return
     }
+    const categoryKeys = category.items.map((i) => i.key)
+    const allKey = category.items.find((i) => i.key.endsWith("-all"))?.key
+    const isAll = allKey === key
+    const isActive = activeFilters.includes(key)
+
+    // If clicking the "All" option
+    if (isAll) {
+      if (isActive) {
+        // If "All" is already the only selected key in this category, turn it off
+        const stillActiveInCategory = activeFilters.filter((k) => categoryKeys.includes(k))
+        if (stillActiveInCategory.length === 1) {
+          onFilterChange?.(activeFilters.filter((k) => k !== key))
+        } else {
+          // Otherwise just ensure it's the only one for this category
+          const withoutCategory = activeFilters.filter((k) => !categoryKeys.includes(k))
+          onFilterChange?.([...withoutCategory, key])
+        }
+      } else {
+        // Selecting "All" clears other stats in this category
+        const withoutCategory = activeFilters.filter((k) => !categoryKeys.includes(k))
+        onFilterChange?.([...withoutCategory, key])
+      }
+      return
+    }
+
+    // For non-"All" options:
+    let next = activeFilters.slice()
+
+    // Always remove the "All" key from this category if present
+    if (allKey) {
+      next = next.filter((k) => k !== allKey)
+    }
+
+    if (isActive) {
+      // Toggle off this stat only
+      next = next.filter((k) => k !== key)
+    } else {
+      // Add this stat; allow multiple non-"All" within the same category
+      next.push(key)
+    }
+
+    onFilterChange?.(next)
   }
 
   return (
     <div className="bg-background px-6 py-4 border-b border-border">
       <div className="grid grid-cols-6 gap-3">
         {CATEGORIES.map((cat) => {
-          const isCategoryActive = cat.items.some((i) => i.key === activeFilter)
+          const isCategoryActive = cat.items.some((i) => activeFilters.includes(i.key))
 
           return (
             <div
@@ -166,7 +208,7 @@ export function PropertyMetricsSummary({ activeFilter, onFilterChange }: Propert
                     type="button"
                     onClick={() => handleItemClick(item.key)}
                     className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors text-left ${
-                      activeFilter === item.key
+                      activeFilters.includes(item.key)
                         ? "bg-primary/10 text-primary font-medium"
                         : "hover:bg-muted/80 text-muted-foreground"
                     }`}

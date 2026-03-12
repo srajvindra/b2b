@@ -13,6 +13,7 @@ import {
     ChevronDown,
     ChevronRight,
     Check,
+    MapPin,
     Pin,
     Printer,
     Send,
@@ -146,6 +147,14 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
     const [llcs, setLlcs] = useState(initialLLCs)
     const [selectedPmaLlc, setSelectedPmaLlc] = useState<string>("")
 
+    // Add Custom Field modal state (Prospect Info card)
+    const [showAddCustomFieldModal, setShowAddCustomFieldModal] = useState(false)
+    const [customFieldData, setCustomFieldData] = useState({
+        section: "Federal Tax",
+        fieldName: "",
+        fieldType: "Text",
+        isRequired: false,
+    })
     // Properties tab expand/collapse
     const [expandedOwnershipTypes, setExpandedOwnershipTypes] = useState<Set<string>>(new Set())
     // Entity level: tracks collapsed entities (empty = all expanded by default)
@@ -273,6 +282,16 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
         description?: string
     } | null>(null)
 
+    const toDateInputValue = (s: string | undefined): string => {
+        if (!s) return ""
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s
+        const d = new Date(s)
+        if (Number.isNaN(d.getTime())) return ""
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+    }
+    const [editableCreatedAt, setEditableCreatedAt] = useState(() => toDateInputValue(lead?.createdAt ?? ""))
+    const [editableClosedAt, setEditableClosedAt] = useState(() => toDateInputValue(lead?.lastTouch ?? ""))
+
     const ownerInfo = {
         name: lead?.name || "N/A",
         primaryEmail: lead?.email || "",
@@ -280,6 +299,9 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
         primaryPhone: lead?.phone || "",
         secondaryPhone: lead?.secondaryPhone || "",
         leadSource: lead?.source || "Website Inquiry",
+        address: lead?.address ?? "San Francisco, CA",
+        startDate: editableCreatedAt,
+        closeDate: editableClosedAt,
     }
 
     // Highlight search matches in text
@@ -716,7 +738,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                             </Avatar>
                             <div>
                                 <h2 className="text-xl font-semibold">{ownerInfo.name}</h2>
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-1 mt-2 text-sm">
+                                <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm">
                                     <div className="flex items-center gap-2">
                                         <Mail className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-muted-foreground">Primary:</span>
@@ -731,6 +753,34 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                             {ownerInfo.primaryPhone}
                                         </a>
                                     </div>
+                                    {ownerInfo.address && (
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-foreground">{ownerInfo.address}</span>
+                                            <a
+                                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ownerInfo.address)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-muted-foreground hover:text-foreground"
+                                                aria-label="Open address in maps"
+                                            >
+                                            </a>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-muted-foreground">Source:</span>
+                                        <span className="text-foreground">{ownerInfo.leadSource}</span>
+                                    </div>
+
+                                    {/* Add Field Button */}
+                                    <button
+                                        onClick={() => setShowAddCustomFieldModal(true)}
+                                        className="flex items-center gap-1 text-sm text-teal-600 hover:text-teal-700 transition-colors border border-teal-600 hover:border-teal-700 rounded-md px-2 py-1"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        <span>Add Field</span>
+                                    </button>
                                     {ownerInfo.secondaryEmail && (
                                         <div className="flex items-center gap-2">
                                             <Mail className="h-4 w-4 text-muted-foreground opacity-0" />
@@ -750,11 +800,28 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                         </div>
                                     )}
                                 </div>
-                                {/* Lead Source */}
-                                <div className="flex items-center gap-2 mt-2 text-sm">
-                                    <Globe className="h-4 w-4 text-muted-foreground" />
-                                    <span className="text-muted-foreground">Lead Source:</span>
-                                    <span className="text-foreground">{ownerInfo.leadSource}</span>
+                                <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm items-center">
+
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="text-muted-foreground shrink-0">Created at:</span>
+                                        <Input
+                                            type="date"
+                                            value={editableCreatedAt}
+                                            onChange={(e) => setEditableCreatedAt(e.target.value)}
+                                            className="h-9 w-[140px] text-blue-600"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <span className="text-muted-foreground shrink-0">Closed at:</span>
+                                        <Input
+                                            type="date"
+                                            value={editableClosedAt}
+                                            onChange={(e) => setEditableClosedAt(e.target.value)}
+                                            className="h-9 w-[140px] text-blue-600"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -5088,6 +5155,126 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                             </div>
                         )}
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Add Custom Field Modal */}
+            <Dialog open={showAddCustomFieldModal} onOpenChange={setShowAddCustomFieldModal}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-foreground">
+                            <Plus className="h-5 w-5 text-teal-600" />
+                            Add Custom Field
+                        </DialogTitle>
+                        <DialogDescription>
+                            Add a new custom field to the {customFieldData.section} section. All custom fields are available for
+                            reporting.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        {/* Section */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Section</Label>
+                            <Select
+                                value={customFieldData.section}
+                                onValueChange={(value) => setCustomFieldData({ ...customFieldData, section: value })}
+                            >
+                                <SelectTrigger className="w-auto">
+                                    <SelectValue placeholder="Select section" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Federal Tax">Federal Tax</SelectItem>
+                                    <SelectItem value="Property Info">Property Info</SelectItem>
+                                    <SelectItem value="Tenant Info">Tenant Info</SelectItem>
+                                    <SelectItem value="Contact Info">Contact Info</SelectItem>
+                                    <SelectItem value="Financial">Financial</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Field Name */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Field Name</Label>
+                            <Input
+                                placeholder="Enter field name..."
+                                value={customFieldData.fieldName}
+                                onChange={(e) => setCustomFieldData({ ...customFieldData, fieldName: e.target.value })}
+                            />
+                        </div>
+
+                        {/* Field Type */}
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium">Field Type</Label>
+                            <Select
+                                value={customFieldData.fieldType}
+                                onValueChange={(value) => setCustomFieldData({ ...customFieldData, fieldType: value })}
+                            >
+                                <SelectTrigger className="w-auto">
+                                    <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Text">Text</SelectItem>
+                                    <SelectItem value="Number">Number</SelectItem>
+                                    <SelectItem value="Date">Date</SelectItem>
+                                    <SelectItem value="Dropdown">Dropdown</SelectItem>
+                                    <SelectItem value="Checkbox">Checkbox</SelectItem>
+                                    <SelectItem value="Currency">Currency</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Required Field Toggle */}
+                        <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                            <div>
+                                <div className="font-medium text-sm">Required Field</div>
+                                <div className="text-xs text-muted-foreground">Mark this field as mandatory</div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setCustomFieldData({ ...customFieldData, isRequired: !customFieldData.isRequired })
+                                }
+                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${customFieldData.isRequired ? "bg-teal-600" : "bg-gray-200"
+                                    }`}
+                            >
+                                <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${customFieldData.isRequired ? "translate-x-6" : "translate-x-1"
+                                        }`}
+                                />
+                            </button>
+                        </div>
+
+                        {/* Info Banner */}
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                            <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                            <span className="text-sm text-blue-700">
+                                This field will be available in Owner Directory reports
+                            </span>
+                        </div>
+                    </div>
+
+                    <DialogFooter className="gap-2">
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setShowAddCustomFieldModal(false)
+                                setCustomFieldData({ section: "Federal Tax", fieldName: "", fieldType: "Text", isRequired: false })
+                            }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            className="bg-teal-600 hover:bg-teal-700"
+                            onClick={() => {
+                                // Handle adding the custom field (UI-only for now)
+                                setShowAddCustomFieldModal(false)
+                                setCustomFieldData({ section: "Federal Tax", fieldName: "", fieldType: "Text", isRequired: false })
+                            }}
+                        >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Field
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
         </div>

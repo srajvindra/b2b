@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, ChevronDown, ChevronUp, Bell, Settings, X, AlertTriangle, CheckCircle, Filter, Download, Calendar, Search } from "lucide-react"
 import {
@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 import type { ProcessType, ProcessInstance, SummaryCard, FilterType, ActiveFilter } from "../types"
 import {
   teamTabs,
@@ -146,6 +147,7 @@ export function ProcessesDashboardView({
   const [openAddRows, setOpenAddRows] = useState<string[]>([])
   const [addRowSearches, setAddRowSearches] = useState<Record<string, string>>({})
   const [addRowSelections, setAddRowSelections] = useState<Record<string, string[]>>({})
+  const [visibleCount, setVisibleCount] = useState(10)
 
   const selectedStartProcessType = useMemo(
     () => processTypes.find((p) => p.id === startProcessTypeId) ?? null,
@@ -214,6 +216,12 @@ export function ProcessesDashboardView({
   const filteredProcessTypes = processFilterSearch.trim()
     ? availableProcessTypes.filter((p) => p.toLowerCase().includes(processFilterSearch.toLowerCase()))
     : availableProcessTypes
+
+  const paginatedInstances = sortedInstances.slice(0, visibleCount)
+
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [sortedInstances.length])
 
   const handleExportCsv = () => {
     const headers = ["Name", "Property", "On Track", "Stage", "Assignee", "Due", "Created", "Status"]
@@ -370,10 +378,10 @@ export function ProcessesDashboardView({
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <Bell className="h-4 w-4" />
             </Button>
-            { selectedProcessNames.length === 1 && <Button className="bg-gray-800 hover:bg-gray-900 text-white gap-2" onClick={() => router.push(`/operations/processes/${selectedProcessNames[0]}?name=${encodeURIComponent(selectedProcessNames[0])}`)}>
+            {/* { selectedProcessNames.length === 1 && <Button className="bg-gray-800 hover:bg-gray-900 text-white gap-2" onClick={() => router.push(`/operations/processes/${selectedProcessNames[0]}?name=${encodeURIComponent(selectedProcessNames[0])}`)}>
                 <Settings className="h-4 w-4" />
               </Button>
-            }
+            } */}
             
           </div>
         </div>
@@ -482,14 +490,14 @@ export function ProcessesDashboardView({
                   )}
                 </button>
               </th>
-              {(isAllSelected || selectedProcessNames.length >= 1) && selectedProcessNames.length !== 1 && <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {/* {(isAllSelected || selectedProcessNames.length >= 1) && selectedProcessNames.length !== 1 && <th className="py-3 px-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
-              }
+              } */}
             </tr>
           </thead>
           <tbody>
-            {sortedInstances.map((instance) => (
+            {paginatedInstances.map((instance) => (
               <tr key={instance.id} className="border-b border-gray-100 hover:bg-gray-50">
                 <td className="py-3 px-2">
                   <Checkbox
@@ -498,7 +506,14 @@ export function ProcessesDashboardView({
                   />
                 </td>
                 <td className="py-3 px-2">
-                  <span className="text-sm text-gray-900">{instance.name}</span>
+                  <button
+                    type="button"
+                    className="text-sm text-blue-600 hover:underline cursor-pointer bg-transparent p-0 m-0 border-none"
+                    style={{ textAlign: "left" }}
+                    onClick={() => router.push(`/operations/processes/${instance.id}`)}
+                  >
+                    {instance.name}
+                  </button>
                 </td>
                 <td className="py-3 px-2">
                   <span className="text-sm text-gray-600 truncate block max-w-xs">
@@ -577,15 +592,24 @@ export function ProcessesDashboardView({
                 <td className="py-3 px-2">
                   <span className="text-sm text-gray-600">{instance.createdAt}</span>
                 </td>
-                {(isAllSelected || selectedProcessNames.length >= 1) && selectedProcessNames.length !== 1 && <td className="py-3 px-2">
+                {/* {(isAllSelected || selectedProcessNames.length >= 1) && selectedProcessNames.length !== 1 && <td className="py-3 px-2">
                   <Button variant="outline" onClick={() => router.push(`/operations/processes/${instance.id}?name=${encodeURIComponent(instance.processType)}`)}>
                     <Settings className="h-4 w-4" />
                   </Button>
-                </td>}
+                </td>} */}
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="px-6 pb-4">
+        <LoadMorePagination
+          total={sortedInstances.length}
+          visibleCount={visibleCount}
+          label="processes"
+          onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, sortedInstances.length))}
+        />
       </div>
 
       {/* Start Process Modal */}

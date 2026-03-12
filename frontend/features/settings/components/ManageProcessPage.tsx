@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -25,24 +25,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import {
-  ChevronRight,
-  ChevronDown,
   Plus,
-  MoreVertical,
   ClipboardList,
-  GripVertical,
-  Pencil,
-  Trash2,
   Search,
   X,
   Code,
 } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { useRouter } from "next/navigation"
 import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 import { unassignedProcesses } from "@/features/operations/data/processes"
@@ -166,7 +154,6 @@ interface ProcessGroup {
 }
 
 export default function ManageProcessPage() {
-  const [expandedProcesses, setExpandedProcesses] = useState<Set<string>>(new Set())
   const [processData, setProcessData] = useState<ProcessGroup[]>(unassignedProcesses.map((process) => ({
     name: "Unassigned Processes",
     processes: process.processes.map((process) => ({
@@ -180,14 +167,6 @@ export default function ManageProcessPage() {
 
 
   const router = useRouter()
-  const [editingStageId, setEditingStageId] = useState<string | null>(null)
-  const [editName, setEditName] = useState("")
-  const [addingStageForProcess, setAddingStageForProcess] = useState<string | null>(null)
-  const [newStageName, setNewStageName] = useState("")
-  const dragItem = useRef<number | null>(null)
-  const dragOverItem = useRef<number | null>(null)
-  const dragProcessId = useRef<string | null>(null)
-
   const [visibleCount, setVisibleCount] = useState(10)
 
   // Add Process Type dialog state
@@ -237,82 +216,6 @@ export default function ManageProcessPage() {
     setAddDialogOpen(false)
   }
 
-  const toggleProcess = (processId: string) => {
-    setExpandedProcesses((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(processId)) {
-        newSet.delete(processId)
-      } else {
-        newSet.add(processId)
-      }
-      return newSet
-    })
-  }
-
-  const updateProcessStages = (processId: string, newStages: Stage[]) => {
-    setProcessData((prev) =>
-      prev.map((group) => ({
-        ...group,
-        processes: group.processes.map((p) =>
-          p.id === processId ? { ...p, stages: newStages, stageCount: newStages.length } : p
-        ),
-      }))
-    )
-  }
-
-  const startEdit = (stage: Stage) => {
-    setEditingStageId(stage.id)
-    setEditName(stage.name)
-  }
-
-  const saveEdit = (processId: string, stages: Stage[]) => {
-    if (!editingStageId || !editName.trim()) return
-    updateProcessStages(
-      processId,
-      stages.map((s) =>
-        s.id === editingStageId ? { ...s, name: editName.trim() } : s
-      )
-    )
-    setEditingStageId(null)
-  }
-
-  const cancelEdit = () => setEditingStageId(null)
-
-  const deleteStage = (processId: string, stageId: string, stages: Stage[]) => {
-    updateProcessStages(processId, stages.filter((s) => s.id !== stageId))
-  }
-
-  const addStage = (processId: string, stages: Stage[]) => {
-    if (!newStageName.trim()) return
-    const newId = `${processId}-new-${Date.now()}`
-    updateProcessStages(processId, [
-      ...stages,
-      { id: newId, name: newStageName.trim(), steps: 0, days: 0, processes: 0 },
-    ])
-    setNewStageName("")
-    setAddingStageForProcess(null)
-  }
-
-  const handleDragStart = (processId: string, index: number) => {
-    dragProcessId.current = processId
-    dragItem.current = index
-  }
-
-  const handleDragEnter = (index: number) => {
-    dragOverItem.current = index
-  }
-
-  const handleDragEnd = (processId: string, stages: Stage[]) => {
-    if (dragProcessId.current !== processId || dragItem.current === null || dragOverItem.current === null) return
-    const reordered = [...stages]
-    const [removed] = reordered.splice(dragItem.current, 1)
-    reordered.splice(dragOverItem.current, 0, removed)
-    updateProcessStages(processId, reordered)
-    dragItem.current = null
-    dragOverItem.current = null
-    dragProcessId.current = null
-  }
-
   const totalProcesses = processData.reduce((sum, group) => sum + group.processes.length, 0)
 
   return (
@@ -342,26 +245,28 @@ export default function ManageProcessPage() {
 
               <div className="space-y-2">
                 {visibleProcesses.map((process) => {
-                  const isExpanded = expandedProcesses.has(process.id)
-
                   return (
                     <div key={process.id} className="border rounded-lg">
-                      <button
-                        onClick={() => toggleProcess(process.id)}
-                        className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
-                      >
+                      <div className="w-full flex items-center justify-between p-4">
                         <div className="flex items-center gap-3 flex-1">
-                          {isExpanded ? (
-                            <ChevronDown className="h-5 w-5 text-primary shrink-0" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                          )}
                           <div className="h-10 w-10 rounded-lg bg-teal-500 flex items-center justify-center text-white shrink-0">
                             <ClipboardList className="h-5 w-5" />
                           </div>
                           <div className="text-left">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-foreground">{process.name}</span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  router.push(
+                                    `/settings/manage-processes/${process.id}?name=${encodeURIComponent(
+                                      process.name,
+                                    )}`,
+                                  )
+                                }
+                                className="font-medium text-blue-600 hover:underline text-left cursor-pointer"
+                              >
+                                {process.name}
+                              </button>
                               {process.badge && (
                                 <Badge variant="secondary" className="text-xs">
                                   {process.badge}
@@ -373,117 +278,7 @@ export default function ManageProcessPage() {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span>{process.stageCount} stages</span>
                         </div>
-                      </button>
-
-                      {isExpanded && (
-                        <div className="border-t bg-muted/30 p-4 space-y-3">
-                          <div className="flex items-center justify-between mb-4">
-                            <span className="font-semibold text-sm text-foreground">Stages</span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
-                              onClick={() => { setAddingStageForProcess(process.id); setEditingStageId(null) }}
-                            >
-                              <Plus className="h-3 w-3 mr-1" />
-                              Add Stage
-                            </Button>
-                          </div>
-
-                          {process.stages.length === 0 && addingStageForProcess !== process.id && (
-                            <p className="text-sm text-muted-foreground text-center py-4">No stages yet. Click &quot;Add Stage&quot; to create one.</p>
-                          )}
-
-                          <div className="space-y-2">
-                            {process.stages.map((stage, idx) => (
-                              <div
-                                key={stage.id}
-                                draggable={editingStageId !== stage.id}
-                                onDragStart={() => handleDragStart(process.id, idx)}
-                                onDragEnter={() => handleDragEnter(idx)}
-                                onDragEnd={() => handleDragEnd(process.id, process.stages)}
-                                onDragOver={(e) => e.preventDefault()}
-                                className="flex items-center justify-between p-3 bg-background border rounded hover:bg-muted/50 transition-colors group"
-                              >
-                                {editingStageId === stage.id ? (
-                                  <div className="flex items-center gap-3 flex-1">
-                                    <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
-                                      {idx + 1}
-                                    </div>
-                                    <Input
-                                      value={editName}
-                                      onChange={(e) => setEditName(e.target.value)}
-                                      className="h-8 text-sm flex-1"
-                                      autoFocus
-                                      onKeyDown={(e) => { if (e.key === "Enter") saveEdit(process.id, process.stages); if (e.key === "Escape") cancelEdit() }}
-                                    />
-                                    <Button size="sm" variant="ghost" className="text-xs" onClick={cancelEdit}>Cancel</Button>
-                                    <Button size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => saveEdit(process.id, process.stages)}>Save</Button>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                                      <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab shrink-0" />
-                                      <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
-                                        {idx + 1}
-                                      </div>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          router.push(`/settings/manage-processes/${process.id}/${stage.id}`)
-                                        }}
-                                        className="text-sm font-medium text-blue-600 hover:underline text-left"
-                                      >
-                                        {stage.name}
-                                      </button>
-                                    </div>
-                                    <div className="flex items-center gap-4 text-xs text-muted-foreground ml-2 shrink-0">
-                                      <span>{stage.steps} Steps</span>
-                                      <span>{stage.days} Days</span>
-                                      <span>{stage.processes} Processes</span>
-                                    </div>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button size="icon" variant="ghost" className="h-8 w-8 ml-2 shrink-0">
-                                          <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => startEdit(stage)}>
-                                          <Pencil className="h-3.5 w-3.5 mr-2" />
-                                          Edit
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => deleteStage(process.id, stage.id, process.stages)} className="text-red-600 focus:text-red-600">
-                                          <Trash2 className="h-3.5 w-3.5 mr-2" />
-                                          Delete
-                                        </DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </>
-                                )}
-                              </div>
-                            ))}
-
-                            {addingStageForProcess === process.id && (
-                              <div className="flex items-center gap-3 p-3 bg-background border rounded border-blue-300">
-                                <div className="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-sm font-semibold text-slate-700 shrink-0">
-                                  {process.stages.length + 1}
-                                </div>
-                                <Input
-                                  value={newStageName}
-                                  onChange={(e) => setNewStageName(e.target.value)}
-                                  placeholder="Stage name"
-                                  className="h-8 text-sm flex-1"
-                                  autoFocus
-                                  onKeyDown={(e) => { if (e.key === "Enter") addStage(process.id, process.stages); if (e.key === "Escape") setAddingStageForProcess(null) }}
-                                />
-                                <Button size="sm" variant="ghost" className="text-xs" onClick={() => setAddingStageForProcess(null)}>Cancel</Button>
-                                <Button size="sm" className="text-xs bg-blue-600 hover:bg-blue-700 text-white" onClick={() => addStage(process.id, process.stages)}>Save</Button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   )
                 })}

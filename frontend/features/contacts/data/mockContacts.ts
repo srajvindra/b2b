@@ -1298,14 +1298,18 @@ MOCK_CONTACTS.forEach((contact, idx) => {
   }
 })
 
-const RENT_AMOUNTS = [12500, 8900, 15600, 6200, 19800, 11400, 7300, 14100, 9700, 16800]
-const DELINQUENT_AMOUNTS = [0, 2300, 0, 1500, 0, 0, 800, 0, 3200, 0]
-const INCOME_AMOUNTS = [14000, 9500, 17200, 7800, 21000, 13200, 8500, 16000, 11000, 18500]
-const EXPENSE_AMOUNTS = [4200, 3100, 5600, 2400, 7800, 4100, 2900, 5200, 3600, 6100]
-const OCCUPIED = [6, 3, 8, 2, 10, 5, 4, 7, 3, 9]
-const VACANT = [2, 0, 1, 1, 0, 2, 0, 1, 0, 1]
-const APPROVED_WOS = [3, 1, 4, 0, 5, 2, 1, 3, 2, 4]
-const PENDING_WOS = [1, 0, 2, 1, 0, 1, 0, 1, 0, 2]
+// Owner metrics arrays are designed so that some owners have
+// "no activity" in certain categories. This makes the stats
+// tiles meaningfully filter the Owners list instead of always
+// returning all owners.
+const RENT_AMOUNTS = [0, 8900, 15600, 0, 19800, 11400, 7300, 14100, 0, 16800]
+const DELINQUENT_AMOUNTS = [0, 2300, 0, 0, 0, 0, 800, 0, 3200, 0]
+const INCOME_AMOUNTS = [0, 9500, 17200, 0, 21000, 13200, 8500, 16000, 11000, 18500]
+const EXPENSE_AMOUNTS = [0, 3100, 5600, 0, 7800, 4100, 2900, 5200, 3600, 6100]
+const OCCUPIED = [0, 3, 8, 0, 10, 5, 4, 7, 3, 9]
+const VACANT = [0, 0, 1, 0, 0, 2, 0, 1, 0, 1]
+const APPROVED_WOS = [0, 1, 4, 0, 5, 2, 1, 3, 0, 4]
+const PENDING_WOS = [0, 0, 2, 0, 0, 1, 0, 1, 0, 2]
 
 MOCK_CONTACTS.filter((c) => c.type === "Owner").forEach((contact, idx) => {
   const i = idx % 10

@@ -74,6 +74,7 @@ import {
   contactsTenantsQuickActions,
 } from "@/lib/quickActions"
 import { ContactTabsStats } from "@/components/shared/contact-tabs"
+import type { OwnerStatsKey, TenantStatsKey } from "@/components/shared/contact-tabs/ContactTabsStats"
 
 interface OwnersTenantsPageProps {
   type: Extract<ContactPageType, "owner" | "tenant">
@@ -129,21 +130,11 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
   const [selectedCsm, setSelectedCsm] = useState<string[]>([])
   const [csmSearchQuery, setCsmSearchQuery] = useState("")
 
-  // Owner tile filter states
-  const [ownerTileFilter, setOwnerTileFilter] = useState<"none" | "collections" | "income-expenses" | "properties-status" | "maintenance">("none")
-  const [collectionsSubFilter, setCollectionsSubFilter] = useState<"all" | "rent-collected" | "delinquent">("all")
-  const [incomeExpenseSubFilter, setIncomeExpenseSubFilter] = useState<"all" | "income" | "expenses">("all")
-  const [propertiesStatusSubFilter, setPropertiesStatusSubFilter] = useState<"all" | "occupied" | "vacant">("all")
-  const [maintenanceSubFilter, setMaintenanceSubFilter] = useState<"all" | "approved-wos" | "pending-approval">("all")
+  // Owner stats multi-select filters
+  const [ownerStatsFilters, setOwnerStatsFilters] = useState<OwnerStatsKey[]>([])
 
-  // Tenant tile filter states
-  const [tenantTileFilter, setTenantTileFilter] = useState<
-    "all" | "active" | "pending" | "moveout" | "evictions" | "type"
-  >("all")
-  const [tenantPendingSubFilter, setTenantPendingSubFilter] = useState<"all" | "tasks" | "processes">("all")
-  const [tenantMoveoutSubFilter, setTenantMoveoutSubFilter] = useState<"all" | "pending" | "completed">("all")
-  const [tenantEvictionSubFilter, setTenantEvictionSubFilter] = useState<"all" | "pending" | "completed">("all")
-  const [selectedTenantType, setSelectedTenantType] = useState<"all" | "Self Paying" | "Section 8">("all")
+  // Tenant stats multi-select filters
+  const [tenantStatsFilters, setTenantStatsFilters] = useState<TenantStatsKey[]>([])
 
   // Get unique values for filter options
   const ownerTenantContacts = MOCK_CONTACTS.filter(
@@ -232,58 +223,10 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
     return "More than 1 week"
   }
 
-  const filteredContacts = MOCK_CONTACTS.filter((contact) => {
+  // First apply base filters (tab, status, column filters, search)
+  const baseContacts = MOCK_CONTACTS.filter((contact) => {
     if (activeTab === "owners" && contact.type !== "Owner") return false
     if (activeTab === "tenants" && contact.type !== "Tenant") return false
-
-    // Owner tiles
-    if (activeTab === "owners" && contact.type === "Owner") {
-      if (ownerTileFilter === "collections") {
-        if (collectionsSubFilter === "rent-collected" && (contact.rentCollected || 0) <= 0) return false
-        if (collectionsSubFilter === "delinquent" && (contact.delinquentAmount || 0) <= 0) return false
-        if (collectionsSubFilter === "all" && (contact.rentCollected || 0) <= 0 && (contact.delinquentAmount || 0) <= 0) return false
-      }
-      if (ownerTileFilter === "income-expenses") {
-        if (incomeExpenseSubFilter === "income" && (contact.ownerIncome || 0) <= 0) return false
-        if (incomeExpenseSubFilter === "expenses" && (contact.ownerExpense || 0) <= 0) return false
-        if (incomeExpenseSubFilter === "all" && (contact.ownerIncome || 0) <= 0 && (contact.ownerExpense || 0) <= 0) return false
-      }
-      if (ownerTileFilter === "properties-status") {
-        if (propertiesStatusSubFilter === "occupied" && (contact.occupiedUnits || 0) <= 0) return false
-        if (propertiesStatusSubFilter === "vacant" && (contact.vacantUnits || 0) <= 0) return false
-        if (propertiesStatusSubFilter === "all" && (contact.occupiedUnits || 0) <= 0 && (contact.vacantUnits || 0) <= 0) return false
-      }
-      if (ownerTileFilter === "maintenance") {
-        if (maintenanceSubFilter === "approved-wos" && (contact.approvedWOs || 0) <= 0) return false
-        if (maintenanceSubFilter === "pending-approval" && (contact.pendingApprovalWOs || 0) <= 0) return false
-        if (maintenanceSubFilter === "all" && (contact.approvedWOs || 0) <= 0 && (contact.pendingApprovalWOs || 0) <= 0) return false
-      }
-    }
-
-    // Tenant tiles
-    if (activeTab === "tenants" && contact.type === "Tenant") {
-      if (tenantTileFilter === "active" && contact.status !== "Active") return false
-      if (tenantTileFilter === "pending") {
-        const hasPendingTask = (contact.tenantPendingTasks || 0) > 0
-        const hasPendingProcess = (contact.tenantPendingProcesses || 0) > 0
-        if (tenantPendingSubFilter === "all" && !hasPendingTask && !hasPendingProcess) return false
-        if (tenantPendingSubFilter === "tasks" && !hasPendingTask) return false
-        if (tenantPendingSubFilter === "processes" && !hasPendingProcess) return false
-      }
-      if (tenantTileFilter === "moveout") {
-        if (tenantMoveoutSubFilter === "all" && !contact.moveOutStatus) return false
-        if (tenantMoveoutSubFilter === "pending" && contact.moveOutStatus !== "Pending") return false
-        if (tenantMoveoutSubFilter === "completed" && contact.moveOutStatus !== "Completed") return false
-      }
-      if (tenantTileFilter === "evictions") {
-        if (tenantEvictionSubFilter === "all" && !contact.evictionStatus) return false
-        if (tenantEvictionSubFilter === "pending" && contact.evictionStatus !== "Pending") return false
-        if (tenantEvictionSubFilter === "completed" && contact.evictionStatus !== "Completed") return false
-      }
-      if (tenantTileFilter === "type" && selectedTenantType !== "all") {
-        if (contact.tenantType !== selectedTenantType) return false
-      }
-    }
 
     if (statusFilter !== "all" && contact.status !== statusFilter) return false
 
@@ -317,6 +260,101 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
       (contact.companyLlc && contact.companyLlc.toLowerCase().includes(searchLower)) ||
       (contact.csm && contact.csm.toLowerCase().includes(searchLower))
     )
+  })
+
+  // Then apply stats-based filters on top of baseContacts
+  const filteredContacts = baseContacts.filter((contact) => {
+    // Owner stats filters (multi-select, OR across selected keys)
+    if (activeTab === "owners" && contact.type === "Owner" && ownerStatsFilters.length > 0) {
+      const matchesAnyOwnerStat = ownerStatsFilters.some((key) => {
+        const rentCollected = contact.rentCollected || 0
+        const delinquentAmount = contact.delinquentAmount || 0
+        const income = contact.ownerIncome || 0
+        const expense = contact.ownerExpense || 0
+        const occupiedUnits = contact.occupiedUnits || 0
+        const vacantUnits = contact.vacantUnits || 0
+        const approvedWOs = contact.approvedWOs || 0
+        const pendingApprovalWOs = contact.pendingApprovalWOs || 0
+
+        switch (key) {
+          case "collections-all":
+            return rentCollected > 0 || delinquentAmount > 0
+          case "collections-rent-collected":
+            return rentCollected > 0
+          case "collections-delinquent":
+            return delinquentAmount > 0
+          case "income-expenses-all":
+            return income > 0 || expense > 0
+          case "income-expenses-income":
+            return income > 0
+          case "income-expenses-expenses":
+            return expense > 0
+          case "properties-status-all":
+            return occupiedUnits > 0 || vacantUnits > 0
+          case "properties-status-occupied":
+            return occupiedUnits > 0
+          case "properties-status-vacant":
+            return vacantUnits > 0
+          case "maintenance-all":
+            return approvedWOs > 0 || pendingApprovalWOs > 0
+          case "maintenance-approved-wos":
+            return approvedWOs > 0
+          case "maintenance-pending-approval":
+            return pendingApprovalWOs > 0
+          default:
+            return false
+        }
+      })
+
+      if (!matchesAnyOwnerStat) return false
+    }
+
+    // Tenant stats filters (multi-select, OR across selected keys)
+    if (activeTab === "tenants" && contact.type === "Tenant" && tenantStatsFilters.length > 0) {
+      const hasPendingTask = (contact.tenantPendingTasks || 0) > 0
+      const hasPendingProcess = (contact.tenantPendingProcesses || 0) > 0
+      const hasMoveout = !!contact.moveOutStatus
+      const hasEviction = !!contact.evictionStatus
+
+      const matchesAnyTenantStat = tenantStatsFilters.some((key) => {
+        switch (key) {
+          case "tenant-total":
+            return true
+          case "tenant-active":
+            return contact.status === "Active"
+          case "pending-all":
+            return hasPendingTask || hasPendingProcess
+          case "pending-tasks":
+            return hasPendingTask
+          case "pending-processes":
+            return hasPendingProcess
+          case "moveout-all":
+            return hasMoveout
+          case "moveout-pending":
+            return contact.moveOutStatus === "Pending"
+          case "moveout-completed":
+            return contact.moveOutStatus === "Completed"
+          case "evictions-all":
+            return hasEviction
+          case "evictions-pending":
+            return contact.evictionStatus === "Pending"
+          case "evictions-completed":
+            return contact.evictionStatus === "Completed"
+          case "type-all":
+            return true
+          case "type-self-paying":
+            return contact.tenantType === "Self Paying"
+          case "type-section-8":
+            return contact.tenantType === "Section 8"
+          default:
+            return false
+        }
+      })
+
+      if (!matchesAnyTenantStat) return false
+    }
+
+    return true
   })
 
   const totalOwners = MOCK_CONTACTS.filter((c) => c.type === "Owner").length
@@ -551,9 +589,8 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
                 visibleContacts.map((contact) => (
                   <TableRow
                     key={contact.id}
-                    className={`cursor-pointer hover:bg-secondary/80 transition-colors ${
-                      selectedContactIds.includes(contact.id) ? "bg-primary/5" : ""
-                    }`}
+                    className={`cursor-pointer hover:bg-secondary/80 transition-colors ${selectedContactIds.includes(contact.id) ? "bg-primary/5" : ""
+                      }`}
                     onClick={() => handleRowClick(contact)}
                   >
                     {(activeTab === "owners" || activeTab === "tenants") && (
@@ -686,33 +723,17 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
       {activeTab === "owners" ? (
         <ContactTabsStats
           variant="owners"
-          owners={MOCK_CONTACTS.filter((c) => c.type === "Owner")}
-          ownerTileFilter={ownerTileFilter}
-          setOwnerTileFilter={setOwnerTileFilter}
-          collectionsSubFilter={collectionsSubFilter}
-          setCollectionsSubFilter={setCollectionsSubFilter}
-          incomeExpenseSubFilter={incomeExpenseSubFilter}
-          setIncomeExpenseSubFilter={setIncomeExpenseSubFilter}
-          propertiesStatusSubFilter={propertiesStatusSubFilter}
-          setPropertiesStatusSubFilter={setPropertiesStatusSubFilter}
-          maintenanceSubFilter={maintenanceSubFilter}
-          setMaintenanceSubFilter={setMaintenanceSubFilter}
+          owners={baseContacts.filter((c) => c.type === "Owner")}
+          ownerStatsFilters={ownerStatsFilters}
+          setOwnerStatsFilters={setOwnerStatsFilters}
           onPageReset={() => setCurrentPage(1)}
         />
       ) : (
         <ContactTabsStats
           variant="tenants"
-          tenants={MOCK_CONTACTS.filter((c) => c.type === "Tenant")}
-          tenantTileFilter={tenantTileFilter}
-          setTenantTileFilter={setTenantTileFilter}
-          tenantPendingSubFilter={tenantPendingSubFilter}
-          setTenantPendingSubFilter={setTenantPendingSubFilter}
-          tenantMoveoutSubFilter={tenantMoveoutSubFilter}
-          setTenantMoveoutSubFilter={setTenantMoveoutSubFilter}
-          tenantEvictionSubFilter={tenantEvictionSubFilter}
-          setTenantEvictionSubFilter={setTenantEvictionSubFilter}
-          selectedTenantType={selectedTenantType}
-          setSelectedTenantType={setSelectedTenantType}
+          tenants={baseContacts.filter((c) => c.type === "Tenant")}
+          tenantStatsFilters={tenantStatsFilters}
+          setTenantStatsFilters={setTenantStatsFilters}
           onPageReset={() => setCurrentPage(1)}
         />
       )}
@@ -740,12 +761,43 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
               Filter
             </Button>
           )}
+          {(activeTab === "owners" ? ownerStatsFilters.length > 0 : tenantStatsFilters.length > 0) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (activeTab === "owners") {
+                  setOwnerStatsFilters([])
+                } else {
+                  setTenantStatsFilters([])
+                }
+                setCurrentPage(1)
+              }}
+              className="h-8 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1" />
+              Clear All
+            </Button>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
           {(activeTab === "owners" || activeTab === "tenants") && (
             <div className="flex items-center border rounded-md overflow-hidden">
               <Button
-                variant={activeTab === "owners" ? (ownersViewMode === "grid" ? "default" : "ghost") : tenantsViewMode === "grid" ? "default" : "ghost"}
+                variant={
+                  activeTab === "owners"
+                    ? ownersViewMode === "grid"
+                      ? "default"
+                      : "ghost"
+                    : tenantsViewMode === "grid"
+                      ? "default"
+                      : "ghost"
+                }
                 size="icon"
-                className={`rounded-none border-r ${ (activeTab === "owners" ? ownersViewMode : tenantsViewMode) === "grid" ? "bg-primary text-primary-foreground hover:bg-primary-hover" : "" }`}
+                className={`rounded-none border-r ${(activeTab === "owners" ? ownersViewMode : tenantsViewMode) === "grid"
+                    ? "bg-primary text-primary-foreground hover:bg-primary-hover"
+                    : ""
+                  }`}
                 onClick={() =>
                   activeTab === "owners" ? setOwnersViewMode("grid") : setTenantsViewMode("grid")
                 }
@@ -753,9 +805,20 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
                 <LayoutGrid className="h-4 w-4" />
               </Button>
               <Button
-                variant={activeTab === "owners" ? (ownersViewMode === "list" ? "default" : "ghost") : tenantsViewMode === "list" ? "default" : "ghost"}
+                variant={
+                  activeTab === "owners"
+                    ? ownersViewMode === "list"
+                      ? "default"
+                      : "ghost"
+                    : tenantsViewMode === "list"
+                      ? "default"
+                      : "ghost"
+                }
                 size="icon"
-                className={`rounded-none ${ (activeTab === "owners" ? ownersViewMode : tenantsViewMode) === "list" ? "bg-primary text-primary-foreground hover:bg-primary-hover" : "" }`}
+                className={`rounded-none ${(activeTab === "owners" ? ownersViewMode : tenantsViewMode) === "list"
+                    ? "bg-primary text-primary-foreground hover:bg-primary-hover"
+                    : ""
+                  }`}
                 onClick={() =>
                   activeTab === "owners" ? setOwnersViewMode("list") : setTenantsViewMode("list")
                 }
@@ -765,10 +828,6 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
             </div>
           )}
         </div>
-        {/* <div className="text-sm text-muted-foreground md:ml-auto md:text-right">
-          Showing {startIndex + 1}-{Math.min(endIndex, filteredContacts.length)} of {filteredContacts.length}{" "}
-          {getPageTitle().toLowerCase()}
-        </div> */}
       </div>
 
       <div className="flex gap-6">
@@ -867,8 +926,8 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
                         ))}
                       {advancedFilterFields.filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
                         .length === 0 && (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
-                      )}
+                          <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
+                        )}
                     </div>
                   </>
                 )}
