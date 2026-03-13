@@ -12,6 +12,7 @@ import {
   Workflow,
   Plus,
   Search,
+  ChevronsUpDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,6 +32,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
 import type { Task, TaskSummary } from "../types"
 
 function getPriorityStyles(priority: string) {
@@ -59,12 +73,20 @@ function getStatusStyles(status: string) {
   }
 }
 
+export interface StaffMember {
+  id: number
+  name: string
+  role: string
+}
+
 interface TasksCardProps {
   filteredTasks: Task[]
   taskSummary: TaskSummary
   searchQuery: string
   setSearchQuery: (q: string) => void
   selectedStaff: string | null
+  staffMembers: StaffMember[]
+  onAssignTask: (taskId: number, staffName: string) => void
 }
 
 export function TasksCard({
@@ -73,6 +95,8 @@ export function TasksCard({
   searchQuery,
   setSearchQuery,
   selectedStaff,
+  staffMembers,
+  onAssignTask,
 }: TasksCardProps) {
   const router = useRouter()
   const [showSkippedModal, setShowSkippedModal] = useState(false)
@@ -80,6 +104,7 @@ export function TasksCard({
     title: string
     skippedComment: string
   } | null>(null)
+  const [assignPopoverOpen, setAssignPopoverOpen] = useState<number | null>(null)
 
   const handleTaskClick = (task: Task) => {
     if (task.entityType === "tenant") router.push("/contacts/tenants")
@@ -202,10 +227,13 @@ export function TasksCard({
                       Task
                     </TableHead>
                     <TableHead className="font-medium text-slate-700">
-                      Related Entity
+                      Contract
                     </TableHead>
                     <TableHead className="font-medium text-slate-700">
-                      Due Date
+                      Risk
+                    </TableHead>
+                    <TableHead className="font-medium text-slate-700">
+                      SLA Due Date
                     </TableHead>
                     <TableHead className="font-medium text-slate-700">
                       Priority
@@ -252,6 +280,9 @@ export function TasksCard({
                         </TableCell>
                         <TableCell className="text-sm text-slate-600">
                           {task.entity}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600">
+                          {task.risk}
                         </TableCell>
                         <TableCell>
                           <span
@@ -301,7 +332,72 @@ export function TasksCard({
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-slate-600">
-                          {task.assignedTo}
+                          <Popover
+                            open={assignPopoverOpen === task.id}
+                            onOpenChange={(open) =>
+                              setAssignPopoverOpen(open ? task.id : null)
+                            }
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                              >
+                                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                  {task.assignedTo
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </div>
+                                <span className="truncate">{task.assignedTo}</span>
+                                <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-[220px] p-0"
+                              align="start"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Command>
+                                <CommandInput placeholder="Search staff..." />
+                                <CommandList>
+                                  <CommandEmpty>No staff found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {staffMembers.map((staff) => (
+                                      <CommandItem
+                                        key={staff.id}
+                                        value={staff.name}
+                                        onSelect={() => {
+                                          onAssignTask(task.id, staff.name)
+                                          setAssignPopoverOpen(null)
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                          {staff.name
+                                            .split(" ")
+                                            .map((n) => n[0])
+                                            .join("")}
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-sm text-slate-900">
+                                            {staff.name}
+                                          </span>
+                                          <span className="text-[11px] text-slate-500">
+                                            {staff.role}
+                                          </span>
+                                        </div>
+                                        {task.assignedTo === staff.name && (
+                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                        )}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">

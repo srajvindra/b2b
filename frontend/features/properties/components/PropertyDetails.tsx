@@ -108,6 +108,23 @@ interface PropertyDetailPageProps {
   onUnitClick?: (unitNumber: string) => void // Added for consistency with usage
 }
 
+const PROPERTY_CUSTOM_FIELD_SECTIONS: { id: string; name: string }[] = [
+  { id: "property-information", name: "Property Information" },
+  { id: "maintenance-information", name: "Maintenance Information" },
+  { id: "notes", name: "Notes" },
+  { id: "rental-information", name: "Rental Information" },
+  { id: "amenities", name: "Amenities" },
+]
+
+interface PropertyCustomField {
+  id: string
+  sectionId: string
+  name: string
+  type: string
+  options?: string[]
+  required: boolean
+}
+
 function CollapsibleSection({
   title,
   icon: Icon,
@@ -115,6 +132,8 @@ function CollapsibleSection({
   defaultOpen = true,
   actions,
   headerColor = "bg-gray-100",
+  sectionId,
+  onAddField,
 }: {
   title: string
   icon: React.ElementType
@@ -122,6 +141,8 @@ function CollapsibleSection({
   defaultOpen?: boolean
   actions?: React.ReactNode
   headerColor?: string
+  sectionId?: string
+  onAddField?: (sectionId: string) => void
 }) {
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
@@ -136,6 +157,19 @@ function CollapsibleSection({
           <span className="font-semibold">{title}</span>
         </div>
         <div className="flex items-center gap-2">
+          {sectionId && onAddField && (
+            <div onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs bg-white border-slate-200 text-slate-800 hover:bg-slate-50 gap-1 px-3"
+                onClick={() => onAddField(sectionId)}
+              >
+                <Plus className="h-3 w-3" />
+                Add Field
+              </Button>
+            </div>
+          )}
           {actions && <div onClick={(e) => e.stopPropagation()}>{actions}</div>}
           {isOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
         </div>
@@ -193,6 +227,23 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
     priority: "Medium",
   })
   const [tasks, setTasks] = useState(PROPERTY_TASKS)
+
+  // Property custom fields (Overview tab)
+  const [showAddCustomFieldDialog, setShowAddCustomFieldDialog] = useState(false)
+  const [customFieldSection, setCustomFieldSection] = useState<string>(PROPERTY_CUSTOM_FIELD_SECTIONS[0]?.id ?? "")
+  const [customFieldName, setCustomFieldName] = useState("")
+  const [customFieldType, setCustomFieldType] = useState("dropdown-multi")
+  const [customFieldOptions, setCustomFieldOptions] = useState("")
+  const [customFieldRequired, setCustomFieldRequired] = useState(false)
+  const [propertyCustomFields, setPropertyCustomFields] = useState<PropertyCustomField[]>([])
+
+  const handleOpenAddField = (sectionId: string) => {
+    setCustomFieldSection(sectionId)
+    setShowAddCustomFieldDialog(true)
+  }
+
+  const getFieldsForSection = (sectionId: string) =>
+    propertyCustomFields.filter((f) => f.sectionId === sectionId)
 
   const [propertyProcesses, setPropertyProcesses] = useState<PropertyProcess[]>(PROPERTY_PROCESSES)
 
@@ -645,6 +696,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                     title="Property Information"
                     icon={Building2}
                     defaultOpen={true}
+                    sectionId="property-information"
+                    onAddField={handleOpenAddField}
                     actions={
                       <Button size="sm" variant="outline" className="bg-white text-primary hover:bg-gray-50 h-7 border-gray-300">
                         Edit
@@ -692,13 +745,30 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                         />
                       </div>
                     </div>
+                    {getFieldsForSection("property-information").length > 0 && (
+                      <div className="mt-4 space-y-1 border-t border-border/50 pt-3">
+                        {getFieldsForSection("property-information").map((field) => (
+                          <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                            <span className="text-muted-foreground flex items-center gap-2">
+                              {field.name}
+                              {field.required && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">Required</span>
+                              )}
+                            </span>
+                            <span className="font-medium">--</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CollapsibleSection>
 
                   {/* Maintenance Information */}
                   <CollapsibleSection
                     title="Maintenance Information"
                     icon={Wrench}
-                    defaultOpen={false}
+                    defaultOpen={true}
+                    sectionId="maintenance-information"
+                    onAddField={handleOpenAddField}
                     actions={
                       <Button variant="link" className="text-primary p-0 h-auto text-sm">
                         Edit
@@ -708,13 +778,30 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                     <div className="grid grid-cols-1 gap-x-8">
                       <InfoRow label="Owner Specific Notes" value={MAINTENANCE_INFO_EXTENDED.ownerSpecificNotes} />
                     </div>
+                    {getFieldsForSection("maintenance-information").length > 0 && (
+                      <div className="mt-4 space-y-1 border-t border-border/50 pt-3">
+                        {getFieldsForSection("maintenance-information").map((field) => (
+                          <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                            <span className="text-muted-foreground flex items-center gap-2">
+                              {field.name}
+                              {field.required && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">Required</span>
+                              )}
+                            </span>
+                            <span className="font-medium">--</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CollapsibleSection>
 
                   {/* Notes */}
                   <CollapsibleSection
                     title="Notes"
                     icon={StickyNote}
-                    defaultOpen={false}
+                    defaultOpen={true}
+                    sectionId="notes"
+                    onAddField={handleOpenAddField}
                     actions={
                       <div className="flex items-center gap-2">
                         <Button size="sm" variant="outline" className="bg-white text-primary hover:bg-gray-50 h-7 border-gray-300">
@@ -729,13 +816,30 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                     }
                   >
                     <p className="text-sm text-muted-foreground">No notes added</p>
+                    {getFieldsForSection("notes").length > 0 && (
+                      <div className="mt-4 space-y-1 border-t border-border/50 pt-3">
+                        {getFieldsForSection("notes").map((field) => (
+                          <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                            <span className="text-muted-foreground flex items-center gap-2">
+                              {field.name}
+                              {field.required && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">Required</span>
+                              )}
+                            </span>
+                            <span className="font-medium">--</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CollapsibleSection>
 
                   {/* Rental Information */}
                   <CollapsibleSection
                     title="Rental Information"
                     icon={Home}
-                    defaultOpen={false}
+                    defaultOpen={true}
+                    sectionId="rental-information"
+                    onAddField={handleOpenAddField}
                     actions={
                       <Button size="sm" variant="outline" className="bg-white text-primary hover:bg-gray-50 h-7 border-gray-300">
                         Edit
@@ -760,13 +864,30 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                         <span className="font-medium">{PROPERTY_DATA.rentalInfo.priceRangeMax}</span>
                       </div>
                     </div>
+                    {getFieldsForSection("rental-information").length > 0 && (
+                      <div className="mt-4 space-y-1 border-t border-border/50 pt-3">
+                        {getFieldsForSection("rental-information").map((field) => (
+                          <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                            <span className="text-muted-foreground flex items-center gap-2">
+                              {field.name}
+                              {field.required && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">Required</span>
+                              )}
+                            </span>
+                            <span className="font-medium">--</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CollapsibleSection>
 
                   {/* Amenities */}
                   <CollapsibleSection
                     title="Amenities"
                     icon={CheckSquare}
-                    defaultOpen={false}
+                    defaultOpen={true}
+                    sectionId="amenities"
+                    onAddField={handleOpenAddField}
                     actions={
                       <Button size="sm" variant="outline" className="bg-white text-primary hover:bg-gray-50 h-7 border-gray-300">
                         Edit
@@ -781,6 +902,21 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                         Dogs Allowed
                       </Badge>
                     </div>
+                    {getFieldsForSection("amenities").length > 0 && (
+                      <div className="mt-4 space-y-1 border-t border-border/50 pt-3">
+                        {getFieldsForSection("amenities").map((field) => (
+                          <div key={field.id} className="flex justify-between items-center py-1 text-sm">
+                            <span className="text-muted-foreground flex items-center gap-2">
+                              {field.name}
+                              {field.required && (
+                                <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">Required</span>
+                              )}
+                            </span>
+                            <span className="font-medium">--</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </CollapsibleSection>
                 </div>
               )}
@@ -1193,12 +1329,20 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                                           onClick={() => toggleProcessExpanded(process.id)}
                                           className="cursor-pointer p-1 hover:bg-slate-100 rounded transition-colors"
                                         >
-                                          {isExpanded ? <ChevronDown className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground -rotate-90 transition-transform" />}
+                                          {isExpanded ? (
+                                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                                          ) : (
+                                            <ChevronDown className="h-5 w-5 text-muted-foreground -rotate-90 transition-transform" />
+                                          )}
                                         </button>
                                         <div>
                                           <button
                                             type="button"
-                                            onClick={() => setSelectedProcessId(process.id)}
+                                            onClick={() =>
+                                              router.push(
+                                                `/properties/${propertyId ?? PROPERTY_DATA.id}/process/${process.id}`
+                                              )
+                                            }
                                             className="font-semibold text-sm text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
                                           >
                                             {process.processName}
@@ -2359,6 +2503,150 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                 }}
               >
                 Create Task
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Custom Field Dialog */}
+        <Dialog open={showAddCustomFieldDialog} onOpenChange={setShowAddCustomFieldDialog}>
+          <DialogContent className="sm:max-w-md p-0">
+            <div className="flex items-center justify-between px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Plus className="h-5 w-5 text-teal-600" />
+                <DialogTitle className="text-lg font-semibold text-slate-900">Add Custom Field</DialogTitle>
+              </div>
+              {/* <button
+                type="button"
+                onClick={() => setShowAddCustomFieldDialog(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button> */}
+            </div>
+
+            <div className="px-6 pb-2">
+              <p className="text-sm text-slate-400">
+                Add a new custom field to the{" "}
+                {PROPERTY_CUSTOM_FIELD_SECTIONS.find((s) => s.id === customFieldSection)?.name ?? "selected"}{" "}
+                section. All custom fields are available for reporting.
+              </p>
+            </div>
+
+            <div className="px-6 py-4 space-y-5">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Section</Label>
+                <Select value={customFieldSection} onValueChange={(v) => setCustomFieldSection(v)}>
+                  <SelectTrigger className="w-48 border-teal-500 focus:ring-teal-500">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROPERTY_CUSTOM_FIELD_SECTIONS.map((section) => (
+                      <SelectItem key={section.id} value={section.id}>
+                        {section.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Field Name</Label>
+                <Input
+                  placeholder="Enter field name..."
+                  value={customFieldName}
+                  onChange={(e) => setCustomFieldName(e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-slate-700">Field Type</Label>
+                <Select value={customFieldType} onValueChange={setCustomFieldType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dropdown-multi">Dropdown / Multi-select</SelectItem>
+                    <SelectItem value="text">Text</SelectItem>
+                    <SelectItem value="number">Number</SelectItem>
+                    <SelectItem value="date">Date</SelectItem>
+                    <SelectItem value="checkbox">Checkbox</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {customFieldType === "dropdown-multi" && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-slate-700">Options (comma separated)</Label>
+                  <Input
+                    placeholder="Option 1, Option 2, Option 3..."
+                    value={customFieldOptions}
+                    onChange={(e) => setCustomFieldOptions(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">Required Field</p>
+                  <p className="text-xs text-teal-600">Mark this field as mandatory</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCustomFieldRequired(!customFieldRequired)}
+                  className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${customFieldRequired ? "bg-teal-600" : "bg-slate-300"}`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${customFieldRequired ? "translate-x-5" : "translate-x-0"}`}
+                  />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 px-4 py-3 bg-blue-50 rounded-lg">
+                <FileBarChart className="h-4 w-4 text-blue-500 shrink-0" />
+                <p className="text-sm text-blue-500">This field will be available in Property reports</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAddCustomFieldDialog(false)
+                  setCustomFieldName("")
+                  setCustomFieldOptions("")
+                  setCustomFieldRequired(false)
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                disabled={!customFieldName.trim() || !customFieldSection}
+                onClick={() => {
+                  if (!customFieldName.trim() || !customFieldSection) return
+                  const newField: PropertyCustomField = {
+                    id: `property_cf_${Date.now()}`,
+                    sectionId: customFieldSection,
+                    name: customFieldName.trim(),
+                    type: customFieldType,
+                    options:
+                      customFieldType === "dropdown-multi"
+                        ? customFieldOptions.split(",").map((o) => o.trim()).filter(Boolean)
+                        : undefined,
+                    required: customFieldRequired,
+                  }
+                  setPropertyCustomFields((prev) => [...prev, newField])
+                  setShowAddCustomFieldDialog(false)
+                  setCustomFieldName("")
+                  setCustomFieldOptions("")
+                  setCustomFieldRequired(false)
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Add Field
               </Button>
             </div>
           </DialogContent>

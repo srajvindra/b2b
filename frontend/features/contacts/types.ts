@@ -292,6 +292,17 @@ export interface ContactProcessDetailViewProps {
   process: ProcessData
   contactName: string
   onBack: () => void
+  ownerInfo?: {
+    name?: string
+    primaryEmail?: string
+    secondaryEmail?: string
+    primaryPhone?: string
+    secondaryPhone?: string
+    leadSource?: string
+    address?: string
+    startDate?: string
+    closeDate?: string
+  }
 }
 
 // Missing info modal data shapes

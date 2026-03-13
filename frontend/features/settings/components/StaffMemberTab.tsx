@@ -18,6 +18,7 @@ import {
 import { Search, MoreVertical, Mail, Phone, Calendar, Eye, UserX, UserCheck } from "lucide-react"
 import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 import { STAFF_MEMBERS_DATA } from "../data/staffMembers"
+import { useRouter } from "next/navigation"
 
 function getRoleBadgeColor(role: string): string {
   const roleColors: Record<string, string> = {
@@ -31,6 +32,7 @@ function getRoleBadgeColor(role: string): string {
 }
 
 export function StaffMemberTab() {
+  const router = useRouter()
   const [staffMembers, setStaffMembers] = useState(STAFF_MEMBERS_DATA)
   const [staffSearchQuery, setStaffSearchQuery] = useState("")
   const [visibleCount, setVisibleCount] = useState(10)
@@ -89,12 +91,12 @@ export function StaffMemberTab() {
             {paginatedStaff.map((staff) => (
               <TableRow key={staff.id} className="hover:bg-muted/50">
                 <TableCell>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-md p-1" onClick={() => router.push(`/settings/staff/${staff.id}`)}>
                     <Avatar className="h-10 w-10">
                       <AvatarImage src={staff.avatar || "/placeholder.svg"} alt={staff.name} />
                       <AvatarFallback className="bg-primary text-primary-foreground">{staff.initials}</AvatarFallback>
                     </Avatar>
-                    <span className="font-medium text-foreground">{staff.name}</span>
+                    <span className="font-medium text-blue-600 hover:text-blue-700 hover:underline">{staff.name}</span>
                   </div>
                 </TableCell>
                 <TableCell>

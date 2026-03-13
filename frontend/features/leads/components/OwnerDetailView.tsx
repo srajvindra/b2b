@@ -107,11 +107,13 @@ import type { DateRange } from "react-day-picker"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { useNav } from "@/app/dashboard/page"
-
+import { useParams, useRouter } from "next/navigation"
 
 export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDetailViewProps) {
     const ACTIVITIES_DATA = getActivitiesData(lead?.name || "", lead?.phone || "", lead?.email || "")
-
+    const router = useRouter()
+    const categoryId = useParams()?.categoryId
+    const leadId = useParams()?.leadId
     const stageIndex = STAGES.findIndex((s) => s.toLowerCase() === lead?.stage?.toLowerCase())
     const [currentStage, setCurrentStage] = useState(stageIndex >= 0 ? stageIndex : 0)
     const [expandedActivity, setExpandedActivity] = useState<number | null>(null)
@@ -1196,7 +1198,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                     <Table>
                                         <TableHeader className="sticky top-0 z-10 bg-white">
                                             <TableRow className="bg-muted/30">
-                                                <TableHead className="font-medium w-[80px]">Source</TableHead>
+                                                {/* <TableHead className="font-medium w-[80px]">Source</TableHead> */}
                                                 <TableHead className="font-medium">Task</TableHead>
                                                 <TableHead className="font-medium">Due Date</TableHead>
                                                 <TableHead className="font-medium">Priority</TableHead>
@@ -1209,18 +1211,18 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                             {/* Process Tasks */}
                                             {ownerTasks.filter(t => t.source === "process").map((task) => (
                                                 <TableRow key={task.id} className="hover:bg-muted/20">
-                                                    <TableCell>
+                                                    {/* <TableCell>
                                                         <div className="flex items-center gap-1.5">
                                                             <div className="h-2 w-2 rounded-full bg-teal-500" />
                                                             <span className="text-xs text-teal-600">Process</span>
                                                         </div>
-                                                    </TableCell>
+                                                    </TableCell> */}
                                                     <TableCell>
                                                         <div className="flex flex-col gap-0.5">
                                                             <span className="font-medium text-foreground">{task.title}</span>
                                                             <button
                                                                 type="button"
-                                                                onClick={(e) => { e.stopPropagation(); handleNavigateToProcess(task.processName) }}
+                                                                onClick={(e) => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/proc-1`)}
                                                                 className="flex items-center gap-1 hover:underline cursor-pointer"
                                                             >
                                                                 <Workflow className="h-3 w-3 text-teal-600" />
@@ -1261,12 +1263,12 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                             {/* Communication Tasks */}
                                             {ownerTasks.filter(t => t.source === "communication").map((task) => (
                                                 <TableRow key={task.id} className="hover:bg-muted/20">
-                                                    <TableCell>
+                                                    {/* <TableCell>
                                                         <div className="flex items-center gap-1.5">
                                                             <div className="h-2 w-2 rounded-full bg-blue-500" />
                                                             <span className="text-xs text-blue-600">Comms</span>
                                                         </div>
-                                                    </TableCell>
+                                                    </TableCell> */}
                                                     <TableCell>
                                                         <div className="flex flex-col gap-0.5">
                                                             <span className="font-medium text-foreground">{task.title}</span>
@@ -1306,12 +1308,12 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                             {/* General Tasks */}
                                             {ownerTasks.filter(t => t.source === "general").map((task) => (
                                                 <TableRow key={task.id} className="hover:bg-muted/20">
-                                                    <TableCell>
+                                                    {/* <TableCell>
                                                         <div className="flex items-center gap-1.5">
                                                             <div className="h-2 w-2 rounded-full bg-slate-400" />
                                                             <span className="text-xs text-slate-500">General</span>
                                                         </div>
-                                                    </TableCell>
+                                                    </TableCell> */}
                                                     <TableCell>
                                                         <div className="flex flex-col gap-0.5">
                                                             <span className="font-medium text-foreground">{task.title}</span>
@@ -2754,7 +2756,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                 <div className="flex items-center gap-2">
                                                                     <button
                                                                         type="button"
-                                                                        onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                                                                        onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}
                                                                         className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
                                                                     >
                                                                         {process.name}
@@ -2781,7 +2783,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                                                    <DropdownMenuItem onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}>
                                                                         <Eye className="h-4 w-4 mr-2" />
                                                                         View Details
                                                                     </DropdownMenuItem>
@@ -2880,7 +2882,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                             <div>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                                                                    onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}
                                                                     className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
                                                                 >
                                                                     {process.name}
@@ -2905,7 +2907,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                                                    <DropdownMenuItem onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}>
                                                                         <Eye className="h-4 w-4 mr-2" />
                                                                         View Details
                                                                     </DropdownMenuItem>
@@ -3012,7 +3014,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                             <div>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                                                                    onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}
                                                                     className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
                                                                 >
                                                                     {process.name}
@@ -3035,7 +3037,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                                                    <DropdownMenuItem onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}>
                                                                         <Eye className="h-4 w-4 mr-2" />
                                                                         View Details
                                                                     </DropdownMenuItem>
@@ -3142,7 +3144,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                             <div>
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" })}
+                                                                    onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}
                                                                     className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left"
                                                                 >
                                                                     {process.name}
@@ -3168,7 +3170,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
-                                                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Owner" }) }}>
+                                                                    <DropdownMenuItem onClick={() => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)}>
                                                                         <Eye className="h-4 w-4 mr-2" />
                                                                         View Details
                                                                     </DropdownMenuItem>

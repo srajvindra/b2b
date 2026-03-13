@@ -263,98 +263,6 @@ export function ProcessesDashboardView({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-semibold text-gray-900">Processes</h1>
-            <DropdownMenu onOpenChange={(open) => { if (!open) setProcessFilterSearch("") }}>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  className="inline-flex items-center gap-1.5 min-w-[220px] max-w-[420px] rounded-md border border-input bg-transparent px-2.5 py-1.5 text-sm shadow-sm hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                >
-                  <div className="flex flex-1 items-center gap-1.5 flex-wrap overflow-hidden">
-                    {isAllSelected ? (
-                      <span className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs font-medium">
-                        All Processes
-                      </span>
-                    ) : (
-                      <>
-                        {activeProcessTypeFilters.slice(0, 2).map((f) => (
-                          <span key={f.value} className="inline-flex items-center gap-1 rounded bg-muted px-2 py-0.5 text-xs font-medium">
-                            {f.value}
-                            <span
-                              role="button"
-                              className="ml-0.5 text-muted-foreground hover:text-foreground"
-                              onClick={(e) => { e.stopPropagation(); onRemoveFilter(f.index) }}
-                            >
-                              <X className="h-3 w-3" />
-                            </span>
-                          </span>
-                        ))}
-                        {activeProcessTypeFilters.length > 2 && (
-                          <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground font-medium">
-                            +{activeProcessTypeFilters.length - 2} more
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0 ml-auto">
-                    {!isAllSelected && (
-                      <span
-                        role="button"
-                        className="text-muted-foreground hover:text-foreground"
-                        onClick={(e) => { e.stopPropagation(); selectAll() }}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </span>
-                    )}
-                    <ChevronUp className="h-3.5 w-3.5 text-muted-foreground" />
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-72">
-                <div className="px-3 py-2 border-b">
-                  <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <input
-                      value={processFilterSearch}
-                      onChange={(e) => setProcessFilterSearch(e.target.value)}
-                      placeholder="Search processes..."
-                      className="w-full text-sm outline-none bg-transparent placeholder:text-muted-foreground"
-                    />
-                  </div>
-                </div>
-                {!processFilterSearch.trim() && (
-                  <DropdownMenuItem
-                    className="flex items-center gap-2"
-                    onSelect={(e) => {
-                      e.preventDefault()
-                      selectAll()
-                    }}
-                  >
-                    <Checkbox checked={isAllSelected} onCheckedChange={() => selectAll()} className="data-[state=checked]:!bg-transparent data-[state=checked]:!border-blue-600 data-[state=checked]:!text-blue-600" />
-                    <span className="text-sm font-medium">All Processes</span>
-                  </DropdownMenuItem>
-                )}
-                {filteredProcessTypes.map((p) => {
-                  const checked = !isAllSelected && selectedProcessNames.includes(p)
-                  return (
-                    <DropdownMenuItem
-                      key={p}
-                      className="flex items-center gap-2"
-                      onSelect={(e) => {
-                        e.preventDefault()
-                        toggleProcessTypeFilter(p)
-                      }}
-                    >
-                      <Checkbox checked={checked} onCheckedChange={() => toggleProcessTypeFilter(p)} className="data-[state=checked]:!bg-transparent data-[state=checked]:!border-blue-600 data-[state=checked]:!text-blue-600" />
-                      <span className="text-sm">{p}</span>
-                    </DropdownMenuItem>
-                  )
-                })}
-                {filteredProcessTypes.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-muted-foreground">No processes found</div>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
           <div className="flex items-center gap-3">
             <Button
@@ -382,7 +290,7 @@ export function ProcessesDashboardView({
                 <Settings className="h-4 w-4" />
               </Button>
             } */}
-            
+
           </div>
         </div>
       </div>
@@ -396,8 +304,8 @@ export function ProcessesDashboardView({
               type="button"
               onClick={() => setActiveTeamTab(tab.id)}
               className={`text-sm pb-2 border-b-2 transition-colors ${activeTeamTab === tab.id
-                  ? "text-gray-900 border-gray-900 font-medium"
-                  : "text-gray-500 border-transparent hover:text-gray-700"
+                ? "text-gray-900 border-gray-900 font-medium"
+                : "text-gray-500 border-transparent hover:text-gray-700"
                 }`}
             >
               {tab.label}
@@ -426,7 +334,90 @@ export function ProcessesDashboardView({
           ))}
         </div>
       </div>
-
+      {/* Process Type Filter */}
+      <div className="px-6 py-3 flex items-center gap-2">
+        <DropdownMenu onOpenChange={(open) => { if (!open) setProcessFilterSearch("") }}>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1 transition-colors"
+            >
+              <div className="flex flex-1 items-center gap-1.5 flex-wrap overflow-hidden">
+                {isAllSelected ? (
+                  <span className="text-sm font-medium text-gray-700">All Processes</span>
+                ) : (
+                  <>
+                    {activeProcessTypeFilters.slice(0, 2).map((f) => (
+                      <span key={f.value} className="inline-flex items-center gap-1 rounded-full bg-blue-50 border border-blue-200 px-2 py-0.5 text-xs font-medium text-blue-700">
+                        {f.value}
+                      </span>
+                    ))}
+                    {activeProcessTypeFilters.length > 2 && (
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 font-medium">
+                        +{activeProcessTypeFilters.length - 2} more
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+              <ChevronDown className="h-4 w-4 text-gray-400 shrink-0 ml-1" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="w-72">
+            <div className="px-3 py-2 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-gray-400 shrink-0" />
+                <input
+                  value={processFilterSearch}
+                  onChange={(e) => setProcessFilterSearch(e.target.value)}
+                  placeholder="Search processes..."
+                  className="w-full text-sm outline-none bg-transparent placeholder:text-gray-400"
+                />
+              </div>
+            </div>
+            {!processFilterSearch.trim() && (
+              <DropdownMenuItem
+                className="flex items-center gap-2"
+                onSelect={(e) => {
+                  e.preventDefault()
+                  selectAll()
+                }}
+              >
+                <Checkbox checked={isAllSelected} onCheckedChange={() => selectAll()} className="data-[state=checked]:!bg-transparent data-[state=checked]:!border-blue-600 data-[state=checked]:!text-blue-600" />
+                <span className="text-sm font-medium">All Processes</span>
+              </DropdownMenuItem>
+            )}
+            {filteredProcessTypes.map((p) => {
+              const checked = !isAllSelected && selectedProcessNames.includes(p)
+              return (
+                <DropdownMenuItem
+                  key={p}
+                  className="flex items-center gap-2"
+                  onSelect={(e) => {
+                    e.preventDefault()
+                    toggleProcessTypeFilter(p)
+                  }}
+                >
+                  <Checkbox checked={checked} onCheckedChange={() => toggleProcessTypeFilter(p)} className="data-[state=checked]:!bg-transparent data-[state=checked]:!border-blue-600 data-[state=checked]:!text-blue-600" />
+                  <span className="text-sm">{p}</span>
+                </DropdownMenuItem>
+              )
+            })}
+            {filteredProcessTypes.length === 0 && (
+              <div className="px-3 py-2 text-sm text-gray-400">No processes found</div>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {!isAllSelected && (
+          <button
+            type="button"
+            onClick={selectAll}
+            className="text-sm text-red-500 hover:text-gray-700 font-medium transition-colors"
+          >
+            Clear
+          </button>
+        )}
+      </div>
 
       {/* Data Table */}
       <div className="px-6">

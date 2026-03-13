@@ -15,9 +15,9 @@ import { Combined } from "@/features/dashboard/components/Combined"
 import type { CombinedItem } from "@/features/dashboard/components/Combined"
 import { CommunicationModal } from "@/features/dashboard/components/CommunicationModal"
 import type { Communication } from "@/features/dashboard/types"
-import { Wrench, FileText, LogOut, DollarSign, ShieldAlert, OctagonAlert } from "lucide-react"
+import { Wrench, FileText, LogOut, DollarSign, ShieldAlert, OctagonAlert, CircleAlert, Landmark, Clock } from "lucide-react"
 import { Filter } from "lucide-react"
-import { mockTasks } from "@/features/dashboard/data/mockTasks"
+import { mockTasks as initialMockTasks } from "@/features/dashboard/data/mockTasks"
 import { mockCommunications } from "@/features/dashboard/data/mockCommunications"
 import { getMockKPIData } from "@/features/dashboard/data/mockKPIs"
 import type { CommSummary, KPIData, KPIViewMode, TaskSummary } from "@/features/dashboard/types"
@@ -58,19 +58,49 @@ export default function Page() {
   )
   const [selectedStaff, setSelectedStaff] = useState<string | null>(null)
   const [tasksSearchQuery, setTasksSearchQuery] = useState("")
+  const [showDashFilters, setShowDashFilters] = useState(false)
+  const [dashFilter, setDashFilter] = useState<"myTasks" | "overdue" | "revenueRisk" | "slaRisk" | "legalRisk" | "orgTasks">("myTasks")
+  const [assignmentOverrides, setAssignmentOverrides] = useState<Record<number, string>>({})
+
+  const handleAssignTask = (taskId: number, staffName: string) => {
+    setAssignmentOverrides((prev) => ({ ...prev, [taskId]: staffName }))
+  }
 
   const filteredStaffMembers = useMemo(
     () => STAFF_MEMBERS.filter((s) => s.name.toLowerCase().includes(tasksSearchQuery.toLowerCase())),
     [STAFF_MEMBERS, tasksSearchQuery],
   )
 
+  const CURRENT_USER = "Nina Patel"
+
   const filteredTasks = useMemo(() => {
-    return mockTasks.filter((t) => {
-      const matchesStaff = selectedStaff ? t.assignedTo === selectedStaff : true
-      const matchesSearch = tasksSearchQuery ? t.assignedTo.toLowerCase().includes(tasksSearchQuery.toLowerCase()) : true
-      return matchesStaff && matchesSearch
-    })
-  }, [selectedStaff, tasksSearchQuery])
+    return initialMockTasks
+      .filter((t) => {
+        const matchesStaff = selectedStaff ? t.assignedTo === selectedStaff : true
+        const matchesSearch = tasksSearchQuery ? t.assignedTo.toLowerCase().includes(tasksSearchQuery.toLowerCase()) : true
+        if (!matchesStaff || !matchesSearch) return false
+
+        switch (dashFilter) {
+          case "myTasks":
+            return t.assignedTo === CURRENT_USER
+          case "overdue":
+            return t.overdue
+          case "revenueRisk":
+            return t.tags?.includes("revenueRisk")
+          case "slaRisk":
+            return t.tags?.includes("slaRisk")
+          case "legalRisk":
+            return t.tags?.includes("legalRisk")
+          case "orgTasks":
+            return t.tags?.includes("orgTask")
+          default:
+            return true
+        }
+      })
+      .map((t) =>
+        assignmentOverrides[t.id] ? { ...t, assignedTo: assignmentOverrides[t.id] } : t
+      )
+  }, [assignmentOverrides, selectedStaff, tasksSearchQuery, dashFilter])
 
   const taskSummary = useMemo(
     (): TaskSummary => ({
@@ -145,7 +175,7 @@ export default function Page() {
   const [kpisSearchQuery, setKpisSearchQuery] = useState("")
   const kpiData = useMemo<KPIData>(() => getMockKPIData(userRole), [userRole])
 
-  const [dashboardTab, setDashboardTab] = useState<"tasks" | "communications" | "combined">("tasks")
+  const [dashboardTab, setDashboardTab] = useState<"tasks" | "communications" | "combined">("combined")
   const [showCommModal, setShowCommModal] = useState(false)
   const [selectedCommunication, setSelectedCommunication] = useState<Communication | null>(null)
 
@@ -163,9 +193,7 @@ export default function Page() {
     return [...commItems, ...taskItems].sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
   }, [filteredCommunications, filteredTasks])
 
-  const [showDashFilters, setShowDashFilters] = useState(false)
-  const [dashFilter, setDashFilter] = useState<"all" | "myTasks" | "overdue" | "legalRisk" | "orgTasks">("all")
-  const [dashFilterType, setDashFilterType] = useState<"all" | "myTasks" | "overdue" | "legalRisk" | "orgTasks">("all")
+  const [dashFilterType, setDashFilterType] = useState<"myTasks" | "overdue" | "revenueRisk" | "slaRisk" | "legalRisk" | "orgTasks">("myTasks")
   const [dashFilterValue, setDashFilterValue] = useState<string>("")
   const [dashFilterDate, setDashFilterDate] = useState<string>("")
   const [dashFilterStatus, setDashFilterStatus] = useState<"all" | "open" | "closed">("all")
@@ -245,67 +273,50 @@ export default function Page() {
       </div>
 
       {/* Summary Tiles */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200">
-          <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
-            <Wrench className="h-4.5 w-4.5 text-amber-600" />
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
+          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+            <CircleAlert className="h-4.5 w-4.5 text-red-600" />
           </div>
           <div>
-            <p className="text-lg font-bold text-slate-900 leading-tight">12</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Open Maintenance</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">6 Critical Items</p>
+            <p className="text-[11px] text-red-500 leading-tight">5 Critical</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200">
-          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-            <FileText className="h-4.5 w-4.5 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-slate-900 leading-tight">8</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Lease Renewals</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200">
-          <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center shrink-0">
-            <LogOut className="h-4.5 w-4.5 text-orange-600" />
-          </div>
-          <div>
-            <p className="text-lg font-bold text-slate-900 leading-tight">3</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Move-Outs</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200">
-          <div className="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
+          <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
             <DollarSign className="h-4.5 w-4.5 text-green-600" />
           </div>
           <div>
-            <p className="text-lg font-bold text-slate-900 leading-tight">94%</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Rent Collected</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">$27,600 Revenue at Risk</p>
+            <p className="text-[11px] text-slate-500 leading-tight">Recent Escalations</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-slate-200">
-          <div className="w-9 h-9 rounded-lg bg-rose-50 flex items-center justify-center shrink-0">
-            <ShieldAlert className="h-4.5 w-4.5 text-rose-600" />
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
+          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+            <Landmark className="h-4.5 w-4.5 text-red-700" />
           </div>
           <div>
-            <p className="text-lg font-bold text-slate-900 leading-tight">2</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Legal / SLA Risk</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">4 Legal Exposure</p>
+            <p className="text-[11px] text-slate-500 leading-tight">Pending Violations</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-white border border-red-200 bg-red-50/30">
-          <div className="w-9 h-9 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-            <OctagonAlert className="h-4.5 w-4.5 text-red-600" />
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
+          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+            <Clock className="h-4.5 w-4.5 text-slate-600" />
           </div>
           <div>
-            <p className="text-lg font-bold text-red-700 leading-tight">5</p>
-            <p className="text-[11px] text-red-600 leading-tight">Critical</p>
+            <p className="text-base font-bold text-slate-900 leading-tight">5 SLA Breaches</p>
+            <p className="text-[11px] text-slate-500 leading-tight">Longest Aging 3h 48m <span className="text-[10px] text-slate-400">15 sec</span></p>
           </div>
         </div>
       </div>
 
       {/* Dashboard Tabs */}
+
       <div className="flex items-center border-b border-slate-200 pb-0">
         <div className="flex items-center gap-1">
-          {(["tasks", "communications", "combined"] as const).map((tab) => {
+          {(["combined", "tasks", "communications"] as const).map((tab) => {
             const count = tab === "tasks" ? filteredTasks.length : tab === "communications" ? filteredCommunications.length : tab === "combined" ? combinedItems.length : null
             return (
               <button
@@ -332,30 +343,33 @@ export default function Page() {
             )
           })}
         </div>
-        <button
-          onClick={() => setShowDashFilters(!showDashFilters)}
-          className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${showDashFilters || dashFilter !== "all"
-            ? "bg-teal-50 border-teal-200 text-teal-700"
-            : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-            }`}
-        >
-          <Filter className="h-3.5 w-3.5" />
-          Filter
-          {dashFilter !== "all" && (
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
-          )}
-        </button>
+        {/* {dashboardTab === "tasks" && (
+          <button
+            onClick={() => setShowDashFilters(!showDashFilters)}
+            className={`ml-auto flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${showDashFilters || dashFilter !== "myTasks"
+              ? "bg-teal-50 border-teal-200 text-teal-700"
+              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+              }`}
+          >
+            <Filter className="h-3.5 w-3.5" />
+            Filter
+            {dashFilter !== "myTasks" && (
+              <span className="w-1.5 h-1.5 rounded-full bg-teal-600" />
+            )}
+          </button>
+        )} */}
       </div>
 
       {/* Filter Section */}
-      {showDashFilters && (
+      {dashboardTab === "tasks" && (
         <div className="flex items-center gap-2 px-1 py-2 bg-slate-50 rounded-lg border border-slate-200">
           {([
-            { key: "all" as const, label: "All" },
             { key: "myTasks" as const, label: "My Tasks" },
             { key: "overdue" as const, label: "Overdue" },
+            { key: "revenueRisk" as const, label: "Revenue at Risk" },
+            { key: "slaRisk" as const, label: "SLA Risk" },
             { key: "legalRisk" as const, label: "Legal Risk" },
-            ...(userRole === "manager" || userRole === "leader" ? [{ key: "orgTasks" as const, label: "Org Tasks" }] : []),
+            { key: "orgTasks" as const, label: "Org Tasks" },
           ]).map((f) => (
             <button
               key={f.key}
@@ -368,9 +382,9 @@ export default function Page() {
               {f.label}
             </button>
           ))}
-          {dashFilter !== "all" && (
+          {dashFilter !== "myTasks" && (
             <button
-              onClick={() => setDashFilter("all")}
+              onClick={() => setDashFilter("myTasks")}
               className="ml-auto text-[11px] text-slate-400 hover:text-slate-600 underline"
             >
               Clear
@@ -420,6 +434,8 @@ export default function Page() {
             searchQuery={tasksSearchQuery}
             setSearchQuery={setTasksSearchQuery}
             selectedStaff={selectedStaff}
+            staffMembers={STAFF_MEMBERS}
+            onAssignTask={handleAssignTask}
           />
         )}
         {dashboardTab === "combined" && (

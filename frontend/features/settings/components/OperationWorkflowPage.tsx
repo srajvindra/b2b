@@ -10,6 +10,8 @@ import EmailTemplatePage from "@/features/settings/components/operationProcesses
 import SMSTemplatePage from "@/features/settings/components/operationProcesses/SMSTemplatePage"
 import { CustomFieldsPage } from "@/features/settings/components/CustomFieldPage"
 import { initialProcessInstances } from "@/features/operations/data/processes"
+import { VersionHistoryPage } from "@/features/settings/components/operationProcesses/VersionHistoryPage"
+import { AutoPilotPage } from "@/features/settings/components/operationProcesses/AutoPilotPage"
 
 interface TabItem {
     id: string
@@ -21,12 +23,12 @@ const tabs: TabItem[] = [
     { id: "overview", label: "Overview" },
     { id: "general", label: "General" },
     { id: "users-roles", label: "Users, Roles & Assignment" },
-    { id: "autopilot-rules", label: "Autopilot Rules", underProgress: true },
+    { id: "autopilot-rules", label: "Autopilot Rules" },
     { id: "stages-workflows", label: "Stages & Workflows" },
     { id: "email-templates", label: "Email Templates" },
     { id: "text-templates", label: "Text Messages Templates" },
     { id: "custom-fields", label: "Custom Fields" },
-    { id: "version-history", label: "Version History", underProgress: true },
+    { id: "version-history", label: "Version History" },
 ]
 
 export function OperationWorkflowPage() {
@@ -121,6 +123,10 @@ export function OperationWorkflowPage() {
                         <div className="max-w-full mx-auto">
                             <PortfolioTab />
                         </div>
+                    ) : activeTab === "autopilot-rules" ? (
+                        <div className="max-w-full mx-auto">
+                            <AutoPilotPage />
+                        </div>
                     ) : activeTab === "stages-workflows" ? (
                         <div className="max-w-full mx-auto">
                             <StageWorkflow currentProcessName={processName} />
@@ -138,11 +144,8 @@ export function OperationWorkflowPage() {
                             <CustomFieldsPage />
                         </div>
                     ) : activeTab === "version-history" ? (
-                        <div>
-                            <h2 className="text-xl font-semibold text-foreground mb-1">{currentTab.label}</h2>
-                            <p className="text-sm text-muted-foreground">
-                                Manage {currentTab.label.toLowerCase()} settings for this process.
-                            </p>
+                        <div className="max-w-full mx-auto">
+                            <VersionHistoryPage />
                         </div>
                     ) : null}
                 </main>

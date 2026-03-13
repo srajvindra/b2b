@@ -2,12 +2,20 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, X, Trash2 } from "lucide-react"
+import { Plus, X, Trash2, Pencil } from "lucide-react"
 import { initialCustomFields, availableProcessTypes } from "../data/customField"
 import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 
@@ -20,6 +28,13 @@ export function CustomFieldsPage() {
     const [newFieldType, setNewFieldType] = useState<string>("Multiple Choice")
     const [newFieldChoices, setNewFieldChoices] = useState<string[]>([""])
     const [newFieldProcessTypes, setNewFieldProcessTypes] = useState<string[]>([])
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editFieldId, setEditFieldId] = useState<number | null>(null)
+  const [editFieldLabel, setEditFieldLabel] = useState("")
+  const [editFieldType, setEditFieldType] = useState<string>("Multiple Choice")
+  const [editFieldChoices, setEditFieldChoices] = useState<string[]>([""])
+  const [editFieldProcessTypes, setEditFieldProcessTypes] = useState<string[]>([])
   
     const handleDeleteField = (fieldId: number) => {
       setCustomFields(customFields.filter((f) => f.id !== fieldId))
@@ -65,6 +80,69 @@ export function CustomFieldsPage() {
       setNewFieldChoices([""])
       setNewFieldProcessTypes([])
     }
+
+  const handleEditChoiceChange = (index: number, value: string) => {
+    const updated = [...editFieldChoices]
+    updated[index] = value
+    setEditFieldChoices(updated)
+  }
+
+  const handleAddEditChoice = () => {
+    setEditFieldChoices([...editFieldChoices, ""])
+  }
+
+  const handleRemoveEditChoice = (index: number) => {
+    setEditFieldChoices(editFieldChoices.filter((_, i) => i !== index))
+  }
+
+  const handleToggleEditProcessType = (processType: string) => {
+    if (editFieldProcessTypes.includes(processType)) {
+      setEditFieldProcessTypes(editFieldProcessTypes.filter((p) => p !== processType))
+    } else {
+      setEditFieldProcessTypes([...editFieldProcessTypes, processType])
+    }
+  }
+
+  const openEditDialog = (fieldId: number) => {
+    const field = customFields.find((f) => f.id === fieldId)
+    if (!field) return
+
+    setEditFieldId(field.id)
+    setEditFieldLabel(field.label)
+    setEditFieldType(field.dataType)
+    setEditFieldChoices(
+      field.dataType === "Multiple Choice" && field.defaultValues.length > 0
+        ? field.defaultValues
+        : [""]
+    )
+    setEditFieldProcessTypes(field.processTypes || [])
+    setIsEditDialogOpen(true)
+  }
+
+  const handleUpdateField = () => {
+    if (!editFieldLabel.trim() || editFieldId == null) return
+
+    const updatedFields = customFields.map((field) =>
+      field.id === editFieldId
+        ? {
+            ...field,
+            label: editFieldLabel,
+            dataType: editFieldType,
+            defaultValues:
+              editFieldType === "Multiple Choice" ? editFieldChoices.filter((c) => c.trim()) : [],
+            processTypes: editFieldProcessTypes,
+          }
+        : field
+    )
+
+    setCustomFields(updatedFields)
+    setIsEditDialogOpen(false)
+    setEditFieldId(null)
+    setEditFieldLabel("")
+    setEditFieldType("Multiple Choice")
+    setEditFieldChoices([""])
+    setEditFieldProcessTypes([])
+  }
 
     const visibleFields = customFields.slice(0, visibleCount)
 
@@ -191,7 +269,7 @@ export function CustomFieldsPage() {
                 <TableHead className="font-semibold text-foreground">Data Type</TableHead>
                 <TableHead className="font-semibold text-foreground">Default / Value</TableHead>
                 <TableHead className="font-semibold text-foreground">Process Types</TableHead>
-                <TableHead className="w-12"></TableHead>
+                <TableHead className="w-24"></TableHead>
               </TableRow>
             </TableHeader>
           <TableBody>
@@ -215,7 +293,15 @@ export function CustomFieldsPage() {
                   <TableCell className="text-muted-foreground">
                     {field.processTypes.join(", ")}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                      onClick={() => openEditDialog(field.id)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -237,6 +323,96 @@ export function CustomFieldsPage() {
           label="fields"
           onLoadMore={() => setVisibleCount((prev) => Math.min(prev + 10, customFields.length))}
         />
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Edit Custom Field</DialogTitle>
+              <DialogDescription>Update this custom field for your processes and workflows.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-field-label">Label Name</Label>
+                <Input
+                  id="edit-field-label"
+                  placeholder="Enter field label..."
+                  value={editFieldLabel}
+                  onChange={(e) => setEditFieldLabel(e.target.value)}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label>Field Type</Label>
+                <Select value={editFieldType} onValueChange={setEditFieldType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
+                    <SelectItem value="Date">Date</SelectItem>
+                    <SelectItem value="Time">Time</SelectItem>
+                    <SelectItem value="Text">Text</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {editFieldType === "Multiple Choice" && (
+                <div className="grid gap-2">
+                  <Label>Choice Values</Label>
+                  <div className="space-y-2">
+                    {editFieldChoices.map((choice, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          placeholder={`Option ${index + 1}`}
+                          value={choice}
+                          onChange={(e) => handleEditChoiceChange(index, e.target.value)}
+                        />
+                        {editFieldChoices.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveEditChoice(index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={handleAddEditChoice}>
+                      <Plus className="h-3 w-3 mr-1" />
+                      Add Option
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-2">
+                <Label>Process Types</Label>
+                <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2">
+                  {availableProcessTypes.map((processType) => (
+                    <label key={processType} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded border-gray-300"
+                        checked={editFieldProcessTypes.includes(processType)}
+                        onChange={() => handleToggleEditProcessType(processType)}
+                      />
+                      <span className="text-sm">{processType}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateField} disabled={!editFieldLabel.trim()}>
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     )
-  } 
+  }

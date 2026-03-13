@@ -8,6 +8,8 @@ export type TaskEntityType =
   | "leaseProspect"
   | "prospectOwner"
 
+export type TaskRiskTag = "revenueRisk" | "slaRisk" | "legalRisk" | "orgTask"
+
 export interface Task {
   id: number
   title: string
@@ -15,6 +17,7 @@ export interface Task {
   priority: string
   entity: string
   entityType: TaskEntityType
+  risk: string
   overdue: boolean
   assignedTo: string
   status: TaskStatus
@@ -22,6 +25,7 @@ export interface Task {
   processEntityType?: TaskEntityType
   skippedComment?: string
   autoCreated?: boolean
+  tags?: TaskRiskTag[]
 }
 
 export type CommunicationType = "email" | "text" | "call"

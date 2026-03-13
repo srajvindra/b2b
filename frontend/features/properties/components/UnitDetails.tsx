@@ -2170,13 +2170,13 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
                 <Plus className="h-5 w-5 text-teal-600" />
                 <DialogTitle className="text-lg font-semibold text-slate-900">Add Custom Field</DialogTitle>
               </div>
-              <button
+              {/* <button
                 type="button"
                 onClick={() => setShowAddCustomFieldDialog(false)}
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="h-5 w-5" />
-              </button>
+              </button> */}
             </div>
 
             <div className="px-6 pb-2">

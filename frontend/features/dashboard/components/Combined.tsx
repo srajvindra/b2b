@@ -45,7 +45,7 @@ export function Combined({
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <div className="max-h-[500px] overflow-y-auto pr-1">
+        <div className="max-h-[250px] overflow-y-auto pr-1">
           <div className="flex flex-col gap-2">
             {combinedItems.length > 0 ? (
               combinedItems.map((item) => {

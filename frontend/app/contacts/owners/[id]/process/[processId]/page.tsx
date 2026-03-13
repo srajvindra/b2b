@@ -59,6 +59,13 @@ export default function OwnerProcessDetailRoutePage() {
       process={process}
       contactName={contact.name}
       onBack={() => router.push(`/contacts/owners/${id}`)}
+      ownerInfo={{
+        name: contact.name,
+        primaryEmail: contact.email,
+        primaryPhone: contact.phone,
+        address: contact.location,
+        leadSource: contact.source,
+      }}
     />
   )
 }

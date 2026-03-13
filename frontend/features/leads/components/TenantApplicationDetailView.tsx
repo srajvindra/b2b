@@ -98,7 +98,7 @@ import { EmailPopupModal } from "@/components/email-popup-modal"
 import { useNav } from "@/app/dashboard/page"
 import { useQuickActions } from "@/context/QuickActionsContext"
 import { getLeadProspectQuickActions, getOwnerProspectQuickActions } from "@/lib/quickActions"
-import { useRouter } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import {
   STAGES,
   getStageColor,
@@ -160,7 +160,8 @@ export function TenantApplicationDetailView({
   defaultTab,
 }: TenantApplicationDetailViewProps) {
   const ACTIVITIES_DATA = getActivitiesData(lead.name, lead.phone, lead.email)
-
+  const categoryId = useParams()?.categoryId
+  const leadId = useParams()?.leadId
   const stageIndex = resolveStageIndex(lead.stage)
   const [currentStage, setCurrentStage] = useState(stageIndex)
   const [expandedActivityId, setExpandedActivityId] = useState<number | null>(null)
@@ -1300,10 +1301,18 @@ export function TenantApplicationDetailView({
                             <div className="flex flex-col gap-1">
                               <span className="font-medium text-foreground">{task.title}</span>
                               {task.processName && (
-                                <div className="flex items-center gap-1">
+                                // <button className="flex items-center gap-1" onClick={() => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/proc-1`)}>
+                                //   <Workflow className="h-3 w-3 text-teal-600" />
+                                //   <span className="text-xs text-teal-600">{task.processName}</span>
+                                // </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/proc-1`)}
+                                  className="flex items-center gap-1 hover:underline cursor-pointer"
+                                >
                                   <Workflow className="h-3 w-3 text-teal-600" />
                                   <span className="text-xs text-teal-600">{task.processName}</span>
-                                </div>
+                                </button>
                               )}
                               {task.autoCreated && (
                                 <span className="text-xs text-muted-foreground">Auto-created</span>
@@ -2501,8 +2510,8 @@ export function TenantApplicationDetailView({
                           <div className="flex items-center gap-4 flex-1 text-left">
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-foreground">{process.name}</p>
+                              <div className="flex items-center gap-2" >
+                                <button type="button" onClick={() => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)} className="font-medium text-foreground text-blue-600 hover:text-blue-700 hover:underline cursor-pointer">{process.name}</button>
                                 <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">New</Badge>
                               </div>
                               <div className="flex items-center gap-2 mt-1">
@@ -2525,7 +2534,7 @@ export function TenantApplicationDetailView({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                <DropdownMenuItem onClick={(e) => { router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`) }}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
@@ -2553,7 +2562,7 @@ export function TenantApplicationDetailView({
                           <div className="flex items-center gap-4 flex-1 text-left">
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <p className="font-medium text-foreground">{process.name}</p>
+                              <button type="button" onClick={() => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)} className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left">{process.name}</button>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
                                   {process.leaseProspectStage}
@@ -2574,7 +2583,7 @@ export function TenantApplicationDetailView({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                <DropdownMenuItem onClick={(e) => { router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`) }}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
@@ -2610,7 +2619,7 @@ export function TenantApplicationDetailView({
                           <div className="flex items-center gap-4 flex-1 text-left">
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <p className="font-medium text-foreground">{process.name}</p>
+                              <button type="button" onClick={() => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)} className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left">{process.name}</button>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
                                   {process.leaseProspectStage}
@@ -2629,7 +2638,7 @@ export function TenantApplicationDetailView({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                <DropdownMenuItem onClick={(e) => { router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`) }}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
@@ -2665,7 +2674,7 @@ export function TenantApplicationDetailView({
                           <div className="flex items-center gap-4 flex-1 text-left">
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <p className="font-medium text-foreground">{process.name}</p>
+                              <button type="button" onClick={() => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`)} className="font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer text-left">{process.name}</button>
                               <div className="flex items-center gap-2 mt-1">
                                 <Badge variant="outline" className="text-xs bg-teal-50 text-teal-700 border-teal-200">
                                   {process.leaseProspectStage}
@@ -2687,7 +2696,7 @@ export function TenantApplicationDetailView({
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); nav.go("contactProcessDetail", { process, contactName: lead?.name || "Prospect" }) }}>
+                                <DropdownMenuItem onClick={(e) => { router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/${process.id}`) }}>
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>

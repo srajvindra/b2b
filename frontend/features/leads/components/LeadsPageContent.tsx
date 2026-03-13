@@ -1318,17 +1318,18 @@ export default function LeadsPageContent({
                               }}
                               className="text-left hover:underline"
                             >
-                              <div className="flex flex-col gap-1.5">
-                                {lead.interestedUnits.slice(0, 3).map((u: { address: string; unit: string }, idx: number) => (
-                                  <div key={idx} className="text-xs text-muted-foreground leading-tight">
-                                    <span className="text-foreground font-medium">{u.address}</span>
-                                    <br />
-                                    <span>{u.unit}</span>
+                              <div className="flex flex-col gap-1 h-[52px] justify-center">
+                                {lead.interestedUnits.slice(0, 2).map((u: { address: string; unit: string }, idx: number) => (
+                                  <div key={idx} className="text-xs text-muted-foreground leading-tight truncate max-w-[180px]">
+                                    <span className="text-foreground font-medium" title={u.address}>
+                                      {u.address.split(",")[0]}...
+                                    </span>
+                                    {" "}
                                   </div>
                                 ))}
-                                {lead.interestedUnits.length > 3 && (
+                                {lead.interestedUnits.length > 2 && (
                                   <span className="text-xs font-semibold text-teal-700">
-                                    +{lead.interestedUnits.length - 3}
+                                    +{lead.interestedUnits.length - 2}
                                   </span>
                                 )}
                               </div>
