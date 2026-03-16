@@ -20,12 +20,14 @@ export interface Task {
   risk: string
   overdue: boolean
   assignedTo: string
+  escalatedTo: string
   status: TaskStatus
   processName?: string
   processEntityType?: TaskEntityType
   skippedComment?: string
   autoCreated?: boolean
   tags?: TaskRiskTag[]
+  notes?: string
 }
 
 export type CommunicationType = "email" | "text" | "call"

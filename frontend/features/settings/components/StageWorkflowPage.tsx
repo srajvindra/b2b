@@ -13,14 +13,21 @@ import {
   CheckSquare,
   Video,
   Settings,
-  Zap,
   FileText,
+  FileSearch,
   Hand,
   Star,
   Ban,
   Users,
   Trash2,
   Plus,
+  TriangleAlert,
+  TrendingUp,
+  Network,
+  Clock,
+  Sparkles,
+  CloudLightning,
+  Zap,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -171,7 +178,7 @@ export function StageWorkflowPage({ categoryName, stage, backHref, onBack }: Sta
               <ArrowLeft className="h-5 w-5 text-gray-600" />
             </button>
             <div>
-              <h1 className="text-lg font-semibold text-gray-900">{stage.name }</h1>
+              <h1 className="text-lg font-semibold text-gray-900">{stage.name}</h1>
               <p className="text-sm text-gray-500">{categoryName}</p>
             </div>
           </div>
@@ -240,6 +247,46 @@ export function StageWorkflowPage({ categoryName, stage, backHref, onBack }: Sta
 
                   {/* Action Icons */}
                   <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Instructions">
+                      <FileText className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Risk Escalation">
+                      <span className="relative inline-flex items-center justify-center h-4 w-4">
+                        <FileSearch className="h-3.5 w-3.5 absolute -top-0.5 -left-0.5" />
+                      </span>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="The workflow won't wait for this step to complete to schedule the following tasks.">
+                      <Hand className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="This step is not sticky and will be skipped when the stage is changed.">
+                      <Star className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Run Process">
+                      <span className="text-xs font-medium">P</span>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Assign to Process Owner.">
+                      <Users className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Set Timer">
+                      <Clock className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Step Conditions">
+                      <Network className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Click to make manual">
+                      <Zap className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-gray-50"
+                      title="Delete Step"
+                      onClick={() => handleDeleteStep(step.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {/* <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50">
                       <FileText className="h-4 w-4" />
                     </Button>
@@ -280,7 +327,7 @@ export function StageWorkflowPage({ categoryName, stage, backHref, onBack }: Sta
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>

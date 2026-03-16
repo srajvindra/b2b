@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,7 @@ import {
   Calendar,
   Check,
   ChevronsUpDown,
+  ChartBar,
 } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -27,6 +28,10 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 // Removed duplicate imports for: ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line, Download, CheckCircle2, Clock, DollarSign, Settings, Wrench, Calendar, User, Building, ChevronsUpDown, Check, cn
 import { staffMembers, tasksData, salesData, operationsData, maintenanceData } from "../data/reports"
+import { KPIsCard } from "@/features/dashboard/components/KPIsCard"
+
+import { getMockKPIData } from "@/features/dashboard/data/mockKPIs"
+import type { CommSummary, KPIData, KPIViewMode, TaskSummary } from "@/features/dashboard/types"
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("tasks")
@@ -89,6 +94,15 @@ export default function ReportsPage() {
       moveOuts: item.moveOuts ? Math.round(item.moveOuts * scaleFactor) : undefined,
     }))
   }
+
+
+  // ----- KPIs (inlined from features/dashboard/hooks/useKPIs.ts) -----
+  const [userRole] = useState<"associate" | "manager" | "leader">("manager")
+  const [kpiView, setKpiView] = useState<KPIViewMode>("table")
+  const [expandedSection, setExpandedSection] = useState<string | null>("sales")
+  const [kpisSearchQuery, setKpisSearchQuery] = useState("")
+  const kpiData = useMemo<KPIData>(() => getMockKPIData(userRole), [userRole])
+
 
   const filteredTasksStats = getFilteredStats(tasksData)
   const filteredSalesStats = getFilteredStats(salesData)
@@ -273,6 +287,10 @@ export default function ReportsPage() {
           <TabsTrigger value="maintenance" className="gap-2 data-[state=active]:bg-white">
             <Wrench className="h-4 w-4" />
             Maintenance
+          </TabsTrigger>
+          <TabsTrigger value="kpis" className="gap-2 data-[state=active]:bg-white">
+            <ChartBar className="h-4 w-4" />
+            KPIs
           </TabsTrigger>
         </TabsList>
 
@@ -779,6 +797,12 @@ export default function ReportsPage() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+        {/* KPIs Tab Content */}
+        {activeTab === "kpis" && (
+          <div className="space-y-6 mt-6">
+            <KPIsCard kpiData={kpiData} kpiView={kpiView} setKpiView={setKpiView} expandedSection={expandedSection} setExpandedSection={setExpandedSection} kpisSearchQuery={kpisSearchQuery} setKpisSearchQuery={setKpisSearchQuery} userRole={userRole} />
           </div>
         )}
       </Tabs>

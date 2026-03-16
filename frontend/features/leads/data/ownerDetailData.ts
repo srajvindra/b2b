@@ -171,6 +171,7 @@ export const ownerTasks = [
         priority: "High" as const,
         status: "In Progress" as const,
         isOverdue: false,
+        escalatedTo: "David Wilson (CSM)",
     },
     {
         id: "2",
@@ -185,6 +186,7 @@ export const ownerTasks = [
         priority: "High" as const,
         status: "Pending" as const,
         isOverdue: false,
+        escalatedTo: "David Wilson (GM)",
     },
     // Communication tasks - auto-created from unread/unresponded communications
     {
@@ -200,6 +202,7 @@ export const ownerTasks = [
         priority: "High" as const,
         status: "Pending" as const,
         isOverdue: true,
+        escalatedTo: "David Wilson (CSM)",
     },
     {
         id: "4",
@@ -214,6 +217,7 @@ export const ownerTasks = [
         priority: "Medium" as const,
         status: "Pending" as const,
         isOverdue: true,
+        escalatedTo: "David Wilson (GM)",
     },
     {
         id: "5",
@@ -228,6 +232,7 @@ export const ownerTasks = [
         priority: "Medium" as const,
         status: "Pending" as const,
         isOverdue: false,
+        escalatedTo: "",
     },
     // General tasks - created by one staff member for another
     {
@@ -243,6 +248,7 @@ export const ownerTasks = [
         priority: "Medium" as const,
         status: "Pending" as const,
         isOverdue: false,
+        escalatedTo: "",
     },
     {
         id: "7",
@@ -257,6 +263,7 @@ export const ownerTasks = [
         priority: "Low" as const,
         status: "Pending" as const,
         isOverdue: false,
+        escalatedTo: "Sarah Johnson (Executive/MD)",
     },
     {
         id: "8",
@@ -271,6 +278,7 @@ export const ownerTasks = [
         priority: "Low" as const,
         status: "Skipped" as const,
         isOverdue: false,
+        escalatedTo: "David Wilson (CSM)",
     },
 ]
 

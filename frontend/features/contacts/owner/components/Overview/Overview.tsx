@@ -8,12 +8,6 @@ import type { OwnerTask, CommunicationItem } from "../../types"
 export interface OwnerOverviewProps {
   // Tasks
   tasks: OwnerTask[]
-  onNewTask: () => void
-  onViewTask: (task: OwnerTask) => void
-  onEditTask: (task: OwnerTask) => void
-  onMarkComplete: (taskId: string) => void
-  getStatusBadgeStyle: (status: OwnerTask["status"]) => string
-  getPriorityBadgeStyle: (priority: OwnerTask["priority"]) => string
   // Activity
   pinnedCommunications: CommunicationItem[]
   unpinnedCommunications: CommunicationItem[]
@@ -33,12 +27,6 @@ export interface OwnerOverviewProps {
 
 export function OwnerOverview({
   tasks,
-  onNewTask,
-  onViewTask,
-  onEditTask,
-  onMarkComplete,
-  getStatusBadgeStyle,
-  getPriorityBadgeStyle,
   pinnedCommunications,
   unpinnedCommunications,
   renderCommunicationItem,
@@ -55,15 +43,7 @@ export function OwnerOverview({
 }: OwnerOverviewProps) {
   return (
     <div className="mt-4 space-y-4">
-      <OwnerOverviewTasks
-        tasks={tasks}
-        onNewTask={onNewTask}
-        onViewTask={onViewTask}
-        onEditTask={onEditTask}
-        onMarkComplete={onMarkComplete}
-        getStatusBadgeStyle={getStatusBadgeStyle}
-        getPriorityBadgeStyle={getPriorityBadgeStyle}
-      />
+      <OwnerOverviewTasks tasks={tasks} />
 
       <OwnerOverviewActivity
         pinnedItems={pinnedCommunications}

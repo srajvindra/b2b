@@ -95,6 +95,7 @@ import {
 } from "lucide-react"
 import { SMSPopupModal } from "@/components/sms-popup-modal"
 import { EmailPopupModal } from "@/components/email-popup-modal"
+import { CommentsDialog, useComments, TENANT_INITIAL_COMMENTS } from "@/components/shared/comments-dialog"
 import { useNav } from "@/app/dashboard/page"
 import { useQuickActions } from "@/context/QuickActionsContext"
 import { getLeadProspectQuickActions, getOwnerProspectQuickActions } from "@/lib/quickActions"
@@ -143,6 +144,9 @@ const STAGE_TASKS: Record<number, { type: "task" | "reason"; text: string }[]> =
   11: [{ type: "reason", text: "Application did not meet criteria" }],
 }
 import type { ProspectTaskStatus, ProspectTask } from "@/features/leads/types"
+import { TasksCard } from "@/features/dashboard/components/TasksCard"
+import { useTasksCardState } from "@/features/dashboard/hooks/useTasksCardState"
+import type { Task } from "@/features/dashboard/types"
 
 interface TenantApplicationDetailViewProps {
   lead: any
@@ -194,6 +198,7 @@ export function TenantApplicationDetailView({
   }
   const [editableCreatedAt, setEditableCreatedAt] = useState(toDateInputValue(lead?.createdAt ?? ""))
   const [editableClosedAt, setEditableClosedAt] = useState(toDateInputValue(lead?.lastTouch ?? ""))
+  const { comments, showCommentDialog, setShowCommentDialog, handleAddComment } = useComments(TENANT_INITIAL_COMMENTS)
   const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
   const [missingInfoTab, setMissingInfoTab] = useState<"fields" | "documents">("fields")
   const router = useRouter()
@@ -816,6 +821,25 @@ export function TenantApplicationDetailView({
     setProspectTasks((prev) => prev.map((task) => (task.id === taskId ? { ...task, status: "Completed" } : task)))
   }
 
+  const dashboardTasks = useMemo<Task[]>(() => prospectTasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    dueDate: t.dueDate,
+    priority: t.priority.toLowerCase(),
+    entity: `${t.relatedEntityName} (${t.relatedEntityType})`,
+    entityType: "leaseProspect" as const,
+    risk: "Operational",
+    overdue: t.isOverdue,
+    assignedTo: t.assignee,
+    escalatedTo: (t as { escalatedTo?: string }).escalatedTo || "",
+    status: t.status,
+    processName: t.processName || undefined,
+    processEntityType: t.processName ? ("leaseProspect" as const) : undefined,
+    autoCreated: t.autoCreated,
+  })), [prospectTasks])
+
+  const tasksCardState = useTasksCardState({ tasks: dashboardTasks })
+
   const handleAddProperty = (property: any) => {
     if (!interestedProperties.find((p) => p.id === property.id)) {
       setInterestedProperties([...interestedProperties, property])
@@ -927,23 +951,37 @@ export function TenantApplicationDetailView({
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground shrink-0">Created at:</span>
-                    <Input
+                    {editableCreatedAt}
+                    {/* <Input
                       type="date"
                       value={editableCreatedAt}
                       onChange={(e) => setEditableCreatedAt(e.target.value)}
                       className="h-9 w-[140px] text-blue-600"
-                    />
+                    /> */}
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                     <span className="text-muted-foreground shrink-0">Closed at:</span>
-                    <Input
+                    {editableClosedAt}
+                    {/* <Input
                       type="date"
                       value={editableClosedAt}
                       onChange={(e) => setEditableClosedAt(e.target.value)}
                       className="h-9 w-[140px] text-blue-600"
-                    />
+                    /> */}
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-8 text-teal-600 border-teal-200 hover:bg-teal-50 hover:text-teal-700"
+                    onClick={() => setShowCommentDialog(true)}
+                  >
+                    <MessageSquare className="h-3.5 w-3.5" />
+                    Comments
+                    <Badge variant="secondary" className="ml-1 bg-teal-100 text-teal-700 text-xs h-5 min-w-[20px] px-1.5">
+                      {comments.length}
+                    </Badge>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -1270,141 +1308,15 @@ export function TenantApplicationDetailView({
           <>
             {/* Tasks Section */}
             <div id="tasks-section" className="mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <ListTodo className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold">Tasks ({prospectTasks.length})</h3>
-                </div>
-                <Button className="bg-primary hover:bg-primary-hover text-primary-foreground">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Task
-                </Button>
-              </div>
-              <div className="border rounded-lg overflow-hidden">
-                <div className="max-h-[280px] overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 z-10 bg-white">
-                      <TableRow className="bg-muted/30">
-                        <TableHead className="font-medium">Task</TableHead>
-                        <TableHead className="font-medium">Related Entity</TableHead>
-                        <TableHead className="font-medium">Due Date</TableHead>
-                        <TableHead className="font-medium">Priority</TableHead>
-                        <TableHead className="font-medium">Status</TableHead>
-                        <TableHead className="font-medium">Assigned To</TableHead>
-                        <TableHead className="font-medium text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {prospectTasks.map((task) => (
-                        <TableRow key={task.id} className="hover:bg-muted/20">
-                          <TableCell>
-                            <div className="flex flex-col gap-1">
-                              <span className="font-medium text-foreground">{task.title}</span>
-                              {task.processName && (
-                                // <button className="flex items-center gap-1" onClick={() => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/proc-1`)}>
-                                //   <Workflow className="h-3 w-3 text-teal-600" />
-                                //   <span className="text-xs text-teal-600">{task.processName}</span>
-                                // </button>
-                                <button
-                                  type="button"
-                                  onClick={(e) => router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/proc-1`)}
-                                  className="flex items-center gap-1 hover:underline cursor-pointer"
-                                >
-                                  <Workflow className="h-3 w-3 text-teal-600" />
-                                  <span className="text-xs text-teal-600">{task.processName}</span>
-                                </button>
-                              )}
-                              {task.autoCreated && (
-                                <span className="text-xs text-muted-foreground">Auto-created</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">
-                              {task.relatedEntityType}: {task.relatedEntityName}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-1">
-                              <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                                {task.dueDate}
-                              </span>
-                              {task.isOverdue && (
-                                <span className="text-xs text-red-500">(Overdue)</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                task.priority === "High"
-                                  ? "bg-red-50 text-red-700 border-red-200"
-                                  : task.priority === "Medium"
-                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                    : "bg-gray-50 text-gray-600 border-gray-200"
-                              }
-                            >
-                              {task.priority}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={
-                                task.status === "In Progress"
-                                  ? "bg-teal-50 text-teal-700 border-teal-200"
-                                  : task.status === "Pending"
-                                    ? "bg-yellow-50 text-yellow-600 border-yellow-200"
-                                    : task.status === "Skipped"
-                                      ? "bg-orange-50 text-orange-600 border-orange-200"
-                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              }
-                            >
-                              {task.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-muted-foreground">{task.assignee}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                                title="View Task"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
-                                title="Edit Task"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              {task.status !== "Completed" && task.status !== "Skipped" && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-muted-foreground hover:text-success"
-                                  title="Mark Complete"
-                                  onClick={() => handleMarkTaskComplete(task.id)}
-                                >
-                                  <Check className="h-4 w-4" />
-                                </Button>
-                              )}
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-
+              <TasksCard
+                selectedStaff={null}
+                {...tasksCardState}
+                processRoute={{
+                  basePath: "leads/lease-prospects",
+                  categoryId: categoryId as string,
+                  leadId: leadId as string,
+                }}
+              />
             </div>
 
             {/* Pinned Activity Section */}
@@ -4618,6 +4530,14 @@ export function TenantApplicationDetailView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CommentsDialog
+        open={showCommentDialog}
+        onOpenChange={setShowCommentDialog}
+        comments={comments}
+        onAddComment={handleAddComment}
+        description="Internal comments for this tenant application."
+      />
     </>
   )
 }

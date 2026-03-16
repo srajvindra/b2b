@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   ArrowLeft,
   Phone,
@@ -124,7 +124,10 @@ import {
   OwnerDocumentTab,
   OwnerAuditLogTab,
 } from "@/features/contacts/tenant/components"
-
+import { TasksCard } from "@/features/dashboard/components/TasksCard"
+import { useTasksCardState } from "@/features/dashboard/hooks/useTasksCardState"
+import type { Task } from "@/features/dashboard/types"
+import { useParams } from "next/navigation"
 interface ContactTenantDetailPageProps {
   contact: Contact
   onBack: () => void
@@ -135,6 +138,9 @@ interface ContactTenantDetailPageProps {
 
 // Communications, documents, tasks, processes, audit logs, property, notes, letters moved to @/features/contacts/tenant/data
 export default function ContactTenantDetailPage({ contact, onBack, onNavigateToUnitDetail, onNavigateToProcess }: ContactTenantDetailPageProps) {
+ 
+  const params = useParams()
+  const id = params.id as string
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [expandedThreadId, setExpandedThreadId] = useState<string | null>(null)
   const [replyingToId, setReplyingToId] = useState<string | null>(null)
@@ -159,6 +165,33 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
   const [isTasksExpanded, setIsTasksExpanded] = useState(true)
   const [isDocumentsExpanded, setIsDocumentsExpanded] = useState(true)
   const [tasksToShow, setTasksToShow] = useState(5)
+
+  const entityTypeMap: Record<string, Task["entityType"]> = {
+    Tenant: "tenant",
+    Property: "property",
+    "Lease Prospect": "leaseProspect",
+    Owner: "owner",
+    "Prospect Owner": "prospectOwner",
+  }
+
+  const dashboardTasks = useMemo<Task[]>(() => tasks.map((t, idx) => ({
+    id: typeof t.id === "string" ? idx + 1 : Number(t.id),
+    title: t.title,
+    dueDate: t.dueDate,
+    priority: t.priority.toLowerCase(),
+    entity: t.relatedEntityName ? `${t.relatedEntityName} (${t.relatedEntityType})` : t.assignee,
+    entityType: entityTypeMap[t.relatedEntityType || "Tenant"] || "tenant",
+    risk: "Operational",
+    overdue: t.isOverdue || false,
+    assignedTo: t.assignee,
+    escalatedTo: t.escalatedTo || "",
+    status: t.status,
+    processName: t.processName || undefined,
+    processEntityType: t.processName ? (entityTypeMap[t.relatedEntityType || "Tenant"] || "tenant") : undefined,
+    autoCreated: t.autoCreated,
+  })), [tasks])
+
+  const tasksCardState = useTasksCardState({ tasks: dashboardTasks })
 
   const [activeTab, setActiveTab] = useState<"overview" | "tenant-info" | "property" | "processes" | "communications" | "documents" | "audit-log">("overview")
 
@@ -1156,152 +1189,16 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
         {activeTab === "overview" && (
           <>
             {/* Tasks Section */}
-            <Card id="tasks-section">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                    <CheckSquare className="h-4 w-4 text-teal-600" />
-                    Tasks ({tasks.length})
-                  </h3>
-                  <Button
-                    size="sm"
-                    className="h-8 text-xs bg-teal-600 hover:bg-teal-700"
-                    onClick={() => setShowNewTaskModal(true)}
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    New Task
-                  </Button>
-                </div>
-                <div className="border rounded-lg overflow-hidden">
-                  <div className="max-h-[320px] overflow-y-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b sticky top-0 z-10">
-                        <tr>
-                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
-                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Related Entity</th>
-                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Due Date</th>
-                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Priority</th>
-                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th>
-                          <th className="text-left text-xs font-medium text-muted-foreground p-3">Assigned To</th>
-                          <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {tasks.map((task) => (
-                          <tr key={task.id} className="hover:bg-gray-50">
-                            <td className="p-3">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-sm font-medium text-slate-800">{task.title}</span>
-                                {task.processName && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); handleNavigateToProcess(task.processName || "") }}
-                                    className="flex items-center gap-1 hover:underline cursor-pointer"
-                                  >
-                                    <Workflow className="h-3 w-3 text-teal-600" />
-                                    <span className="text-xs text-teal-600">{task.processName}</span>
-                                  </button>
-                                )}
-                                {task.autoCreated && (
-                                  <span className="text-xs text-muted-foreground">Auto-created</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <span className="text-sm text-slate-600">
-                                {task.relatedEntityType}: {task.relatedEntityName}
-                              </span>
-                            </td>
-                            <td className="p-3">
-                              <div className="flex items-center gap-1">
-                                <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-slate-600"}`}>
-                                  {task.dueDate}
-                                </span>
-                                {task.isOverdue && (
-                                  <span className="text-xs text-red-500">(Overdue)</span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="p-3">
-                              <Badge
-                                variant="outline"
-                                className={`text-xs ${task.priority === "High"
-                                  ? "bg-red-50 text-red-700 border-red-200"
-                                  : task.priority === "Medium"
-                                    ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                    : "bg-gray-50 text-gray-600 border-gray-200"
-                                  }`}
-                              >
-                                {task.priority}
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <Badge
-                                variant="outline"
-                                className={`text-xs ${task.status === "In Progress"
-                                  ? "bg-teal-50 text-teal-700 border-teal-200"
-                                  : task.status === "Pending"
-                                    ? "bg-teal-50 text-teal-600 border-teal-200"
-                                    : task.status === "Skipped"
-                                      ? "bg-gray-100 text-gray-600 border-gray-300"
-                                      : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  }`}
-                              >
-                                {task.status}
-                              </Badge>
-                            </td>
-                            <td className="p-3">
-                              <span className="text-sm text-slate-600">{task.assignee}</span>
-                            </td>
-                            <td className="p-3">
-                              <div className="flex items-center justify-end gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                  title="View Task"
-                                  onClick={() => handleViewTask(task)}
-                                >
-                                  <Eye className="h-4 w-4 text-slate-500" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0"
-                                  title="Edit Task"
-                                  onClick={() => handleEditTask(task)}
-                                >
-                                  <Edit className="h-4 w-4 text-slate-500" />
-                                </Button>
-                                {task.status !== "Completed" && task.status !== "Skipped" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    title="Mark Complete"
-                                    onClick={() => handleMarkComplete(task.id)}
-                                  >
-                                    <Check className="h-4 w-4 text-slate-500" />
-                                  </Button>
-                                )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                        {tasks.length === 0 && (
-                          <tr>
-                            <td colSpan={7} className="p-4 text-center text-sm text-muted-foreground">
-                              No tasks yet. Click "New Task" to create one.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-              </CardContent>
-            </Card>
+            <div id="tasks-section">
+              <TasksCard
+                selectedStaff={null}
+                {...tasksCardState}
+                processRoute={{
+                  basePath: "contacts/tenants",
+                  leadId: id,
+                }}
+              />
+            </div>
 
             {/* Pinned Activity Section */}
             <div id="activity-section">

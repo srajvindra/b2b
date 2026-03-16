@@ -29,6 +29,7 @@ import {
   PlayCircle,
   AlertTriangle,
   HelpCircle,
+  Paperclip,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -263,28 +264,30 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
     "qa-ja": null,
   })
   const [activeSidebarPopover, setActiveSidebarPopover] = useState<string | null>(null)
+  const [detailsExpanded, setDetailsExpanded] = useState(true)
+  const [attachmentsExpanded, setAttachmentsExpanded] = useState(true)
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-6 h-[calc(100vh-112px)]">
       <div className="min-w-0 space-y-0 overflow-y-auto pr-2">
-      {/* Header */}
-      <div className="flex items-center justify-between py-4 border-b">
-        <div className="flex items-center gap-3">
-          <button onClick={onBack} className="text-muted-foreground hover:text-foreground transition-colors">
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <h2 className="text-lg font-semibold text-foreground">{process.name} for {contactName}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-8 w-8">
-            <Settings2 className="h-4 w-4" />
-          </Button>
+        {/* Header */}
+        <div className="flex items-center justify-between py-4 border-b">
+          <div className="flex items-center gap-3">
+            <button onClick={onBack} className="text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <h2 className="text-lg font-semibold text-foreground">{process.name} for {contactName}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8">
+              <Settings2 className="h-4 w-4" />
+            </Button>
 
+          </div>
         </div>
-      </div>
 
-      {/* Stage Progress */}
-      {/* <div className="py-5">
+        {/* Stage Progress */}
+        {/* <div className="py-5">
         <div className="flex items-center gap-2 mb-3">
           <span className="text-sm text-teal-600 font-medium">Stage: {stageName}</span>
           <ChevronDown className="h-3.5 w-3.5 text-teal-600" />
@@ -300,209 +303,8 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
           ))}
         </div>
       </div> */}
-      {/* Owner Info Card */}
-      <div className="rounded-lg p-4 mb-6 bg-[rgba(248,245,245,1)]">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12 bg-teal-100 text-teal-600">
-              <AvatarFallback>
-                <User className="h-6 w-6" />
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h2 className="text-xl font-semibold">{ownerInfo.name}</h2>
-              <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Primary:</span>
-                  <a href={`mailto:${ownerInfo.primaryEmail}`} className="text-teal-600 hover:underline">
-                    {ownerInfo.primaryEmail}
-                  </a>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Primary:</span>
-                  <a href={`tel:${ownerInfo.primaryPhone}`} className="text-teal-600 hover:underline">
-                    {ownerInfo.primaryPhone}
-                  </a>
-                </div>
-                {ownerInfo.address && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-foreground">{ownerInfo.address}</span>
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ownerInfo.address)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-muted-foreground hover:text-foreground"
-                      aria-label="Open address in maps"
-                    >
-                    </a>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Source:</span>
-                  <span className="text-foreground">{ownerInfo.leadSource}</span>
-                </div>
-                {ownerInfo.secondaryEmail && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground opacity-0" />
-                    <span className="text-muted-foreground">Secondary:</span>
-                    <a href={`mailto:${ownerInfo.secondaryEmail}`} className="text-teal-600 hover:underline">
-                      {ownerInfo.secondaryEmail}
-                    </a>
-                  </div>
-                )}
-                {ownerInfo.secondaryPhone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground opacity-0" />
-                    <span className="text-muted-foreground">Secondary:</span>
-                    <a href={`tel:${ownerInfo.secondaryPhone}`} className="text-teal-600 hover:underline">
-                      {ownerInfo.secondaryPhone}
-                    </a>
-                  </div>
-                )}
-              </div>
-              <div className="flex flex-wrap gap-x-6 gap-y-1 mt-2 text-sm items-center">
-
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-muted-foreground shrink-0">Created at:</span>
-                  <Input
-                    type="date"
-                    value={editableCreatedAt}
-                    onChange={(e) => setEditableCreatedAt(e.target.value)}
-                    className="h-9 w-[140px] text-blue-600"
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="text-muted-foreground shrink-0">Closed at:</span>
-                  <Input
-                    type="date"
-                    value={editableClosedAt}
-                    onChange={(e) => setEditableClosedAt(e.target.value)}
-                    className="h-9 w-[140px] text-blue-600"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <Popover open={teamPopoverOpen} onOpenChange={setTeamPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm" className="gap-2 bg-transparent h-8">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">Richard Surovi</span>
-
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[340px] p-0" align="start">
-                  <div className="p-3 border-b">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-semibold text-sm">Assigned Team Members</h4>
-                      {assignedTeam.length > 0 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-xs text-muted-foreground hover:text-destructive"
-                          onClick={() => setAssignedTeam([])}
-                        >
-                          Clear All
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* Currently Assigned */}
-                    {assignedTeam.length > 0 ? (
-                      <div className="space-y-2">
-                        {assignedTeam.map((member) => (
-                          <div key={member.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-6 w-6">
-                                <AvatarFallback className={`text-xs ${member.color}`}>{member.initials}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="text-sm font-medium">{member.name}</p>
-                                <p className="text-xs text-muted-foreground">{member.department}</p>
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => setAssignedTeam(assignedTeam.filter(t => t.id !== member.id))}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground py-2">No team members assigned</p>
-                    )}
-                  </div>
-
-                  {/* Add Team Member */}
-                  <div className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm">Add Team Member</h4>
-                      <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                        <SelectTrigger className="w-[130px] h-7 text-xs">
-                          <SelectValue placeholder="Department" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Departments</SelectItem>
-                          {DEPARTMENTS.map((dept) => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Command className="border rounded-md">
-                      <CommandInput placeholder="Search staff..." className="h-8" />
-                      <CommandList className="max-h-[180px]">
-                        <CommandEmpty>No staff found.</CommandEmpty>
-                        <CommandGroup>
-                          {STAFF_MEMBERS
-                            .filter(staff => !assignedTeam.some(t => t.id === staff.id))
-                            .filter(staff => departmentFilter === "all" || staff.department === departmentFilter)
-                            .map((staff) => (
-                              <CommandItem
-                                key={staff.id}
-                                value={staff.name}
-                                onSelect={() => {
-                                  setAssignedTeam([...assignedTeam, staff])
-                                }}
-                                className="flex items-center gap-2 cursor-pointer"
-                              >
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback className={`text-xs ${staff.color}`}>{staff.initials}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                  <p className="text-sm">{staff.name}</p>
-                                  <p className="text-xs text-muted-foreground">{staff.department}</p>
-                                </div>
-                                <Plus className="h-4 w-4 text-muted-foreground" />
-                              </CommandItem>
-                            ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-
-          </div>
-        </div>
-
         {/* Stage Progress Rectangles */}
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-3 py-4">
           <div className="flex items-center gap-1 flex-1">
             {STAGES.map((stage, index) => {
               const tasks = STAGE_TASKS[stage] || []
@@ -566,210 +368,209 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
             </SelectContent>
           </Select>
         </div>
-      </div>
 
-      {/* Tasks Section */}
-      <div className="border-t pt-5 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-foreground">Tasks</h3>
-          <Select value={taskFilter} onValueChange={setTaskFilter}>
-            <SelectTrigger className="w-[130px] h-8 text-sm justify-between text-left">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              <SelectItem value="upcoming">Upcoming</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Tasks Section */}
+        <div className="border-t pt-5 pb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-foreground">Tasks</h3>
+            <Select value={taskFilter} onValueChange={setTaskFilter}>
+              <SelectTrigger className="w-[130px] h-8 text-sm justify-between text-left">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All</SelectItem>
+                <SelectItem value="upcoming">Upcoming</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div className="space-y-1">
-          {filteredTasks.map((task) => {
-            const initials = task.staffName.split(" ").map(n => n[0]).join("")
-            const isCompleted = !!task.completedDate
-            return (
-              <div
-                key={task.id}
-                className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors group"
-              >
-                <button
-                  type="button"
-                  className="flex items-center gap-2 shrink-0 cursor-pointer"
-                  onClick={() => {
-                    if (isCompleted) return
-                    const today = new Date().toISOString().split("T")[0]
-                    setTasks(prev =>
-                      prev.map(t =>
-                        t.id === task.id ? { ...t, completedDate: t.completedDate || today } : t,
-                      ),
-                    )
-                  }}
+          <div className="space-y-1">
+            {filteredTasks.map((task) => {
+              const initials = task.staffName.split(" ").map(n => n[0]).join("")
+              const isCompleted = !!task.completedDate
+              return (
+                <div
+                  key={task.id}
+                  className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-muted/50 transition-colors group"
                 >
-                  {isCompleted ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <Circle className="h-5 w-5 text-gray-300" />
-                  )}
-                  {isCompleted ? (
-                    <Mail className="h-4 w-4 text-blue-500" />
-                  ) : (
-                    <div className="h-4 w-4" />
-                  )}
-                </button>
-
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${isCompleted ? "text-muted-foreground line-through" : "text-foreground"}`}>
-                    {task.name}
-                  </p>
-                  {!isCompleted && (
-                    <p className="text-xs text-amber-600 mt-0.5">{process.name}</p>
-                  )}
-                </div>
-
-                {!isCompleted && (
-                  <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 shrink-0">
-                    <FileText className="h-3.5 w-3.5" />
-                    Instructions
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 shrink-0 cursor-pointer"
+                    onClick={() => {
+                      if (isCompleted) return
+                      const today = new Date().toISOString().split("T")[0]
+                      setTasks(prev =>
+                        prev.map(t =>
+                          t.id === task.id ? { ...t, completedDate: t.completedDate || today } : t,
+                        ),
+                      )
+                    }}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-gray-300" />
+                    )}
+                    {isCompleted ? (
+                      <Mail className="h-4 w-4 text-blue-500" />
+                    ) : (
+                      <div className="h-4 w-4" />
+                    )}
                   </button>
-                )}
 
-                <Avatar className="h-7 w-7 shrink-0">
-                  <AvatarFallback className="text-[10px] bg-amber-100 text-amber-700">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm font-medium ${isCompleted ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                      {task.name}
+                    </p>
+                    {!isCompleted && (
+                      <p className="text-xs text-amber-600 mt-0.5">{process.name}</p>
+                    )}
+                  </div>
 
-                <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 w-[80px]">
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>{task.completedDate || task.startDate || "Pending"}</span>
+                  {!isCompleted && (
+                    <button className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 shrink-0">
+                      <FileText className="h-3.5 w-3.5" />
+                      Instructions
+                    </button>
+                  )}
+
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarFallback className="text-[10px] bg-amber-100 text-amber-700">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 w-[80px]">
+                    <Clock className="h-3.5 w-3.5" />
+                    <span>{task.completedDate || task.startDate || "Pending"}</span>
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
+                      <DropdownMenuItem><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
+              )
+            })}
 
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 shrink-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
-                    <DropdownMenuItem><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )
-          })}
-
-          {filteredTasks.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6">No {taskFilter} tasks.</p>
-          )}
-        </div>
-      </div>
-
-      {/* Activity Timeline */}
-      <div className="border-t pt-5 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
-            {/* <ArrowLeft className="h-4 w-4" /> */}
-            {process.name} for {contactName}
-          </h3>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <Settings2 className="h-4 w-4" />
-            </Button>
-
+            {filteredTasks.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-6">No {taskFilter} tasks.</p>
+            )}
           </div>
         </div>
 
-        <div className="space-y-1">
-          {activities.map((activity) => {
-            if (activity.type === "email") {
-              return (
-                <div key={activity.id} className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 mb-3">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-9 w-9 shrink-0 mt-0.5">
-                      <AvatarFallback className="text-xs bg-amber-100 text-amber-700">
-                        {activity.actorInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm">
-                          <span className="font-semibold">{activity.actor}</span>
-                          <span className="text-muted-foreground"> emailed </span>
-                          <span className="font-semibold">{activity.target}</span>
-                        </p>
-                        <span className="text-xs text-muted-foreground shrink-0 ml-2">{activity.timestamp}</span>
+        {/* Activity Timeline */}
+        <div className="border-t pt-5 pb-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
+              {/* <ArrowLeft className="h-4 w-4" /> */}
+              {process.name} for {contactName}
+            </h3>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8">
+                <Settings2 className="h-4 w-4" />
+              </Button>
+
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            {activities.map((activity) => {
+              if (activity.type === "email") {
+                return (
+                  <div key={activity.id} className="rounded-lg border border-amber-200 bg-amber-50/50 p-4 mb-3">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-9 w-9 shrink-0 mt-0.5">
+                        <AvatarFallback className="text-xs bg-amber-100 text-amber-700">
+                          {activity.actorInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm">
+                            <span className="font-semibold">{activity.actor}</span>
+                            <span className="text-muted-foreground"> emailed </span>
+                            <span className="font-semibold">{activity.target}</span>
+                          </p>
+                          <span className="text-xs text-muted-foreground shrink-0 ml-2">{activity.timestamp}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          <p className="text-sm text-foreground font-medium">{activity.subject}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">{activity.preview}</p>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <p className="text-sm text-foreground font-medium">{activity.subject}</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5 truncate">{activity.preview}</p>
                     </div>
                   </div>
-                </div>
-              )
-            }
+                )
+              }
 
-            if (activity.type === "task_completed" || activity.type === "email_opened" || activity.type === "process_assigned") {
-              const iconColor = activity.type === "task_completed" ? "text-green-500"
-                : activity.type === "email_opened" ? "text-blue-400"
-                  : "text-rose-400"
-              const Icon = activity.type === "task_completed" ? CheckCircle2
-                : activity.type === "email_opened" ? Mail
-                  : Phone
-              return (
-                <div key={activity.id} className="flex items-center gap-3 py-2 px-4">
-                  <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
-                  <p className="text-xs text-muted-foreground">{activity.detail}</p>
-                </div>
-              )
-            }
+              if (activity.type === "task_completed" || activity.type === "email_opened" || activity.type === "process_assigned") {
+                const iconColor = activity.type === "task_completed" ? "text-green-500"
+                  : activity.type === "email_opened" ? "text-blue-400"
+                    : "text-rose-400"
+                const Icon = activity.type === "task_completed" ? CheckCircle2
+                  : activity.type === "email_opened" ? Mail
+                    : Phone
+                return (
+                  <div key={activity.id} className="flex items-center gap-3 py-2 px-4">
+                    <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
+                    <p className="text-xs text-muted-foreground">{activity.detail}</p>
+                  </div>
+                )
+              }
 
-            if (activity.type === "note") {
-              return (
-                <div key={activity.id} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 mb-3 mt-2">
-                  <div className="flex items-start gap-3">
-                    <Avatar className="h-9 w-9 shrink-0 mt-0.5">
-                      <AvatarFallback className="text-xs bg-slate-200 text-slate-700">
-                        {activity.actorInitials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm">
-                          <span className="font-semibold">{activity.actor}</span>
-                          <span className="text-muted-foreground"> left a </span>
-                          <span className="font-semibold">Note</span>
-                        </p>
-                        <span className="text-xs text-muted-foreground shrink-0 ml-2">{activity.timestamp}</span>
+              if (activity.type === "note") {
+                return (
+                  <div key={activity.id} className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 mb-3 mt-2">
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-9 w-9 shrink-0 mt-0.5">
+                        <AvatarFallback className="text-xs bg-slate-200 text-slate-700">
+                          {activity.actorInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm">
+                            <span className="font-semibold">{activity.actor}</span>
+                            <span className="text-muted-foreground"> left a </span>
+                            <span className="font-semibold">Note</span>
+                          </p>
+                          <span className="text-xs text-muted-foreground shrink-0 ml-2">{activity.timestamp}</span>
+                        </div>
+                        {activity.address && (
+                          <a href="#" className="text-sm text-blue-600 underline mt-1 block">{activity.address}</a>
+                        )}
+                        {activity.noteText && (
+                          <p className="text-sm text-foreground mt-0.5">{activity.noteText}</p>
+                        )}
                       </div>
-                      {activity.address && (
-                        <a href="#" className="text-sm text-blue-600 underline mt-1 block">{activity.address}</a>
-                      )}
-                      {activity.noteText && (
-                        <p className="text-sm text-foreground mt-0.5">{activity.noteText}</p>
-                      )}
-                    </div>
-                    <div className="shrink-0 mt-0.5">
-                      <div className="h-4 w-4 rounded-full bg-blue-500" />
+                      <div className="shrink-0 mt-0.5">
+                        <div className="h-4 w-4 rounded-full bg-blue-500" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )
-            }
+                )
+              }
 
-            return null
-          })}
+              return null
+            })}
+          </div>
         </div>
-      </div>
 
       </div>
 
       {/* Right sidebar */}
-      <div className="w-[320px] shrink-0 hidden xl:block">
+      <div className="w-[320px] shrink-0 hidden xl:block overflow-y-auto">
         <div className="space-y-4">
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
@@ -898,6 +699,129 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
                 )
               })}
             </div>
+          </div>
+
+          {/* Details - Collapsible */}
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-4"
+              onClick={() => setDetailsExpanded(!detailsExpanded)}
+            >
+              <h3 className="text-sm font-semibold text-slate-900">Details</h3>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${detailsExpanded ? "" : "-rotate-90"}`} />
+            </button>
+            {detailsExpanded && (
+              <div className="px-4 pb-4 space-y-3">
+                <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                  <Avatar className="h-9 w-9 bg-teal-100 text-teal-600">
+                    <AvatarFallback>
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-semibold text-slate-900">{ownerInfo.name}</span>
+                </div>
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex items-start gap-2">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground">Primary Email</span>
+                      <a href={`mailto:${ownerInfo.primaryEmail}`} className="block text-teal-600 hover:underline truncate text-[13px]">
+                        {ownerInfo.primaryEmail || "—"}
+                      </a>
+                    </div>
+                  </div>
+                  {ownerInfo.secondaryEmail && (
+                    <div className="flex items-start gap-2">
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0 opacity-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs text-muted-foreground">Secondary Email</span>
+                        <a href={`mailto:${ownerInfo.secondaryEmail}`} className="block text-teal-600 hover:underline truncate text-[13px]">
+                          {ownerInfo.secondaryEmail}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-start gap-2">
+                    <Phone className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground">Primary Phone</span>
+                      <a href={`tel:${ownerInfo.primaryPhone}`} className="block text-teal-600 hover:underline text-[13px]">
+                        {ownerInfo.primaryPhone || "—"}
+                      </a>
+                    </div>
+                  </div>
+                  {ownerInfo.secondaryPhone && (
+                    <div className="flex items-start gap-2">
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0 opacity-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs text-muted-foreground">Secondary Phone</span>
+                        <a href={`tel:${ownerInfo.secondaryPhone}`} className="block text-teal-600 hover:underline text-[13px]">
+                          {ownerInfo.secondaryPhone}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {ownerInfo.address && (
+                    <div className="flex items-start gap-2">
+                      <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-xs text-muted-foreground">Address</span>
+                        <span className="block text-[13px] text-slate-900">{ownerInfo.address}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-start gap-2">
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground">Source</span>
+                      <span className="block text-[13px] text-slate-900">{ownerInfo.leadSource || "—"}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs text-muted-foreground">Created at: </span>
+                      {editableCreatedAt}
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Calendar className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs text-muted-foreground">Closed at: </span>
+                      {editableClosedAt}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Attachments - Collapsible */}
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-4"
+              onClick={() => setAttachmentsExpanded(!attachmentsExpanded)}
+            >
+              <div className="flex items-center gap-1.5">
+                <Paperclip className="h-3.5 w-3.5 text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-900">Attachments</h3>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${attachmentsExpanded ? "" : "-rotate-90"}`} />
+            </button>
+            {attachmentsExpanded && (
+              <div className="px-4 pb-4">
+                <div className="flex flex-col items-center justify-center py-6 border border-dashed border-slate-200 rounded-md bg-slate-50/50">
+                  <Paperclip className="h-5 w-5 text-slate-300 mb-2" />
+                  <p className="text-xs text-muted-foreground">No attachments yet</p>
+                  <Button variant="ghost" size="sm" className="mt-2 text-xs h-7 gap-1">
+                    <Plus className="h-3 w-3" />
+                    Add attachment
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

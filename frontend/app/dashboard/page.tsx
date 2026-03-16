@@ -56,14 +56,39 @@ export default function Page() {
     ],
     [],
   )
+
+  const escalatedToStaffMembers = useMemo(
+    () => [
+      { id: 1, name: "David Wilson", role: "CSM" },
+      { id: 2, name: "Oliver Torres", role: "VP" },
+      { id: 3, name: "Taylor Johnson", role: "GM" },
+      { id: 4, name: "Kimberly Johnson", role: "Executive/MD" },
+      { id: 5, name: "David Kim", role: "CSM" },],
+    []
+  )
   const [selectedStaff, setSelectedStaff] = useState<string | null>(null)
   const [tasksSearchQuery, setTasksSearchQuery] = useState("")
   const [showDashFilters, setShowDashFilters] = useState(false)
   const [dashFilter, setDashFilter] = useState<"myTasks" | "overdue" | "revenueRisk" | "slaRisk" | "legalRisk" | "orgTasks">("myTasks")
   const [assignmentOverrides, setAssignmentOverrides] = useState<Record<number, string>>({})
+  const [riskOverrides, setRiskOverrides] = useState<Record<number, string>>({})
+  const [escalatedTo, setEscalatedTo] = useState<Record<number, string>>({})
+  const [noteOverrides, setNoteOverrides] = useState<Record<number, string>>({})
 
   const handleAssignTask = (taskId: number, staffName: string) => {
     setAssignmentOverrides((prev) => ({ ...prev, [taskId]: staffName }))
+  }
+
+  const handleUpdateRisk = (taskId: number, risk: string) => {
+    setRiskOverrides((prev) => ({ ...prev, [taskId]: risk }))
+  }
+
+  const handleEscalateTask = (taskId: number, staffName: string) => {
+    setEscalatedTo((prev) => ({ ...prev, [taskId]: staffName }))
+  }
+
+  const handleUpdateNote = (taskId: number, note: string) => {
+    setNoteOverrides((prev) => ({ ...prev, [taskId]: note }))
   }
 
   const filteredStaffMembers = useMemo(
@@ -92,15 +117,19 @@ export default function Page() {
           case "legalRisk":
             return t.tags?.includes("legalRisk")
           case "orgTasks":
-            return t.tags?.includes("orgTask")
+            return true
           default:
             return true
         }
       })
-      .map((t) =>
-        assignmentOverrides[t.id] ? { ...t, assignedTo: assignmentOverrides[t.id] } : t
-      )
-  }, [assignmentOverrides, selectedStaff, tasksSearchQuery, dashFilter])
+      .map((t) => ({
+        ...t,
+        ...(assignmentOverrides[t.id] && { assignedTo: assignmentOverrides[t.id] }),
+        ...(riskOverrides[t.id] && { risk: riskOverrides[t.id] }),
+        ...(escalatedTo[t.id] && { escalatedTo: escalatedTo[t.id] }),
+        ...(noteOverrides[t.id] !== undefined && { notes: noteOverrides[t.id] }),
+      }))
+  }, [assignmentOverrides, riskOverrides, escalatedTo, noteOverrides, selectedStaff, tasksSearchQuery, dashFilter])
 
   const taskSummary = useMemo(
     (): TaskSummary => ({
@@ -361,37 +390,37 @@ export default function Page() {
       </div>
 
       {/* Filter Section */}
-      {dashboardTab === "tasks" && (
-        <div className="flex items-center gap-2 px-1 py-2 bg-slate-50 rounded-lg border border-slate-200">
-          {([
-            { key: "myTasks" as const, label: "My Tasks" },
-            { key: "overdue" as const, label: "Overdue" },
-            { key: "revenueRisk" as const, label: "Revenue at Risk" },
-            { key: "slaRisk" as const, label: "SLA Risk" },
-            { key: "legalRisk" as const, label: "Legal Risk" },
-            { key: "orgTasks" as const, label: "Org Tasks" },
-          ]).map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setDashFilter(f.key)}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${dashFilter === f.key
-                ? "bg-teal-600 text-white shadow-sm"
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
-                }`}
-            >
-              {f.label}
-            </button>
-          ))}
-          {dashFilter !== "myTasks" && (
-            <button
-              onClick={() => setDashFilter("myTasks")}
-              className="ml-auto text-[11px] text-slate-400 hover:text-slate-600 underline"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-      )}
+
+      <div className="flex items-center gap-2 px-1 py-2 bg-slate-50 rounded-lg border border-slate-200">
+        {([
+          { key: "myTasks" as const, label: "My Tasks" },
+          { key: "overdue" as const, label: "Overdue" },
+          { key: "revenueRisk" as const, label: "Revenue at Risk" },
+          { key: "slaRisk" as const, label: "SLA Risk" },
+          { key: "legalRisk" as const, label: "Legal Risk" },
+          { key: "orgTasks" as const, label: "Org Tasks" },
+        ]).map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setDashFilter(f.key)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${dashFilter === f.key
+              ? "bg-teal-600 text-white shadow-sm"
+              : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+              }`}
+          >
+            {f.label}
+          </button>
+        ))}
+        {dashFilter !== "myTasks" && (
+          <button
+            onClick={() => setDashFilter("myTasks")}
+            className="ml-auto text-[11px] text-slate-400 hover:text-slate-600 underline"
+          >
+            Clear
+          </button>
+        )}
+      </div>
+
 
 
       {/* {selectedStaff && (
@@ -435,7 +464,15 @@ export default function Page() {
             setSearchQuery={setTasksSearchQuery}
             selectedStaff={selectedStaff}
             staffMembers={STAFF_MEMBERS}
+            escalatedToStaffMembers={escalatedToStaffMembers}
+            escalatedTo={escalatedTo}
             onAssignTask={handleAssignTask}
+            onUpdateRisk={handleUpdateRisk}
+            onEscalateTask={handleEscalateTask}
+            onUpdateNote={handleUpdateNote}
+            processRoute={{
+              basePath: "dashboard",
+            }}
           />
         )}
         {dashboardTab === "combined" && (
@@ -454,7 +491,7 @@ export default function Page() {
           setSearchQuery={setTasksSearchQuery}
           selectedStaff={selectedStaff}
         /> */}
-        <KPIsCard
+        {/* <KPIsCard
           kpiData={kpiData}
           kpiView={kpiView}
           setKpiView={setKpiView}
@@ -463,7 +500,7 @@ export default function Page() {
           kpisSearchQuery={kpisSearchQuery}
           setKpisSearchQuery={setKpisSearchQuery}
           userRole={userRole}
-        />
+        /> */}
 
         <CommunicationModal
           communication={selectedCommunication}

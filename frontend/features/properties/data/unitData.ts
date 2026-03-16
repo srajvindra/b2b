@@ -38,6 +38,7 @@ export const UNIT_DATA = {
       status: "Pending",
       assignedTo: "Nina Patel",
       autoCreated: false,
+      escalatedTo: "David Wilson (CSM)",
     },
     {
       id: "2",
@@ -51,6 +52,7 @@ export const UNIT_DATA = {
       status: "In Progress",
       assignedTo: "Richard Surovi",
       autoCreated: false,
+      escalatedTo: "Oliver Torres (VP)",
     },
     {
       id: "3",
@@ -64,6 +66,7 @@ export const UNIT_DATA = {
       status: "Pending",
       assignedTo: "Nina Patel",
       autoCreated: false,
+      escalatedTo: "",
     },
     {
       id: "4",
@@ -77,6 +80,7 @@ export const UNIT_DATA = {
       status: "Pending",
       assignedTo: "Mike Johnson",
       autoCreated: false,
+      escalatedTo: "",
     },
     {
       id: "5",
@@ -90,6 +94,7 @@ export const UNIT_DATA = {
       status: "In Progress",
       assignedTo: "Sarah Chen",
       autoCreated: false,
+      escalatedTo: "Taylor Johnson (GM)",
     },
     {
       id: "6",
@@ -103,6 +108,7 @@ export const UNIT_DATA = {
       status: "Skipped",
       assignedTo: "Richard Surovi",
       autoCreated: false,
+      escalatedTo: "",
     },
     {
       id: "7",
@@ -116,6 +122,7 @@ export const UNIT_DATA = {
       status: "Pending",
       assignedTo: "Nina Patel",
       autoCreated: false,
+      escalatedTo: "David Kim (CSM)",
     },
     {
       id: "8",
@@ -129,6 +136,7 @@ export const UNIT_DATA = {
       status: "Pending",
       assignedTo: "Mike Johnson",
       autoCreated: false,
+      escalatedTo: "",
     },
     {
       id: "9",
@@ -142,6 +150,7 @@ export const UNIT_DATA = {
       status: "Pending",
       assignedTo: "Sarah Chen",
       autoCreated: true,
+      escalatedTo: "Kimberly Johnson (Executive/MD)",
     },
     {
       id: "10",
@@ -155,6 +164,7 @@ export const UNIT_DATA = {
       status: "Pending",
       assignedTo: "Nina Patel",
       autoCreated: true,
+      escalatedTo: "",
     },
   ],
   currentTenants: [

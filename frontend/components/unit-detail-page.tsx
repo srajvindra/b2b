@@ -418,7 +418,7 @@ export function UnitDetailPage({ unitId, propertyId, onBack }: UnitDetailPagePro
                         <TableHead className="font-medium text-slate-600 py-3">Related Entity</TableHead>
                         <TableHead className="font-medium text-slate-600 py-3">Due Date</TableHead>
                         <TableHead className="font-medium text-slate-600 py-3">Priority</TableHead>
-                        <TableHead className="font-medium text-slate-600 py-3">Status</TableHead>
+                        {/* <TableHead className="font-medium text-slate-600 py-3">Status</TableHead> */}
                         <TableHead className="font-medium text-slate-600 py-3">Assigned To</TableHead>
                         <TableHead className="font-medium text-slate-600 py-3 text-right">Actions</TableHead>
                       </TableRow>
@@ -468,7 +468,7 @@ export function UnitDetailPage({ unitId, propertyId, onBack }: UnitDetailPagePro
                               {activity.priority}
                             </Badge>
                           </TableCell>
-                          <TableCell className="py-4">
+                          {/* <TableCell className="py-4">
                             <Badge 
                               variant="outline" 
                               className={`text-xs font-medium ${
@@ -480,8 +480,8 @@ export function UnitDetailPage({ unitId, propertyId, onBack }: UnitDetailPagePro
                               }`}
                             >
                               {activity.status}
-                            </Badge>
-                          </TableCell>
+                            </Badge> */}
+                          {/* </TableCell> */}
                           <TableCell className="py-4">
                             <span className="text-sm text-slate-600">{activity.assignedTo}</span>
                           </TableCell>

@@ -227,13 +227,13 @@ export const initialInterestedProperties = [
 ]
 
 export const initialProspectTasks = [
-  { id: 1, title: "Review rental application - Sarah Johnson", processName: "Lease Prospect Onboarding", relatedEntityType: "Lease Prospect", relatedEntityName: "Sarah Johnson", assignee: "Nina Patel", dueDate: "2025-12-20", priority: "High", status: "Pending" as const, isOverdue: true },
-  { id: 2, title: "Send lease agreement - Unit 305", processName: "New Lease Signing", relatedEntityType: "Lease Prospect", relatedEntityName: "Unit 305", assignee: "Sarah Chen", dueDate: "2025-12-21", priority: "High", status: "In Progress" as const, isOverdue: true },
-  { id: 3, title: "Schedule property showing", processName: "Lease Prospect Onboarding", relatedEntityType: "Property", relatedEntityName: "Sunset Villa", assignee: "Richard Surovi", dueDate: "2025-12-23", priority: "High", status: "Pending" as const, isOverdue: false },
-  { id: 4, title: "Follow up with prospect - Unit 204", processName: "Lease Renewal Process", relatedEntityType: "Tenant", relatedEntityName: "John Smith", assignee: "Nina Patel", dueDate: "2025-12-23", priority: "Medium", status: "Pending" as const, isOverdue: false },
-  { id: 5, title: "Verify employment documents", processName: "", relatedEntityType: "Lease Prospect", relatedEntityName: "Sarah Johnson", assignee: "Mike Johnson", dueDate: "2025-12-24", priority: "Medium", status: "In Progress" as const, isOverdue: false },
-  { id: 6, title: "Call about viewing feedback", processName: "Lease Prospect Outreach", relatedEntityType: "Lease Prospect", relatedEntityName: "Emily Brown", assignee: "Richard Surovi", dueDate: "2025-12-25", priority: "Low", status: "Skipped" as const, isOverdue: false },
-  { id: 7, title: "Respond to inquiry", processName: "", relatedEntityType: "Lease Prospect", relatedEntityName: "Robert Garcia", assignee: "Nina Patel", dueDate: "2025-12-24", priority: "Low", status: "Pending" as const, isOverdue: false, autoCreated: true },
+  { id: 1, title: "Review rental application - Sarah Johnson", processName: "Lease Prospect Onboarding", relatedEntityType: "Lease Prospect", relatedEntityName: "Sarah Johnson", assignee: "Nina Patel", dueDate: "2025-12-20", priority: "High", status: "Pending" as const, isOverdue: true, escalatedTo: "David Wilson (CSM)" },
+  { id: 2, title: "Send lease agreement - Unit 305", processName: "New Lease Signing", relatedEntityType: "Lease Prospect", relatedEntityName: "Unit 305", assignee: "Sarah Chen", dueDate: "2025-12-21", priority: "High", status: "In Progress" as const, isOverdue: true, escalatedTo: "Oliver Torres (VP)" },
+  { id: 3, title: "Schedule property showing", processName: "Lease Prospect Onboarding", relatedEntityType: "Property", relatedEntityName: "Sunset Villa", assignee: "Richard Surovi", dueDate: "2025-12-23", priority: "High", status: "Pending" as const, isOverdue: false, escalatedTo: "" },
+  { id: 4, title: "Follow up with prospect - Unit 204", processName: "Lease Renewal Process", relatedEntityType: "Tenant", relatedEntityName: "John Smith", assignee: "Nina Patel", dueDate: "2025-12-23", priority: "Medium", status: "Pending" as const, isOverdue: false, escalatedTo: "Taylor Johnson (GM)" },
+  { id: 5, title: "Verify employment documents", processName: "", relatedEntityType: "Lease Prospect", relatedEntityName: "Sarah Johnson", assignee: "Mike Johnson", dueDate: "2025-12-24", priority: "Medium", status: "In Progress" as const, isOverdue: false, escalatedTo: "" },
+  { id: 6, title: "Call about viewing feedback", processName: "Lease Prospect Outreach", relatedEntityType: "Lease Prospect", relatedEntityName: "Emily Brown", assignee: "Richard Surovi", dueDate: "2025-12-25", priority: "Low", status: "Skipped" as const, isOverdue: false, escalatedTo: "" },
+  { id: 7, title: "Respond to inquiry", processName: "", relatedEntityType: "Lease Prospect", relatedEntityName: "Robert Garcia", assignee: "Nina Patel", dueDate: "2025-12-24", priority: "Low", status: "Pending" as const, isOverdue: false, autoCreated: true, escalatedTo: "David Kim (CSM)" },
 ]
 
 // Re-export for convenience

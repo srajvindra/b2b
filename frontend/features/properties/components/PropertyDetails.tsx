@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import {
   ArrowLeft,
   Calendar,
@@ -100,6 +100,10 @@ import {
 import { PROPERTY_MISSING_FIELDS, PROPERTY_MISSING_DOCUMENTS } from "@/features/properties/data/propertyDetail"
 import type { ProcessTask, PropertyProcess } from "@/features/properties/types"
 import { useRouter } from "next/navigation"
+import { TasksCard } from "@/features/dashboard/components/TasksCard"
+import { useTasksCardState } from "@/features/dashboard/hooks/useTasksCardState"
+import type { Task } from "@/features/dashboard/types"
+import { useParams } from "next/navigation"
 
 
 interface PropertyDetailPageProps {
@@ -207,6 +211,8 @@ function getInitials(name: string) {
 }
 
 export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: PropertyDetailPageProps) {
+  const params = useParams()
+  const id = params.id as string
   useQuickActions(propertyDetailQuickActions, {
     subtitle: "Property",
     aiSuggestedPrompts: [
@@ -227,6 +233,24 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
     priority: "Medium",
   })
   const [tasks, setTasks] = useState(PROPERTY_TASKS)
+
+  const dashboardTasks = useMemo<Task[]>(() => tasks.map((t) => ({
+    id: t.id,
+    title: t.title,
+    dueDate: t.dueDate,
+    priority: t.priority.toLowerCase(),
+    entity: t.relatedEntity,
+    entityType: "property" as const,
+    risk: "Operational",
+    overdue: t.isOverdue,
+    assignedTo: t.assignedTo,
+    escalatedTo: (t as { escalatedTo?: string }).escalatedTo || "",
+    status: t.status as Task["status"],
+    processName: t.processLink || undefined,
+    processEntityType: t.processLink ? ("property" as const) : undefined,
+  })), [tasks])
+
+  const tasksCardState = useTasksCardState({ tasks: dashboardTasks })
 
   // Property custom fields (Overview tab)
   const [showAddCustomFieldDialog, setShowAddCustomFieldDialog] = useState(false)
@@ -575,121 +599,15 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
               {activeTab === "overview" && (
                 <div className="space-y-4">
                   {/* Tasks Section */}
-                  <div id="property-tasks-section" className="bg-white border border-border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <CheckSquare className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="text-lg font-semibold">Tasks ({tasks.length})</h3>
-                      </div>
-                      <Button
-                        onClick={() => setShowNewTaskModal(true)}
-                        className="bg-teal-600 text-white hover:bg-teal-700"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        New Task
-                      </Button>
-                    </div>
-                    <div className="border rounded-lg overflow-hidden">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="bg-muted/30">
-                            <TableHead className="font-medium text-muted-foreground">Task</TableHead>
-                            <TableHead className="font-medium text-muted-foreground">Related Entity</TableHead>
-                            <TableHead className="font-medium text-muted-foreground">Due Date</TableHead>
-                            <TableHead className="font-medium text-muted-foreground">Priority</TableHead>
-                            <TableHead className="font-medium text-muted-foreground">Status</TableHead>
-                            <TableHead className="font-medium text-muted-foreground">Assigned To</TableHead>
-                            <TableHead className="font-medium text-muted-foreground text-right">Actions</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                      </Table>
-                      <div className="max-h-[280px] overflow-y-auto">
-                        <Table>
-                          <TableBody>
-                            {tasks.length > 0 ? (
-                              tasks.map((task) => (
-                                <TableRow key={task.id} className="hover:bg-muted/30 border-b">
-                                  <TableCell className="align-top py-3">
-                                    <div>
-                                      <p className="font-medium text-foreground">{task.title}</p>
-                                      {task.processLink && (
-                                        <p className="text-sm text-teal-600 flex items-center gap-1 mt-0.5">
-                                          <Link2 className="h-3 w-3" />
-                                          {task.processLink}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="align-top py-3 text-sm text-muted-foreground">
-                                    {task.relatedEntity}
-                                  </TableCell>
-                                  <TableCell className="align-top py-3">
-                                    <div className="flex items-center gap-1.5">
-                                      <span className={task.isOverdue ? "text-red-600 font-medium" : "text-sm"}>
-                                        {task.dueDate}
-                                      </span>
-                                      {task.isOverdue && (
-                                        <span className="text-red-500 text-sm">(Overdue)</span>
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="align-top py-3">
-                                    <Badge
-                                      variant="outline"
-                                      className={
-                                        task.priority === "High"
-                                          ? "bg-red-50 text-red-600 border-red-200"
-                                          : task.priority === "Medium"
-                                            ? "bg-teal-50 text-teal-600 border-teal-200"
-                                            : "bg-gray-50 text-gray-600 border-gray-200"
-                                      }
-                                    >
-                                      {task.priority}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="align-top py-3">
-                                    <Badge
-                                      variant="outline"
-                                      className={
-                                        task.status === "Pending"
-                                          ? "bg-teal-50 text-teal-600 border-teal-300"
-                                          : task.status === "In Progress"
-                                            ? "bg-teal-600 text-white border-teal-600"
-                                            : "bg-gray-100 text-gray-600 border-gray-300"
-                                      }
-                                    >
-                                      {task.status}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell className="align-top py-3 text-sm">
-                                    {task.assignedTo}
-                                  </TableCell>
-                                  <TableCell className="align-top py-3">
-                                    <div className="flex items-center justify-end gap-1">
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                                        <Eye className="h-4 w-4" />
-                                      </Button>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                                        <Edit className="h-4 w-4" />
-                                      </Button>
-                                      <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
-                                        <Check className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              ))
-                            ) : (
-                              <TableRow>
-                                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                                  No tasks found for this property. Click "Add Task" to create one.
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </div>
+                  <div id="property-tasks-section">
+                    <TasksCard
+                      selectedStaff={null}
+                      {...tasksCardState}
+                      processRoute={{
+                        basePath: "properties",
+                        leadId: id,
+                      }}
+                    />
                   </div>
                   {/* Property Information - Expanded */}
                   <CollapsibleSection
@@ -2489,6 +2407,7 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                         isOverdue: false,
                         priority: newTask.priority as "High" | "Medium" | "Low",
                         status: "Pending",
+                        escalatedTo: "",
                       },
                     ])
                     setNewTask({

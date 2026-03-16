@@ -157,6 +157,8 @@ export interface OwnerTask {
   propertyName?: string
   propertyAddress?: string
   createdDate?: string
+  escalatedTo?: string
+  risk?: string
 }
 
 export interface TeamMember {

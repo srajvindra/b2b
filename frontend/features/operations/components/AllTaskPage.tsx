@@ -8,9 +8,24 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Checkbox } from "@/components/ui/checkbox"
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import {
   CheckSquare,
   Workflow,
@@ -21,6 +36,13 @@ import {
   Filter,
   Plus,
   X,
+  ChevronsUpDown,
+  MoreVertical,
+  StickyNote,
+  TriangleAlert,
+  Upload,
+  FileIcon,
+  Trash2,
 } from "lucide-react"
 import { getTasks } from "@/features/contacts/data/ownerDetailData"
 import type { OwnerTask } from "@/features/contacts/types"
@@ -29,14 +51,43 @@ type EntityType = "Tenant" | "Owner" | "Prospect Owner" | "Lease Prospect" | "Pr
 
 const ENTITY_OPTIONS: EntityType[] = ["Tenant", "Owner", "Prospect Owner", "Lease Prospect", "Property"]
 
-const ALL_STAFF = [
-  "Nina Patel",
-  "Richard Surovi",
-  "Mike Johnson",
-  "Sarah Chen",
-  "Raj Patel",
-  "James Cooper",
+const STAFF_MEMBERS = [
+  { id: 1, name: "Nina Patel", role: "Leasing Manager" },
+  { id: 2, name: "Richard Surovi", role: "Property Manager" },
+  { id: 3, name: "Mike Johnson", role: "Maintenance Tech" },
+  { id: 4, name: "Sarah Chen", role: "Leasing Agent" },
+  { id: 5, name: "David Wilson", role: "Operations Manager" },
 ]
+
+const ESCALATION_STAFF = [
+  { id: 1, name: "David Wilson", role: "CSM" },
+  { id: 2, name: "Oliver Torres", role: "VP" },
+  { id: 3, name: "Taylor Johnson", role: "GM" },
+  { id: 4, name: "Kimberly Johnson", role: "Executive/MD" },
+  { id: 5, name: "David Kim", role: "CSM" },
+]
+
+const RISK_OPTIONS = [
+  { value: "Revenue", label: "Revenue" },
+  { value: "SLA Breach", label: "SLA Breach" },
+  { value: "Operational", label: "Operational" },
+  { value: "Legal", label: "Legal" },
+] as const
+
+function getRiskStyles(risk: string) {
+  switch (risk) {
+    case "Revenue":
+      return "bg-[#FCE7F3] text-[#BE185D] border-[#F9A8D4]"
+    case "SLA Breach":
+      return "bg-[#E0F2FE] text-[#0369A1] border-[#7DD3FC]"
+    case "Operational":
+      return "bg-[#DCFCE7] text-[#166534] border-[#86EFAC]"
+    case "Legal":
+      return "bg-[#EDE9FE] text-[#5B21B6] border-[#C4B5FD]"
+    default:
+      return "bg-[#F5F0EB] text-[#78594A] border-[#D6C4B6]"
+  }
+}
 
 const getStatusBadgeStyle = (status: OwnerTask["status"]) => {
   switch (status) {
@@ -88,19 +139,51 @@ export function AllTaskPage() {
   const [dueDateFrom, setDueDateFrom] = useState("")
   const [dueDateTo, setDueDateTo] = useState("")
 
+  const [activeTab, setActiveTab] = useState<"escalated" | "all">("escalated")
+
+  const [contractFilterOpen, setContractFilterOpen] = useState(false)
+  const [selectedContracts, setSelectedContracts] = useState<string[]>([])
+  const [contractFilterSearch, setContractFilterSearch] = useState("")
+
+  const [riskColumnFilterOpen, setRiskColumnFilterOpen] = useState(false)
+  const [selectedRiskFilters, setSelectedRiskFilters] = useState<string[]>([])
+
+  const [assignedToFilterOpen, setAssignedToFilterOpen] = useState(false)
+  const [assignedToFilterSearch, setAssignedToFilterSearch] = useState("")
+
+  const [escalatedToFilterOpen, setEscalatedToFilterOpen] = useState(false)
+  const [selectedEscalatedToFilters, setSelectedEscalatedToFilters] = useState<string[]>([])
+  const [escalatedToFilterSearch, setEscalatedToFilterSearch] = useState("")
+
+  const [riskOverrides, setRiskOverrides] = useState<Record<string, string>>({})
+  const [assignOverrides, setAssignOverrides] = useState<Record<string, string>>({})
+  const [noteOverrides, setNoteOverrides] = useState<Record<string, string>>({})
+
+  const [riskPopoverOpen, setRiskPopoverOpen] = useState<string | null>(null)
+  const [assignPopoverOpen, setAssignPopoverOpen] = useState<string | null>(null)
+  const [escalatePopoverOpen, setEscalatePopoverOpen] = useState<string | null>(null)
+
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false)
+  const [noteDialogTaskId, setNoteDialogTaskId] = useState<string | null>(null)
+  const [noteDialogValue, setNoteDialogValue] = useState("")
+
   const [viewTaskModalOpen, setViewTaskModalOpen] = useState(false)
-  const [editTaskModalOpen, setEditTaskModalOpen] = useState(false)
-  const [showNewTaskModal, setShowNewTaskModal] = useState(false)
   const [selectedTask, setSelectedTask] = useState<OwnerTask | null>(null)
-  const [newTask, setNewTask] = useState({
+
+  const [taskDialogMode, setTaskDialogMode] = useState<"edit" | "add" | null>(null)
+  const [taskForm, setTaskForm] = useState({
+    id: "",
     title: "",
     description: "",
     assignee: "",
     dueDate: "",
+    status: "Pending" as OwnerTask["status"],
     priority: "Medium" as "High" | "Medium" | "Low",
     relatedEntityType: "" as string,
     relatedEntityName: "",
   })
+  const [taskDialogFiles, setTaskDialogFiles] = useState<File[]>([])
+  const [dialogAssigneeOpen, setDialogAssigneeOpen] = useState(false)
 
   const toggleEntity = (entity: EntityType) => {
     setSelectedEntities((prev) =>
@@ -149,6 +232,67 @@ export function AllTaskPage() {
     setAssigneeFilterSearch("")
   }
 
+  const uniqueContracts = useMemo(() => {
+    const names = new Set<string>()
+    tasks.forEach((t) => {
+      if (t.relatedEntityName) names.add(t.relatedEntityName)
+    })
+    return Array.from(names).sort()
+  }, [tasks])
+
+  const uniqueAssignees = useMemo(() => {
+    const names = new Set<string>()
+    tasks.forEach((t) => {
+      if (t.assignee) names.add(t.assignee)
+    })
+    return Array.from(names).sort()
+  }, [tasks])
+
+  const uniqueEscalatedTo = useMemo(() => {
+    const names = new Set<string>()
+    tasks.forEach((t) => {
+      if (t.escalatedTo) names.add(t.escalatedTo)
+    })
+    return Array.from(names).sort()
+  }, [tasks])
+
+  const toggleContract = (name: string) => {
+    setSelectedContracts((prev) =>
+      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name],
+    )
+  }
+  const clearContractFilter = () => {
+    setSelectedContracts([])
+    setContractFilterSearch("")
+  }
+
+  const toggleRiskFilter = (risk: string) => {
+    setSelectedRiskFilters((prev) =>
+      prev.includes(risk) ? prev.filter((r) => r !== risk) : [...prev, risk],
+    )
+  }
+  const clearRiskFilter = () => setSelectedRiskFilters([])
+
+  const toggleAssignedToFilter = (name: string) => {
+    setSelectedAssignees((prev) =>
+      prev.includes(name) ? prev.filter((a) => a !== name) : [...prev, name],
+    )
+  }
+  const clearAssignedToFilter = () => {
+    setSelectedAssignees([])
+    setAssignedToFilterSearch("")
+  }
+
+  const toggleEscalatedToFilter = (name: string) => {
+    setSelectedEscalatedToFilters((prev) =>
+      prev.includes(name) ? prev.filter((e) => e !== name) : [...prev, name],
+    )
+  }
+  const clearEscalatedToFilter = () => {
+    setSelectedEscalatedToFilters([])
+    setEscalatedToFilterSearch("")
+  }
+
   const parseDueDate = (value: string) => {
     const d = new Date(value)
     return Number.isNaN(d.getTime()) ? null : d
@@ -156,6 +300,8 @@ export function AllTaskPage() {
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((task) => {
+      if (activeTab === "escalated" && !task.escalatedTo) return false
+
       if (searchQuery) {
         const q = searchQuery.toLowerCase()
         const matchesSearch =
@@ -172,6 +318,17 @@ export function AllTaskPage() {
         }
       }
 
+      if (selectedContracts.length > 0) {
+        if (!task.relatedEntityName || !selectedContracts.includes(task.relatedEntityName)) {
+          return false
+        }
+      }
+
+      if (selectedRiskFilters.length > 0) {
+        const taskRisk = riskOverrides[task.id] || task.risk || "Operational"
+        if (!selectedRiskFilters.includes(taskRisk)) return false
+      }
+
       if (selectedPriorities.length > 0 && !selectedPriorities.includes(task.priority)) {
         return false
       }
@@ -180,8 +337,15 @@ export function AllTaskPage() {
         return false
       }
 
-      if (selectedAssignees.length > 0 && !selectedAssignees.includes(task.assignee)) {
-        return false
+      if (selectedAssignees.length > 0) {
+        const taskAssignee = assignOverrides[task.id] || task.assignee
+        if (!selectedAssignees.includes(taskAssignee)) return false
+      }
+
+      if (selectedEscalatedToFilters.length > 0) {
+        if (!task.escalatedTo || !selectedEscalatedToFilters.includes(task.escalatedTo)) {
+          return false
+        }
       }
 
       if (dueDateFrom || dueDateTo) {
@@ -201,38 +365,104 @@ export function AllTaskPage() {
 
       return true
     })
-  }, [tasks, searchQuery, selectedEntities, selectedPriorities, selectedStatuses, selectedAssignees, dueDateFrom, dueDateTo])
+  }, [tasks, activeTab, searchQuery, selectedEntities, selectedContracts, selectedRiskFilters, selectedPriorities, selectedStatuses, selectedAssignees, selectedEscalatedToFilters, dueDateFrom, dueDateTo, riskOverrides, assignOverrides])
 
   const hasActiveFilters =
     selectedEntities.length > 0 ||
+    selectedContracts.length > 0 ||
+    selectedRiskFilters.length > 0 ||
     selectedPriorities.length > 0 ||
     selectedStatuses.length > 0 ||
     selectedAssignees.length > 0 ||
+    selectedEscalatedToFilters.length > 0 ||
     !!dueDateFrom ||
     !!dueDateTo
 
   // Reset visible rows when filters or search change
   useEffect(() => {
     setVisibleCount(10)
-  }, [searchQuery, selectedEntities, selectedPriorities, selectedStatuses, selectedAssignees, dueDateFrom, dueDateTo])
+  }, [activeTab, searchQuery, selectedEntities, selectedContracts, selectedRiskFilters, selectedPriorities, selectedStatuses, selectedAssignees, selectedEscalatedToFilters, dueDateFrom, dueDateTo])
 
   const clearFilters = () => {
     clearEntityFilter()
+    clearContractFilter()
+    clearRiskFilter()
     clearDueDateFilter()
     clearPriorityFilter()
     clearStatusFilter()
-    clearAssigneeFilter()
+    clearAssignedToFilter()
+    clearEscalatedToFilter()
     setSearchQuery("")
   }
 
   const handleViewTask = (task: OwnerTask) => {
+    console.log(task)
     setSelectedTask(task)
     setViewTaskModalOpen(true)
   }
 
   const handleEditTask = (task: OwnerTask) => {
     setSelectedTask(task)
-    setEditTaskModalOpen(true)
+    setTaskForm({
+      id: task.id,
+      title: task.title,
+      description: task.description || "",
+      assignee: task.assignee,
+      dueDate: task.dueDate,
+      status: task.status,
+      priority: task.priority,
+      relatedEntityType: task.relatedEntityType || "",
+      relatedEntityName: task.relatedEntityName || "",
+    })
+    setTaskDialogFiles([])
+    setTaskDialogMode("edit")
+  }
+
+  const handleOpenAddTask = () => {
+    setSelectedTask(null)
+    setTaskForm({
+      id: "",
+      title: "",
+      description: "",
+      assignee: "",
+      dueDate: "",
+      status: "Pending",
+      priority: "Medium",
+      relatedEntityType: "",
+      relatedEntityName: "",
+    })
+    setTaskDialogFiles([])
+    setTaskDialogMode("add")
+  }
+
+  const handleAssignTask = (taskId: string, staffName: string) => {
+    setAssignOverrides((prev) => ({ ...prev, [taskId]: staffName }))
+    setAssignPopoverOpen(null)
+  }
+
+  const handleUpdateRisk = (taskId: string, risk: string) => {
+    setRiskOverrides((prev) => ({ ...prev, [taskId]: risk }))
+    setRiskPopoverOpen(null)
+  }
+
+  const handleEscalateTask = (taskId: string, staffName: string) => {
+    setTasks(tasks.map((task) => (task.id === taskId ? { ...task, escalatedTo: staffName } : task)))
+    setEscalatePopoverOpen(null)
+  }
+
+  const handleOpenNote = (taskId: string) => {
+    setNoteDialogTaskId(taskId)
+    setNoteDialogValue(noteOverrides[taskId] || "")
+    setNoteDialogOpen(true)
+  }
+
+  const handleSaveNote = () => {
+    if (noteDialogTaskId) {
+      setNoteOverrides((prev) => ({ ...prev, [noteDialogTaskId]: noteDialogValue }))
+    }
+    setNoteDialogOpen(false)
+    setNoteDialogTaskId(null)
+    setNoteDialogValue("")
   }
 
   const handleMarkComplete = (taskId: string) => {
@@ -242,64 +472,107 @@ export function AllTaskPage() {
   const handleSaveTask = () => {
     if (selectedTask) {
       setTasks(tasks.map((task) => (task.id === selectedTask.id ? selectedTask : task)))
-      setEditTaskModalOpen(false)
       setViewTaskModalOpen(false)
       setSelectedTask(null)
     }
   }
 
-  const handleCreateTask = () => {
-    if (!newTask.title.trim()) return
-    const task: OwnerTask = {
-      id: `t${Date.now()}`,
-      title: newTask.title,
-      description: newTask.description,
-      assignee: newTask.assignee,
-      dueDate: newTask.dueDate,
-      status: "Pending",
-      priority: newTask.priority,
-      relatedEntityType: (newTask.relatedEntityType as OwnerTask["relatedEntityType"]) || undefined,
-      relatedEntityName: newTask.relatedEntityName || undefined,
-      createdDate: new Date().toLocaleDateString(),
+  const handleTaskDialogSave = () => {
+    if (!taskForm.title.trim()) return
+
+    if (taskDialogMode === "edit" && taskForm.id) {
+      setTasks(tasks.map((t) =>
+        t.id === taskForm.id
+          ? {
+            ...t,
+            title: taskForm.title,
+            description: taskForm.description,
+            assignee: taskForm.assignee,
+            dueDate: taskForm.dueDate,
+            status: taskForm.status,
+            priority: taskForm.priority,
+          }
+          : t,
+      ))
+    } else {
+      const task: OwnerTask = {
+        id: `t${Date.now()}`,
+        title: taskForm.title,
+        description: taskForm.description,
+        assignee: taskForm.assignee,
+        dueDate: taskForm.dueDate,
+        status: "Pending",
+        priority: taskForm.priority,
+        risk: "Operational",
+        relatedEntityType: (taskForm.relatedEntityType as OwnerTask["relatedEntityType"]) || undefined,
+        relatedEntityName: taskForm.relatedEntityName || undefined,
+        createdDate: new Date().toLocaleDateString(),
+      }
+      setTasks([...tasks, task])
     }
-    setTasks([...tasks, task])
-    setShowNewTaskModal(false)
-    setNewTask({ title: "", description: "", assignee: "", dueDate: "", priority: "Medium", relatedEntityType: "", relatedEntityName: "" })
+
+    setTaskDialogMode(null)
+    setTaskDialogFiles([])
+    setSelectedTask(null)
   }
 
   return (
     <>
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-              <CheckSquare className="h-4 w-4 text-teal-600" />
-              All Tasks ({filteredTasks.length})
-            </h3>
-            {/* <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white gap-1" onClick={() => setShowNewTaskModal(true)}>
-              <Plus className="h-4 w-4" />
-              New Task
-            </Button> */}
-          </div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Task Management</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Track, assign, and manage all tasks across your properties and contracts. Use the tabs below to view escalated items or browse all tasks.
+        </p>
+      </div>
 
-          {/* Search */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9"
-              />
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "escalated" | "all")} className="gap-0">
+        <div className="flex items-center justify-between mb-4">
+          <TabsList>
+            <TabsTrigger value="escalated" className="gap-1.5">
+              <TriangleAlert className="h-3.5 w-3.5" />
+              Escalated Tasks
+            </TabsTrigger>
+            <TabsTrigger value="all" className="gap-1.5">
+              <CheckSquare className="h-3.5 w-3.5" />
+              All Tasks
+            </TabsTrigger>
+          </TabsList>
+          <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white gap-1" onClick={handleOpenAddTask}>
+            <Plus className="h-4 w-4" />
+            Add Task
+          </Button>
+        </div>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                {activeTab === "escalated" ? (
+                  <><TriangleAlert className="h-4 w-4 text-amber-600" /> Escalated Tasks ({filteredTasks.length})</>
+                ) : (
+                  <><CheckSquare className="h-4 w-4 text-teal-600" /> All Tasks ({filteredTasks.length})</>
+                )}
+              </h3>
             </div>
-            {hasActiveFilters && (
-              <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground gap-1 ml-auto" onClick={clearFilters}>
-                <X className="h-3.5 w-3.5" />
-                Clear all filters
-              </Button>
-            )}
-          </div>
+
+            {/* Search */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground gap-1 ml-auto" onClick={clearFilters}>
+                  <X className="h-3.5 w-3.5" />
+                  Clear all filters
+                </Button>
+              )}
+            </div>
 
           {/* Tasks Table */}
           <div className="border rounded-lg overflow-hidden">
@@ -307,76 +580,102 @@ export function AllTaskPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b sticky top-0 z-10">
                   <tr>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
                     <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <div className="p-3">Task</div>
-                    </th>
-                    {/* Related Entity column filter */}
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={entityFilterOpen} onOpenChange={setEntityFilterOpen}>
+                      <Popover open={contractFilterOpen} onOpenChange={setContractFilterOpen}>
                         <PopoverTrigger asChild>
                           <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>Related Entity</span>
-                            <Filter className={`h-3 w-3 ${selectedEntities.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
-                            {selectedEntities.length > 0 && (
+                            <span>Contract</span>
+                            <Filter className={`h-3 w-3 ${selectedContracts.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                            {selectedContracts.length > 0 && (
                               <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
-                                {selectedEntities.length}
+                                {selectedContracts.length}
                               </span>
                             )}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-60 p-2" align="start">
+                        <PopoverContent className="w-56 p-2" align="start">
                           <div className="mb-2">
                             <Input
-                              placeholder="Search entity types..."
-                              value={entityFilterSearch}
-                              onChange={(e) => setEntityFilterSearch(e.target.value)}
+                              placeholder="Search contracts..."
+                              value={contractFilterSearch}
+                              onChange={(e) => setContractFilterSearch(e.target.value)}
                               className="h-8 text-xs"
                             />
                           </div>
-                          <div className="max-h-48 overflow-y-auto space-y-1">
-                            {ENTITY_OPTIONS.filter((entity) =>
-                              entity.toLowerCase().includes(entityFilterSearch.toLowerCase()),
-                            ).map((entity) => (
-                              <label
-                                key={entity}
-                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
-                              >
-                                <Checkbox
-                                  checked={selectedEntities.includes(entity)}
-                                  onCheckedChange={() => toggleEntity(entity)}
-                                />
-                                {entity}
-                              </label>
-                            ))}
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {uniqueContracts
+                              .filter((c) => c.toLowerCase().includes(contractFilterSearch.toLowerCase()))
+                              .map((contract) => (
+                                <label
+                                  key={contract}
+                                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                >
+                                  <Checkbox
+                                    checked={selectedContracts.includes(contract)}
+                                    onCheckedChange={() => toggleContract(contract)}
+                                  />
+                                  <span className="truncate">{contract}</span>
+                                </label>
+                              ))}
                           </div>
                           <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs px-2"
-                              onClick={clearEntityFilter}
-                              disabled={selectedEntities.length === 0 && !entityFilterSearch}
-                            >
+                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearContractFilter} disabled={selectedContracts.length === 0}>
                               Clear
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs px-2"
-                              onClick={() => setEntityFilterOpen(false)}
-                            >
+                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setContractFilterOpen(false)}>
                               Close
                             </Button>
                           </div>
                         </PopoverContent>
                       </Popover>
                     </th>
-                    {/* Due Date column filter */}
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <Popover open={riskColumnFilterOpen} onOpenChange={setRiskColumnFilterOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                            <span>Risk</span>
+                            <Filter className={`h-3 w-3 ${selectedRiskFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                            {selectedRiskFilters.length > 0 && (
+                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                {selectedRiskFilters.length}
+                              </span>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-52 p-2" align="start">
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {RISK_OPTIONS.map((opt) => (
+                              <label
+                                key={opt.value}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                              >
+                                <Checkbox
+                                  checked={selectedRiskFilters.includes(opt.value)}
+                                  onCheckedChange={() => toggleRiskFilter(opt.value)}
+                                />
+                                <Badge variant="outline" className={`text-xs ${getRiskStyles(opt.value)}`}>
+                                  {opt.label}
+                                </Badge>
+                              </label>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearRiskFilter} disabled={selectedRiskFilters.length === 0}>
+                              Clear
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setRiskColumnFilterOpen(false)}>
+                              Close
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </th>
                     <th className="text-left text-xs font-medium text-muted-foreground p-0">
                       <Popover open={dueDateFilterOpen} onOpenChange={setDueDateFilterOpen}>
                         <PopoverTrigger asChild>
                           <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>Due Date</span>
+                            <span>SLA Due Date</span>
                             <Filter className={`h-3 w-3 ${(dueDateFrom || dueDateTo) ? "text-teal-600" : "text-slate-400"}`} />
                           </button>
                         </PopoverTrigger>
@@ -426,7 +725,6 @@ export function AllTaskPage() {
                         </PopoverContent>
                       </Popover>
                     </th>
-                    {/* Priority column filter */}
                     <th className="text-left text-xs font-medium text-muted-foreground p-0">
                       <Popover open={priorityFilterOpen} onOpenChange={setPriorityFilterOpen}>
                         <PopoverTrigger asChild>
@@ -477,60 +775,8 @@ export function AllTaskPage() {
                         </PopoverContent>
                       </Popover>
                     </th>
-                    {/* Status column filter */}
                     <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={statusFilterOpen} onOpenChange={setStatusFilterOpen}>
-                        <PopoverTrigger asChild>
-                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>Status</span>
-                            <Filter className={`h-3 w-3 ${selectedStatuses.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
-                            {selectedStatuses.length > 0 && (
-                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
-                                {selectedStatuses.length}
-                              </span>
-                            )}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-56 p-2" align="start">
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {(["Pending", "In Progress", "Completed", "Skipped"] as OwnerTask["status"][]).map((status) => (
-                              <label
-                                key={status}
-                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
-                              >
-                                <Checkbox
-                                  checked={selectedStatuses.includes(status)}
-                                  onCheckedChange={() => toggleStatus(status)}
-                                />
-                                {status}
-                              </label>
-                            ))}
-                          </div>
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs px-2"
-                              onClick={clearStatusFilter}
-                              disabled={selectedStatuses.length === 0}
-                            >
-                              Clear
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs px-2"
-                              onClick={() => setStatusFilterOpen(false)}
-                            >
-                              Close
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
-                    {/* Assigned To column filter */}
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={assigneeFilterOpen} onOpenChange={setAssigneeFilterOpen}>
+                      <Popover open={assignedToFilterOpen} onOpenChange={setAssignedToFilterOpen}>
                         <PopoverTrigger asChild>
                           <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
                             <span>Assigned To</span>
@@ -542,120 +788,349 @@ export function AllTaskPage() {
                             )}
                           </button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-60 p-2" align="start">
+                        <PopoverContent className="w-56 p-2" align="start">
                           <div className="mb-2">
                             <Input
-                              placeholder="Search staff..."
-                              value={assigneeFilterSearch}
-                              onChange={(e) => setAssigneeFilterSearch(e.target.value)}
+                              placeholder="Search assignees..."
+                              value={assignedToFilterSearch}
+                              onChange={(e) => setAssignedToFilterSearch(e.target.value)}
                               className="h-8 text-xs"
                             />
                           </div>
-                          <div className="max-h-48 overflow-y-auto space-y-1">
-                            {Array.from(new Set(tasks.map((t) => t.assignee)))
-                              .filter((name) =>
-                                name.toLowerCase().includes(assigneeFilterSearch.toLowerCase()),
-                              )
-                              .map((name) => (
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {uniqueAssignees
+                              .filter((a) => a.toLowerCase().includes(assignedToFilterSearch.toLowerCase()))
+                              .map((assignee) => (
                                 <label
-                                  key={name}
+                                  key={assignee}
                                   className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
                                 >
                                   <Checkbox
-                                    checked={selectedAssignees.includes(name)}
-                                    onCheckedChange={() => toggleAssignee(name)}
+                                    checked={selectedAssignees.includes(assignee)}
+                                    onCheckedChange={() => toggleAssignedToFilter(assignee)}
                                   />
-                                  {name}
+                                  <span className="truncate">{assignee}</span>
                                 </label>
                               ))}
                           </div>
                           <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-xs px-2"
-                              onClick={clearAssigneeFilter}
-                              disabled={selectedAssignees.length === 0 && !assigneeFilterSearch}
-                            >
+                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearAssignedToFilter} disabled={selectedAssignees.length === 0}>
                               Clear
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs px-2"
-                              onClick={() => setAssigneeFilterOpen(false)}
-                            >
+                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setAssignedToFilterOpen(false)}>
                               Close
                             </Button>
                           </div>
                         </PopoverContent>
                       </Popover>
                     </th>
-                    <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                      <Popover open={escalatedToFilterOpen} onOpenChange={setEscalatedToFilterOpen}>
+                        <PopoverTrigger asChild>
+                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                            <span>Escalated To</span>
+                            <Filter className={`h-3 w-3 ${selectedEscalatedToFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                            {selectedEscalatedToFilters.length > 0 && (
+                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                {selectedEscalatedToFilters.length}
+                              </span>
+                            )}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-56 p-2" align="start">
+                          <div className="mb-2">
+                            <Input
+                              placeholder="Search escalated to..."
+                              value={escalatedToFilterSearch}
+                              onChange={(e) => setEscalatedToFilterSearch(e.target.value)}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div className="space-y-1 max-h-40 overflow-y-auto">
+                            {uniqueEscalatedTo
+                              .filter((e) => e.toLowerCase().includes(escalatedToFilterSearch.toLowerCase()))
+                              .map((name) => (
+                                <label
+                                  key={name}
+                                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                >
+                                  <Checkbox
+                                    checked={selectedEscalatedToFilters.includes(name)}
+                                    onCheckedChange={() => toggleEscalatedToFilter(name)}
+                                  />
+                                  <span className="truncate">{name}</span>
+                                </label>
+                              ))}
+                          </div>
+                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearEscalatedToFilter} disabled={selectedEscalatedToFilters.length === 0}>
+                              Clear
+                            </Button>
+                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setEscalatedToFilterOpen(false)}>
+                              Close
+                            </Button>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </th>
+                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {filteredTasks.slice(0, visibleCount).map((task) => (
-                    <tr key={task.id} className="hover:bg-gray-50">
-                      <td className="p-3">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-sm font-medium text-slate-800">{task.title}</span>
-                          {task.processName && (
-                            <div className="flex items-center gap-1">
-                              <Workflow className="h-3 w-3 text-teal-600" />
-                              <span className="text-xs text-teal-600">{task.processName}</span>
+                  {filteredTasks.slice(0, visibleCount).map((task) => {
+                    const currentRisk = riskOverrides[task.id] || task.risk || "Operational"
+                    const currentAssignee = assignOverrides[task.id] || task.assignee
+                    const currentEscalatedTo = task.escalatedTo || ""
+                    const currentNote = noteOverrides[task.id] || ""
+
+                    return (
+                      <tr key={task.id} className="hover:bg-gray-50">
+                        {/* Task */}
+                        <td className="p-3">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-medium text-slate-800">{task.title}</span>
+                            {task.processName && (
+                              <div className="flex items-center gap-1">
+                                <Workflow className="h-3 w-3 text-teal-600" />
+                                <span className="text-xs text-teal-600">{task.processName}</span>
+                              </div>
+                            )}
+                            {task.autoCreated && <span className="text-xs text-muted-foreground">Auto-created</span>}
+                          </div>
+                        </td>
+                        {/* Contract */}
+                        <td className="p-3">
+                          <span className="text-sm text-slate-600">
+                            {task.relatedEntityName} ({task.relatedEntityType})
+                          </span>
+                        </td>
+                        {/* Risk */}
+                        <td className="p-3">
+                          <Popover
+                            open={riskPopoverOpen === task.id}
+                            onOpenChange={(open) => setRiskPopoverOpen(open ? task.id : null)}
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex items-center gap-1.5 group"
+                              >
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs cursor-pointer ${getRiskStyles(currentRisk)}`}
+                                >
+                                  {currentRisk}
+                                </Badge>
+                                <ChevronsUpDown className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[200px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search risk..." />
+                                <CommandList>
+                                  <CommandEmpty>No risk found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {RISK_OPTIONS.map((opt) => (
+                                      <CommandItem
+                                        key={opt.value}
+                                        value={opt.value}
+                                        onSelect={() => handleUpdateRisk(task.id, opt.value)}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Badge
+                                          variant="outline"
+                                          className={`text-xs ${getRiskStyles(opt.value)}`}
+                                        >
+                                          {opt.label}
+                                        </Badge>
+                                        {currentRisk === opt.value && (
+                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                        )}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </td>
+                        {/* SLA Due Date */}
+                        <td className="p-3">
+                          <div className="flex items-center gap-1">
+                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-slate-600"}`}>{task.dueDate}</span>
+                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
+                          </div>
+                        </td>
+                        {/* Priority */}
+                        <td className="p-3">
+                          <Badge variant="outline" className={`text-xs ${getPriorityBadgeStyle(task.priority)}`}>
+                            {task.priority}
+                          </Badge>
+                        </td>
+                        {/* Assigned To */}
+                        <td className="p-3">
+                          <Popover
+                            open={assignPopoverOpen === task.id}
+                            onOpenChange={(open) => setAssignPopoverOpen(open ? task.id : null)}
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                              >
+                                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                  {currentAssignee
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </div>
+                                <span className="truncate">{currentAssignee}</span>
+                                <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[220px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search staff..." />
+                                <CommandList>
+                                  <CommandEmpty>No staff found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {STAFF_MEMBERS.map((staff) => (
+                                      <CommandItem
+                                        key={staff.id}
+                                        value={staff.name}
+                                        onSelect={() => handleAssignTask(task.id, staff.name)}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                          {staff.name
+                                            .split(" ")
+                                            .map((n) => n[0])
+                                            .join("")}
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-sm text-slate-900">{staff.name}</span>
+                                          <span className="text-[10px] text-slate-500">{staff.role}</span>
+                                        </div>
+                                        {currentAssignee === staff.name && (
+                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                        )}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </td>
+                        {/* Escalated To */}
+                        <td className="p-3">
+                          <Popover
+                            open={escalatePopoverOpen === task.id}
+                            onOpenChange={(open) => setEscalatePopoverOpen(open ? task.id : null)}
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                              >
+                                {currentEscalatedTo ? (
+                                  <>
+                                    <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                      {currentEscalatedTo
+                                        .split(" ")
+                                        .map((n) => n[0])
+                                        .join("")}
+                                    </div>
+                                    <span className="truncate">{currentEscalatedTo}</span>
+                                  </>
+                                ) : (
+                                  <span className="text-slate-400">None</span>
+                                )}
+                                <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[220px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Search staff..." />
+                                <CommandList>
+                                  <CommandEmpty>No staff found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {ESCALATION_STAFF.map((staff) => (
+                                      <CommandItem
+                                        key={staff.id}
+                                        value={staff.name}
+                                        onSelect={() => handleEscalateTask(task.id, `${staff.name} (${staff.role})`)}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                          {staff.name
+                                            .split(" ")
+                                            .map((n) => n[0])
+                                            .join("")}
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="text-sm text-slate-900">{staff.name}</span>
+                                          <span className="text-[10px] text-slate-500">{staff.role}</span>
+                                        </div>
+                                        {currentEscalatedTo.startsWith(staff.name) && (
+                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                        )}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </td>
+                        {/* Actions */}
+                        <td className="p-3">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="h-4 w-4 text-slate-500" />
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end" className="w-44">
+
+                              {
+                                task.processName === "" && (
+                                  <DropdownMenuItem onClick={() => handleViewTask(task)} className="gap-2">
+                                    <Eye className="h-3.5 w-3.5" /> View Task
+                                  </DropdownMenuItem>
+                                )
+                              }
+                              <DropdownMenuItem onClick={() => handleEditTask(task)} className="gap-2">
+                                <Edit className="h-3.5 w-3.5" /> Edit Task
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenNote(task.id)} className="gap-2">
+                                <StickyNote className="h-3.5 w-3.5" /> Add Note
+                              </DropdownMenuItem>
+                              {task.status !== "Completed" && task.status !== "Skipped" && (
+                                <DropdownMenuItem onClick={() => handleMarkComplete(task.id)} className="gap-2">
+                                  <Check className="h-3.5 w-3.5" /> Mark Complete
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                          {currentNote && (
+                            <div className="mt-1">
+                              <span className="text-[10px] text-amber-600 flex items-center gap-0.5">
+                                <StickyNote className="h-2.5 w-2.5" /> Note added
+                              </span>
                             </div>
                           )}
-                          {task.autoCreated && <span className="text-xs text-muted-foreground">Auto-created</span>}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <span className="text-sm text-slate-600">
-                          {task.relatedEntityType}: {task.relatedEntityName}
-                        </span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1">
-                          <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-slate-600"}`}>{task.dueDate}</span>
-                          {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant="outline" className={`text-xs ${getPriorityBadgeStyle(task.priority)}`}>
-                          {task.priority}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <Badge variant="outline" className={`text-xs ${getStatusBadgeStyle(task.status)}`}>
-                          {task.status}
-                        </Badge>
-                      </td>
-                      <td className="p-3">
-                        <span className="text-sm text-slate-600">{task.assignee}</span>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="View Task" onClick={() => handleViewTask(task)}>
-                            <Eye className="h-4 w-4 text-slate-500" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Edit Task" onClick={() => handleEditTask(task)}>
-                            <Edit className="h-4 w-4 text-slate-500" />
-                          </Button>
-                          {task.status !== "Completed" && task.status !== "Skipped" && (
-                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" title="Mark Complete" onClick={() => handleMarkComplete(task.id)}>
-                              <Check className="h-4 w-4 text-slate-500" />
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                      </tr>
+                    )
+                  })}
                   {filteredTasks.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-8 text-center text-sm text-muted-foreground">
+                      <td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">
                         {hasActiveFilters || searchQuery
                           ? "No tasks match your filters."
-                          : "No tasks yet. Click \"New Task\" to create one."}
+                          : "No tasks yet."}
                       </td>
                     </tr>
                   )}
@@ -682,8 +1157,9 @@ export function AllTaskPage() {
               )}
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Tabs>
 
       {/* View Task Dialog */}
       <Dialog open={viewTaskModalOpen} onOpenChange={setViewTaskModalOpen}>
@@ -737,14 +1213,20 @@ export function AllTaskPage() {
                   </div>
                 </div>
               </div>
-              {selectedTask.relatedEntityType && (
+              <div className="grid grid-cols-2 gap-4">
+                {selectedTask.relatedEntityType && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground">Related Entity</label>
+                    <p className="text-sm text-slate-700 mt-1">
+                      {selectedTask.relatedEntityType}: {selectedTask.relatedEntityName}
+                    </p>
+                  </div>
+                )}
                 <div>
-                  <label className="text-xs font-medium text-muted-foreground">Related Entity</label>
-                  <p className="text-sm text-slate-700 mt-1">
-                    {selectedTask.relatedEntityType}: {selectedTask.relatedEntityName}
-                  </p>
+                  <label className="text-xs font-medium text-muted-foreground">Escalated To</label>
+                  <p className="text-sm text-slate-700 mt-1">{selectedTask.escalatedTo || "—"}</p>
                 </div>
-              )}
+              </div>
               {selectedTask.createdDate && (
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Created Date</label>
@@ -769,50 +1251,82 @@ export function AllTaskPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Task Dialog */}
-      <Dialog open={editTaskModalOpen} onOpenChange={setEditTaskModalOpen}>
+      {/* Note Dialog */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Edit className="h-5 w-5 text-slate-600" />
-              Edit Task
+              <StickyNote className="h-5 w-5 text-amber-600" />
+              {noteDialogTaskId && noteOverrides[noteDialogTaskId] ? "Edit Note" : "Add Note"}
             </DialogTitle>
           </DialogHeader>
-          {selectedTask && (
-            <div className="space-y-4">
+          <div className="space-y-3">
+            <Textarea
+              placeholder="Enter your note..."
+              value={noteDialogValue}
+              onChange={(e) => setNoteDialogValue(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNote} className="bg-slate-800 hover:bg-slate-700 text-white">
+              Save Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Unified Add/Edit Task Dialog */}
+      <Dialog open={taskDialogMode !== null} onOpenChange={(open) => { if (!open) { setTaskDialogMode(null); setDialogAssigneeOpen(false) } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {taskDialogMode === "edit" ? (
+                <><Edit className="h-5 w-5 text-slate-600" /> Edit Task</>
+              ) : (
+                <><CheckSquare className="h-5 w-5 text-teal-600" /> Add Task</>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground">Task Title</Label>
+              <Input
+                className="mt-1"
+                placeholder="Enter task title"
+                value={taskForm.title}
+                onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+              <Textarea
+                className="mt-1"
+                placeholder="Enter task description"
+                value={taskForm.description}
+                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs font-medium text-muted-foreground">Task Title</Label>
+                <Label className="text-xs font-medium text-muted-foreground">Due Date</Label>
                 <Input
+                  type="date"
                   className="mt-1"
-                  placeholder="Enter task title"
-                  value={selectedTask.title}
-                  onChange={(e) => setSelectedTask({ ...selectedTask, title: e.target.value })}
+                  value={taskForm.dueDate}
+                  onChange={(e) => setTaskForm({ ...taskForm, dueDate: e.target.value })}
                 />
               </div>
-              <div>
-                <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-                <Textarea
-                  className="mt-1"
-                  value={selectedTask.description || ""}
-                  onChange={(e) => setSelectedTask({ ...selectedTask, description: e.target.value })}
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">Due Date</Label>
-                  <Input
-                    type="date"
-                    className="mt-1"
-                    value={selectedTask.dueDate}
-                    onChange={(e) => setSelectedTask({ ...selectedTask, dueDate: e.target.value })}
-                  />
-                </div>
+              {/* {taskDialogMode === "edit" && (
                 <div>
                   <Label className="text-xs font-medium text-muted-foreground">Status</Label>
                   <Select
-                    value={selectedTask.status}
-                    onValueChange={(value) => setSelectedTask({ ...selectedTask, status: value as OwnerTask["status"] })}
+                    value={taskForm.status}
+                    onValueChange={(value) => setTaskForm({ ...taskForm, status: value as OwnerTask["status"] })}
                   >
                     <SelectTrigger className="mt-1">
                       <SelectValue placeholder="Select status" />
@@ -825,145 +1339,133 @@ export function AllTaskPage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">Priority</Label>
-                  <Select
-                    value={selectedTask.priority}
-                    onValueChange={(value) => setSelectedTask({ ...selectedTask, priority: value as OwnerTask["priority"] })}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select priority" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Low">Low</SelectItem>
-                      <SelectItem value="Medium">Medium</SelectItem>
-                      <SelectItem value="High">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">Assignee</Label>
-                  <Input
-                    className="mt-1"
-                    placeholder="Enter assignee"
-                    value={selectedTask.assignee}
-                    onChange={(e) => setSelectedTask({ ...selectedTask, assignee: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setEditTaskModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleSaveTask} className="bg-slate-800 hover:bg-slate-700 text-white">
-              Save Changes
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* New Task Dialog */}
-      <Dialog open={showNewTaskModal} onOpenChange={setShowNewTaskModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckSquare className="h-5 w-5 text-teal-600" />
-              Create New Task
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground">Task Title</Label>
-              <Input
-                className="mt-1"
-                placeholder="Enter task title"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground">Description</Label>
-              <Textarea
-                className="mt-1"
-                placeholder="Enter task description"
-                value={newTask.description}
-                onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+              )} */}
               <div>
-                <Label className="text-xs font-medium text-muted-foreground">Related Entity Type</Label>
-                <Select value={newTask.relatedEntityType} onValueChange={(value) => setNewTask({ ...newTask, relatedEntityType: value })}>
+                <Label className="text-xs font-medium text-muted-foreground">Priority</Label>
+                <Select
+                  value={taskForm.priority}
+                  onValueChange={(value) => setTaskForm({ ...taskForm, priority: value as "High" | "Medium" | "Low" })}
+                >
                   <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select entity" />
+                    <SelectValue placeholder="Select priority" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Tenant">Tenant</SelectItem>
-                    <SelectItem value="Owner">Owner</SelectItem>
-                    <SelectItem value="Prospect Owner">Prospect Owner</SelectItem>
-                    <SelectItem value="Lease Prospect">Lease Prospect</SelectItem>
-                    <SelectItem value="Property">Property</SelectItem>
+                    <SelectItem value="High">High</SelectItem>
+                    <SelectItem value="Medium">Medium</SelectItem>
+                    <SelectItem value="Low">Low</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-xs font-medium text-muted-foreground">Entity Name</Label>
-                <Input
-                  className="mt-1"
-                  placeholder="Enter name"
-                  value={newTask.relatedEntityName}
-                  onChange={(e) => setNewTask({ ...newTask, relatedEntityName: e.target.value })}
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-medium text-muted-foreground">Assignee</Label>
-                <Input
-                  className="mt-1"
-                  placeholder="Enter assignee name"
-                  value={newTask.assignee}
-                  onChange={(e) => setNewTask({ ...newTask, assignee: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-medium text-muted-foreground">Due Date</Label>
-                <Input
-                  type="date"
-                  className="mt-1"
-                  value={newTask.dueDate}
-                  onChange={(e) => setNewTask({ ...newTask, dueDate: e.target.value })}
-                />
-              </div>
             </div>
             <div>
-              <Label className="text-xs font-medium text-muted-foreground">Priority</Label>
-              <Select
-                value={newTask.priority}
-                onValueChange={(value: "High" | "Medium" | "Low") => setNewTask({ ...newTask, priority: value })}
+              <Label className="text-xs font-medium text-muted-foreground">Assignee</Label>
+              <Popover open={dialogAssigneeOpen} onOpenChange={setDialogAssigneeOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    className="w-full mt-1 justify-between font-normal"
+                  >
+                    {taskForm.assignee ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                          {taskForm.assignee.split(" ").map((n) => n[0]).join("")}
+                        </div>
+                        <span className="truncate">{taskForm.assignee}</span>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">Select assignee...</span>
+                    )}
+                    <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Search staff..." />
+                    <CommandList>
+                      <CommandEmpty>No staff found.</CommandEmpty>
+                      <CommandGroup>
+                        {STAFF_MEMBERS.map((staff) => (
+                          <CommandItem
+                            key={staff.id}
+                            value={staff.name}
+                            onSelect={() => {
+                              setTaskForm({ ...taskForm, assignee: staff.name })
+                              setDialogAssigneeOpen(false)
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                              {staff.name.split(" ").map((n) => n[0]).join("")}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm text-slate-900">{staff.name}</span>
+                              <span className="text-[10px] text-slate-500">{staff.role}</span>
+                            </div>
+                            {taskForm.assignee === staff.name && (
+                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                            )}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground">Upload Files</Label>
+              <label
+                htmlFor="task-dialog-file-upload"
+                className="mt-1 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50/50 p-4 cursor-pointer hover:border-teal-300 hover:bg-teal-50/30 transition-colors"
               >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select priority" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="High">High</SelectItem>
-                  <SelectItem value="Medium">Medium</SelectItem>
-                  <SelectItem value="Low">Low</SelectItem>
-                </SelectContent>
-              </Select>
+                <Upload className="h-5 w-5 text-slate-400" />
+                <span className="text-xs text-slate-500">Click to upload or drag & drop</span>
+                <span className="text-[10px] text-slate-400">PDF, DOC, XLS, JPG, PNG up to 10MB</span>
+                <input
+                  id="task-dialog-file-upload"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      setTaskDialogFiles((prev) => [...prev, ...Array.from(e.target.files!)])
+                    }
+                    e.target.value = ""
+                  }}
+                />
+              </label>
+              {taskDialogFiles.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                  {taskDialogFiles.map((file, idx) => (
+                    <div key={`${file.name}-${idx}`} className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-2.5 py-1.5">
+                      <FileIcon className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <span className="text-xs text-slate-700 truncate flex-1">{file.name}</span>
+                      <span className="text-[10px] text-slate-400 shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                      <button
+                        type="button"
+                        onClick={() => setTaskDialogFiles((prev) => prev.filter((_, i) => i !== idx))}
+                        className="text-slate-400 hover:text-red-500 transition-colors shrink-0"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowNewTaskModal(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setTaskDialogMode(null)}>
               Cancel
             </Button>
-            <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleCreateTask} disabled={!newTask.title.trim()}>
-              Create Task
+            <Button
+              onClick={handleTaskDialogSave}
+              disabled={!taskForm.title.trim()}
+              className={taskDialogMode === "edit" ? "bg-slate-800 hover:bg-slate-700 text-white" : "bg-teal-600 hover:bg-teal-700 text-white"}
+            >
+              {taskDialogMode === "edit" ? "Save Changes" : "Create Task"}
             </Button>
           </DialogFooter>
         </DialogContent>

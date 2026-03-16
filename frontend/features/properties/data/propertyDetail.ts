@@ -213,6 +213,8 @@ export const PROPERTY_TASKS = [
     isOverdue: true,
     priority: "High",
     status: "Pending",
+    escalatedTo: "",
+
   },
   {
     id: 2,
@@ -224,6 +226,7 @@ export const PROPERTY_TASKS = [
     isOverdue: true,
     priority: "High",
     status: "In Progress",
+    escalatedTo: "David Wilson (GM)",
   },
   {
     id: 3,
@@ -235,6 +238,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "High",
     status: "Pending",
+    escalatedTo: "David Wilson (CSM)",
   },
   {
     id: 4,
@@ -246,6 +250,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "Medium",
     status: "Pending",
+    escalatedTo: "",
   },
   {
     id: 5,
@@ -257,6 +262,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "Medium",
     status: "In Progress",
+    escalatedTo: "",
   },
   {
     id: 6,
@@ -268,6 +274,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "Low",
     status: "Skipped",
+    escalatedTo: "David Wilson (GM)",
   },
   {
     id: 7,
@@ -279,6 +286,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "Medium",
     status: "Pending",
+    escalatedTo: "David Wilson (CSM)",
   },
   {
     id: 8,
@@ -290,6 +298,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "Medium",
     status: "Pending",
+    escalatedTo: "David Wilson (GM)",
   },
   {
     id: 9,
@@ -301,6 +310,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "Low",
     status: "Pending",
+    escalatedTo: "David Wilson (VP)",
   },
   {
     id: 10,
@@ -312,6 +322,7 @@ export const PROPERTY_TASKS = [
     isOverdue: false,
     priority: "High",
     status: "Pending",
+    escalatedTo: "David Wilson (CSM)",
   },
 ];
 

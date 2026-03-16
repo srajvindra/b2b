@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -71,6 +71,9 @@ import {
   Mail,
   MessageSquare,
 } from "lucide-react"
+import { TasksCard } from "@/features/dashboard/components/TasksCard"
+import { useTasksCardState } from "@/features/dashboard/hooks/useTasksCardState"
+import type { Task } from "@/features/dashboard/types"
 
 const UNIT_CUSTOM_FIELD_SECTIONS = [
   { id: "overview-unit-information", name: "Unit Information" },
@@ -212,6 +215,25 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
   const pendingProcesses = taskActivities.filter(a => a.status === "Pending" && a.workflow).length
   const overdueTasks = taskActivities.filter(a => a.isOverdue && !a.workflow).length
   const overdueProcesses = taskActivities.filter(a => a.isOverdue && a.workflow).length
+
+  const dashboardTasks = useMemo<Task[]>(() => taskActivities.map((a, idx) => ({
+    id: typeof a.id === "string" ? idx + 1 : Number(a.id),
+    title: a.taskName,
+    dueDate: a.dueDate,
+    priority: a.priority.toLowerCase(),
+    entity: `${a.relatedEntityName} (${a.relatedEntityType})`,
+    entityType: (a.relatedEntityType === "Property" ? "property" : "tenant") as Task["entityType"],
+    risk: "Operational",
+    overdue: a.isOverdue,
+    assignedTo: a.assignedTo,
+    escalatedTo: (a as { escalatedTo?: string }).escalatedTo || "",
+    status: a.status as Task["status"],
+    processName: a.workflow || undefined,
+    processEntityType: a.workflow ? ("Property" as const) : undefined,
+    autoCreated: a.autoCreated,
+  })), [taskActivities])
+
+  const tasksCardState = useTasksCardState({ tasks: dashboardTasks })
   const [activityForm, setActivityForm] = useState({
     date: "",
     allDay: false,
@@ -404,179 +426,11 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
 
           {/* Unit Information Tab */}
           <TabsContent value="unit-information" className="space-y-6 mt-6">
-            {/* Upcoming Activities */}
-            <Card className="border-0 shadow-sm">
-              <CardHeader className="border-b bg-slate-50 py-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold text-slate-800">
-                    Task Summary
-                  </CardTitle>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-blue-600 border-blue-200 hover:bg-blue-50 bg-transparent"
-                    onClick={() => setShowAddActivityDialog(true)}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Activity
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {UNIT_DATA.upcomingActivities.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-slate-50/50 border-b">
-                        <TableHead className="font-medium text-slate-600 py-3">Task</TableHead>
-                        <TableHead className="font-medium text-slate-600 py-3">Related Entity</TableHead>
-                        <TableHead className="font-medium text-slate-600 py-3">Due Date</TableHead>
-                        <TableHead className="font-medium text-slate-600 py-3">Priority</TableHead>
-                        <TableHead className="font-medium text-slate-600 py-3">Status</TableHead>
-                        <TableHead className="font-medium text-slate-600 py-3">Assigned To</TableHead>
-                        <TableHead className="font-medium text-slate-600 py-3 text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {UNIT_DATA.upcomingActivities.slice(0, visibleTaskCount).map((activity) => (
-                        <TableRow key={activity.id} className="hover:bg-slate-50/50 border-b border-slate-100">
-                          <TableCell className="py-4">
-                            <div className="space-y-1">
-                              <span className="text-sm font-medium text-slate-800 block">{activity.taskName}</span>
-                              {activity.workflow && (
-                                <span className="text-xs text-teal-600 cursor-pointer hover:underline block">
-                                  % {activity.workflow}
-                                </span>
-                              )}
-                              {activity.autoCreated && (
-                                <span className="text-xs text-slate-400 block">Auto-created</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <span className="text-sm text-slate-600">
-                              {activity.relatedEntityType}: {activity.relatedEntityName}
-                            </span>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <div className="flex items-center gap-2">
-                              <span className={`text-sm ${activity.isOverdue ? "text-red-600" : "text-slate-600"}`}>
-                                {activity.dueDate}
-                              </span>
-                              {activity.isOverdue && (
-                                <span className="text-xs text-red-500">(Overdue)</span>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs font-medium ${activity.priority === "High"
-                                  ? "bg-red-50 text-red-600 border-red-200"
-                                  : activity.priority === "Medium"
-                                    ? "bg-yellow-50 text-yellow-600 border-yellow-200"
-                                    : "bg-slate-50 text-slate-500 border-slate-200"
-                                }`}
-                            >
-                              {activity.priority}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <Badge
-                              variant="outline"
-                              className={`text-xs font-medium ${activity.status === "Pending"
-                                  ? "bg-yellow-50 text-yellow-600 border-yellow-300"
-                                  : activity.status === "In Progress"
-                                    ? "bg-teal-50 text-teal-600 border-teal-300"
-                                    : "bg-slate-50 text-slate-500 border-slate-300"
-                                }`}
-                            >
-                              {activity.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="py-4">
-                            <span className="text-sm text-slate-600">{activity.assignedTo}</span>
-                          </TableCell>
-                          <TableCell className="py-4 text-right">
-                            <div className="flex items-center justify-end gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100"
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-slate-400 hover:text-green-600 hover:bg-green-50"
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <div className="text-center py-8 text-slate-500">
-                    <Calendar className="h-12 w-12 mx-auto mb-2 text-slate-300" />
-                    <p>No upcoming activities</p>
-                  </div>
-                )}
-                {/* View More / View Less Buttons */}
-                <div className="flex items-center justify-center gap-3 py-3 border-t border-slate-100">
-                  {visibleTaskCount < UNIT_DATA.upcomingActivities.length && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => setVisibleTaskCount((prev) => Math.min(prev + 5, UNIT_DATA.upcomingActivities.length))}
-                    >
-                      <ChevronDown className="h-4 w-4 mr-1" />
-                      View More
-                    </Button>
-                  )}
-                  {visibleTaskCount > 5 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                      onClick={() => setVisibleTaskCount((prev) => Math.max(prev - 5, 5))}
-                    >
-                      <ChevronUp className="h-4 w-4 mr-1" />
-                      View Less
-                    </Button>
-                  )}
-                </div>
-                {unitCustomFields.filter((field) => field.sectionId === "overview-task-summary").length > 0 && (
-                  <div className="px-6 pb-4 space-y-1 border-t border-slate-100">
-                    {unitCustomFields
-                      .filter((field) => field.sectionId === "overview-task-summary")
-                      .map((field) => (
-                        <div key={field.id} className="flex justify-between items-center py-1 text-sm">
-                          <span className="text-slate-500 flex items-center gap-2">
-                            {field.name}
-                            {field.required && (
-                              <span className="px-1.5 py-0.5 text-[10px] font-medium bg-red-50 text-red-600 rounded">
-                                Required
-                              </span>
-                            )}
-                          </span>
-                          <span className="font-medium text-slate-800">--</span>
-                        </div>
-                      ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Tasks */}
+            <TasksCard
+              selectedStaff={null}
+              {...tasksCardState}
+            />
 
             {/* Unit Information */}
             <Card className="border-0 shadow-md">

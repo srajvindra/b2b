@@ -321,104 +321,112 @@ function RolesPermissionsPage() {
                             Permission
                           </th>
                           <th className="text-center font-semibold text-sm text-foreground py-2 px-2 whitespace-normal break-words">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help inline-flex items-center justify-center">
-                                  View/Read
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="">
-                                <p className="text-xs">
-                                  Allows users to view and access the information, but not make any changes.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <span className="inline-flex items-center justify-center">
+                              View/Read
+                            </span>
                           </th>
                           <th className="text-center font-semibold text-sm text-foreground py-2 px-2 whitespace-normal break-words">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help inline-flex items-center justify-center">
-                                  Write
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="">
-                                <p className="text-xs">
-                                  Allows users to edit or modify existing information.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <span className="inline-flex items-center justify-center">
+                              Write
+                            </span>
                           </th>
                           <th className="text-center font-semibold text-sm text-foreground py-2 px-2 whitespace-normal break-words">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help inline-flex items-center justify-center">
-                                  Delete
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="">
-                                <p className="text-xs">
-                                  Allows users to permanently remove existing information.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <span className="inline-flex items-center justify-center">
+                              Delete
+                            </span>
                           </th>
                           <th className="text-center font-semibold text-sm text-foreground py-2 px-2 whitespace-normal break-words">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help inline-flex items-center justify-center">
-                                  Add
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="">
-                                <p className="">
-                                  Allows users to create and add new information or records.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
+                            <span className="inline-flex items-center justify-center">
+                              Add
+                            </span>
                           </th>
                         </tr>
                       </thead>
-                    <tbody>
-                      {category.sections.map((section) => (
-                        <tr key={section.id} className="border-b hover:bg-white transition-colors last:border-b-0">
-                          <td className="font-medium text-foreground py-3">{section.name}</td>
-                          <td className="text-center py-3">
-                            <input
-                              type="checkbox"
-                              checked={categoryPermissions[category.id]?.[`${section.id}-view`] || false}
-                              onChange={() => togglePermission(category.id, section.id, "view")}
-                              className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
-                            />
-                          </td>
-                          <td className="text-center py-3">
-                            <input
-                              type="checkbox"
-                              checked={categoryPermissions[category.id]?.[`${section.id}-write`] || false}
-                              onChange={() => togglePermission(category.id, section.id, "write")}
-                              className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
-                            />
-                          </td>
-                          <td className="text-center py-3">
-                            <input
-                              type="checkbox"
-                              checked={categoryPermissions[category.id]?.[`${section.id}-delete`] || false}
-                              onChange={() => togglePermission(category.id, section.id, "delete")}
-                              className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
-                            />
-                          </td>
-                          <td className="text-center py-3">
-                            <input
-                              type="checkbox"
-                              checked={categoryPermissions[category.id]?.[`${section.id}-add`] || false}
-                              onChange={() => togglePermission(category.id, section.id, "add")}
-                              className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      <tbody>
+                        {category.sections.map((section) => (
+                          <tr key={section.id} className="border-b hover:bg-white transition-colors last:border-b-0">
+                            <td className="font-medium text-foreground py-3">{section.name}</td>
+                            <td className="text-center py-3">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help inline-flex items-center justify-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={categoryPermissions[category.id]?.[`${section.id}-view`] || false}
+                                      onChange={() => togglePermission(category.id, section.id, "view")}
+                                      className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                    />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="">
+                                  <p className="text-xs">
+                                    Allows users to view and access the information, but not make any changes.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                            <td className="text-center py-3">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help inline-flex items-center justify-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={categoryPermissions[category.id]?.[`${section.id}-write`] || false}
+                                      onChange={() => togglePermission(category.id, section.id, "write")}
+                                      className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                    />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="">
+                                  <p className="text-xs">
+                                    Allows users to edit or modify existing information.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                            <td className="text-center py-3">
+
+                              <Tooltip> <TooltipTrigger asChild>
+                                <span className="cursor-help inline-flex items-center justify-center">
+                                  <input
+                                    type="checkbox"
+                                    checked={categoryPermissions[category.id]?.[`${section.id}-delete`] || false}
+                                    onChange={() => togglePermission(category.id, section.id, "delete")}
+                                    className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                                <TooltipContent side="top" className="">
+                                  <p className="text-xs">
+                                    Allows users to permanently remove existing information.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                            <td className="text-center py-3">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="cursor-help inline-flex items-center justify-center">
+                                    <input
+                                      type="checkbox"
+                                      checked={categoryPermissions[category.id]?.[`${section.id}-add`] || false}
+                                      onChange={() => togglePermission(category.id, section.id, "add")}
+                                      className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                                    />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="">
+                                  <p className="text-xs">
+                                    Allows users to create and add new information or records.
+                                  </p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             ))}

@@ -7,16 +7,19 @@ import {
   AlertCircle,
   Clock,
   Eye,
-  Pencil,
+  StickyNote,
   Check,
   Workflow,
   Plus,
   Search,
   ChevronsUpDown,
+  MoreVertical,
+  TriangleAlert,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -31,6 +34,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog"
 import {
   Popover,
@@ -45,6 +49,12 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { Task, TaskSummary } from "../types"
 
 function getPriorityStyles(priority: string) {
@@ -79,6 +89,14 @@ export interface StaffMember {
   role: string
 }
 
+const RISK_OPTIONS = [
+  { value: "Revenue", label: "Revenue" },
+  { value: "SLA Breach", label: "SLA Breach" },
+  { value: "Operational", label: "Operational" },
+  { value: "Legal", label: "Legal" },
+  // { value: "Org Task", label: "Org Task" },
+] as const
+
 interface TasksCardProps {
   filteredTasks: Task[]
   taskSummary: TaskSummary
@@ -87,6 +105,16 @@ interface TasksCardProps {
   selectedStaff: string | null
   staffMembers: StaffMember[]
   onAssignTask: (taskId: number, staffName: string) => void
+  onUpdateRisk: (taskId: number, risk: string) => void
+  onEscalateTask: (taskId: number, staffName: string) => void
+  onUpdateNote: (taskId: number, note: string) => void
+  escalatedToStaffMembers: StaffMember[]
+  escalatedTo: Record<number, string>
+  processRoute?: {
+    basePath: string
+    categoryId?: string
+    leadId?: string
+  }
 }
 
 export function TasksCard({
@@ -97,6 +125,12 @@ export function TasksCard({
   selectedStaff,
   staffMembers,
   onAssignTask,
+  onUpdateRisk,
+  onEscalateTask,
+  onUpdateNote,
+  escalatedToStaffMembers,
+  escalatedTo,
+  processRoute,
 }: TasksCardProps) {
   const router = useRouter()
   const [showSkippedModal, setShowSkippedModal] = useState(false)
@@ -105,7 +139,15 @@ export function TasksCard({
     skippedComment: string
   } | null>(null)
   const [assignPopoverOpen, setAssignPopoverOpen] = useState<number | null>(null)
-
+  const [riskPopoverOpen, setRiskPopoverOpen] = useState<number | null>(null)
+  const [escalatedToPopoverOpen, setEscalatedToPopoverOpen] = useState<number | null>(null)
+  const [noteModalOpen, setNoteModalOpen] = useState(false)
+  const [noteTask, setNoteTask] = useState<Task | null>(null)
+  const [noteText, setNoteText] = useState("")
+  const [escalateModalOpen, setEscalateModalOpen] = useState(false)
+  const [escalateTask, setEscalateTask] = useState<Task | null>(null)
+  const [escalateSelectedStaff, setEscalateSelectedStaff] = useState("")
+  const [escalateStaffPopoverOpen, setEscalateStaffPopoverOpen] = useState(false)
   const handleTaskClick = (task: Task) => {
     if (task.entityType === "tenant") router.push("/contacts/tenants")
     else if (task.entityType === "owner") router.push("/contacts/owners")
@@ -117,17 +159,42 @@ export function TasksCard({
   }
 
   const handleProcessClick = (task: Task) => {
-    if (!task.processEntityType) return
-    if (task.processEntityType === "tenant")
-      router.push("/contacts/tenants?tab=processes")
-    else if (task.processEntityType === "owner")
-      router.push("/contacts/owners?tab=processes")
-    else if (task.processEntityType === "prospectOwner")
-      router.push("/leads/owners?tab=processes")
-    else if (task.processEntityType === "leaseProspect")
-      router.push("/leads/tenants?tab=processes")
+    if (!processRoute) return
+    const { basePath, categoryId, leadId } = processRoute
+    if (basePath === 'leads/owner-prospects') {
+      router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/proc-1`)
+    }
+    else if (basePath === 'leads/lease-prospects') {
+      router.push(`/leads/lease-prospects/${categoryId}/lead/${leadId}/process/proc-1`)
+    }
+    else if (basePath === 'contacts/owners') {
+      router.push(`/contacts/owners/${leadId}/process/proc-1`)
+    }
+    else if (basePath === 'contacts/tenants') {
+      router.push(`/contacts/tenants/${leadId}/process/proc-1`)
+    }
+    else if (basePath === 'properties') {
+      router.push(`/properties/${leadId}/process/proc-1`)
+    }
+    else {
+      router.push(`/dashboard/process/proc-1`)
+    }
   }
 
+  const getRiskStyles = (risk: string) => {
+    switch (risk) {
+      case "Revenue":
+        return "bg-[#FCE7F3] text-[#BE185D] border-[#F9A8D4]"
+      case "SLA Breach":
+        return "bg-[#E0F2FE] text-[#0369A1] border-[#7DD3FC]"
+      case "Operational":
+        return "bg-[#DCFCE7] text-[#166534] border-[#86EFAC]"
+      case "Legal":
+        return "bg-[#EDE9FE] text-[#5B21B6] border-[#C4B5FD]"
+      default:
+        return "bg-[#F5F0EB] text-[#78594A] border-[#D6C4B6]"
+    }
+  }
   const handleSkippedClick = (task: Task) => {
     if (task.status === "Skipped" && task.skippedComment) {
       setSelectedSkippedTask({
@@ -238,11 +305,14 @@ export function TasksCard({
                     <TableHead className="font-medium text-slate-700">
                       Priority
                     </TableHead>
-                    <TableHead className="font-medium text-slate-700">
+                    {/* <TableHead className="font-medium text-slate-700">
                       Status
-                    </TableHead>
+                    </TableHead> */}
                     <TableHead className="font-medium text-slate-700">
                       Assigned To
+                    </TableHead>
+                    <TableHead className="font-medium text-slate-700">
+                      Escalated To
                     </TableHead>
                     <TableHead className="font-medium text-slate-700 text-right">
                       Actions
@@ -262,7 +332,6 @@ export function TasksCard({
                               <button
                                 type="button"
                                 onClick={(e) => {
-                                  e.stopPropagation()
                                   handleProcessClick(task)
                                 }}
                                 className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 hover:underline w-fit"
@@ -282,7 +351,63 @@ export function TasksCard({
                           {task.entity}
                         </TableCell>
                         <TableCell className="text-sm text-slate-600">
-                          {task.risk}
+                          <Popover
+                            open={riskPopoverOpen === task.id}
+                            onOpenChange={(open) =>
+                              setRiskPopoverOpen(open ? task.id : null)
+                            }
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1.5 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-left"
+                              >
+                                <Badge
+                                  variant="outline"
+                                  className={`text-xs font-medium capitalize ${getRiskStyles(task.risk)}`}
+                                >
+                                  {task.risk}
+                                  <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                                </Badge>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-[180px] p-0"
+                              align="start"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Command>
+                                <CommandInput placeholder="Search risk..." />
+                                <CommandList>
+                                  <CommandEmpty>No risk found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {RISK_OPTIONS.map((option) => (
+                                      <CommandItem
+                                        key={option.value}
+                                        value={option.value}
+                                        onSelect={() => {
+                                          onUpdateRisk(task.id, option.value)
+                                          setRiskPopoverOpen(null)
+                                        }}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <Badge
+                                          variant="outline"
+                                          className={`text-xs font-medium ${getRiskStyles(option.value)}`}
+                                        >
+                                          {option.label}
+                                        </Badge>
+                                        {task.risk === option.value && (
+                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                        )}
+                                      </CommandItem>
+                                    ))}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                         </TableCell>
                         <TableCell>
                           <span
@@ -308,7 +433,7 @@ export function TasksCard({
                             {task.priority}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        {/* <TableCell>
                           {task.status === "Skipped" ? (
                             <button
                               type="button"
@@ -330,7 +455,7 @@ export function TasksCard({
                               {task.status}
                             </Badge>
                           )}
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell className="text-sm text-slate-600">
                           <Popover
                             open={assignPopoverOpen === task.id}
@@ -399,45 +524,147 @@ export function TasksCard({
                             </PopoverContent>
                           </Popover>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleTaskClick(task)
-                              }}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
+                        <TableCell className="text-sm text-slate-600">
+                          <Popover
+                            open={escalatedToPopoverOpen === task.id}
+                            onOpenChange={(open) =>
+                              setEscalatedToPopoverOpen(open ? task.id : null)
+                            }
+                          >
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                              >
+                                {task.escalatedTo ? (
+                                  <>
+                                    {/* <TriangleAlert className="h-4 w-4 text-amber-500 shrink-0" /> */}
+                                    <span className="truncate">{task.escalatedTo}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <TriangleAlert className="h-4 w-4 text-slate-300 shrink-0" />
+                                    <span className="text-slate-400">None</span>
+                                  </>
+                                )}
+                                <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent
+                              className="w-[220px] p-0"
+                              align="start"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            {task.status !== "Completed" && (
+                              <Command>
+                                <CommandInput placeholder="Search staff..." />
+                                <CommandList>
+                                  <CommandEmpty>No staff found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {escalatedToStaffMembers.map((staff) => {
+                                      const displayValue = `${staff.name} (${staff.role})`
+                                      const isSelected = task.escalatedTo === displayValue || task.escalatedTo === staff.name
+                                      return (
+                                        <CommandItem
+                                          key={staff.id}
+                                          value={staff.name}
+                                          onSelect={() => {
+                                            onEscalateTask(task.id, displayValue)
+                                            setEscalatedToPopoverOpen(null)
+                                          }}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                            {staff.name
+                                              .split(" ")
+                                              .map((n) => n[0])
+                                              .join("")}
+                                          </div>
+                                          <div className="flex flex-col">
+                                            <span className="text-sm text-slate-900">
+                                              {staff.name}
+                                            </span>
+                                            <span className="text-[11px] text-slate-500">
+                                              {staff.role}
+                                            </span>
+                                          </div>
+                                          {isSelected && (
+                                            <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                          )}
+                                        </CommandItem>
+                                      )
+                                    })}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-8 w-8 p-0 text-slate-500 hover:text-emerald-600"
+                                className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <Check className="h-4 w-4" />
+                                <MoreVertical className="h-4 w-4" />
                               </Button>
-                            )}
-                          </div>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleTaskClick(task)
+                                }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <Eye className="h-4 w-4" />
+                                View
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setNoteTask(task)
+                                  setNoteText(task.notes || "")
+                                  setNoteModalOpen(true)
+                                }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <StickyNote className={`h-4 w-4 ${task.notes ? "text-teal-600" : ""}`} />
+                                {task.notes ? "Edit Note" : "Add Note"}
+                              </DropdownMenuItem>
+                              {task.status !== "Completed" && (
+                                <DropdownMenuItem
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="gap-2 cursor-pointer"
+                                >
+                                  <Check className="h-4 w-4" />
+                                  Complete
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  setEscalateTask(task)
+                                  setEscalateSelectedStaff(task.escalatedTo || "")
+                                  setEscalateModalOpen(true)
+                                }}
+                                className="gap-2 cursor-pointer"
+                              >
+                                <TriangleAlert className={`h-4 w-4 ${task.escalatedTo ? "text-amber-500" : ""}`} />
+                                Escalate
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={8}
                         className="text-center py-8 text-slate-500"
                       >
                         No tasks found
@@ -460,6 +687,147 @@ export function TasksCard({
           <p className="text-sm text-slate-600 whitespace-pre-wrap">
             {selectedSkippedTask?.skippedComment}
           </p>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={noteModalOpen} onOpenChange={setNoteModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <StickyNote className="h-5 w-5 text-slate-600" />
+              {noteTask?.notes ? "Edit Note" : "Add Note"}
+            </DialogTitle>
+            {noteTask && (
+              <p className="text-sm text-slate-500 mt-1">{noteTask.title}</p>
+            )}
+          </DialogHeader>
+          <Textarea
+            placeholder="Write a note for this task..."
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            rows={4}
+            className="resize-none"
+          />
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setNoteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-teal-600 hover:bg-teal-700 text-white"
+              onClick={() => {
+                if (noteTask) {
+                  onUpdateNote(noteTask.id, noteText)
+                }
+                setNoteModalOpen(false)
+              }}
+            >
+              Save Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={escalateModalOpen} onOpenChange={setEscalateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <TriangleAlert className="h-5 w-5 text-amber-500" />
+              Escalate Task
+            </DialogTitle>
+            {escalateTask && (
+              <p className="text-sm text-slate-500 mt-1">{escalateTask.title}</p>
+            )}
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-slate-600">
+              Select a staff member to escalate this task to:
+            </p>
+            <Popover open={escalateStaffPopoverOpen} onOpenChange={setEscalateStaffPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="w-full justify-between text-left font-normal"
+                >
+                  {escalateSelectedStaff ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                        {escalateSelectedStaff
+                          .replace(/\s*\(.*?\)\s*/g, " ")
+                          .trim()
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                      <span>{escalateSelectedStaff}</span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-400">Select staff member...</span>
+                  )}
+                  <ChevronsUpDown className="h-4 w-4 text-slate-400 shrink-0" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search staff..." />
+                  <CommandList>
+                    <CommandEmpty>No staff found.</CommandEmpty>
+                    <CommandGroup>
+                      {escalatedToStaffMembers.map((staff) => {
+                        const displayValue = `${staff.name} (${staff.role})`
+                        const isSelected = escalateSelectedStaff === displayValue || escalateSelectedStaff === staff.name
+                        return (
+                          <CommandItem
+                            key={staff.id}
+                            value={staff.name}
+                            onSelect={() => {
+                              setEscalateSelectedStaff(displayValue)
+                              setEscalateStaffPopoverOpen(false)
+                            }}
+                            className="flex items-center gap-2"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                              {staff.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm text-slate-900">
+                                {staff.name}
+                              </span>
+                              <span className="text-[11px] text-slate-500">
+                                {staff.role}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                            )}
+                          </CommandItem>
+                        )
+                      })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setEscalateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className="bg-amber-500 hover:bg-amber-600 text-white"
+              disabled={!escalateSelectedStaff}
+              onClick={() => {
+                if (escalateTask && escalateSelectedStaff) {
+                  onEscalateTask(escalateTask.id, escalateSelectedStaff)
+                }
+                setEscalateModalOpen(false)
+              }}
+            >
+              Confirm Escalation
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

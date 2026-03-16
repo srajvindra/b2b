@@ -4,7 +4,7 @@ import { DialogDescription } from "@/components/ui/dialog"
 
 import { Checkbox } from "@/components/ui/checkbox"
 
-import { useState, type ReactNode } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import {
     ArrowLeft,
     Mail,
@@ -67,6 +67,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Textarea } from "@/components/ui/textarea"
 import { OwnerDetailQuickActions } from "@/features/leads/components/owner-detail-quick-actions"
+import { CommentsDialog, useComments, OWNER_INITIAL_COMMENTS } from "@/components/shared/comments-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -108,6 +109,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { useNav } from "@/app/dashboard/page"
 import { useParams, useRouter } from "next/navigation"
+import { TasksCard } from "@/features/dashboard/components/TasksCard"
+import { useTasksCardState } from "@/features/dashboard/hooks/useTasksCardState"
+import type { Task } from "@/features/dashboard/types"
 
 export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDetailViewProps) {
     const ACTIVITIES_DATA = getActivitiesData(lead?.name || "", lead?.phone || "", lead?.email || "")
@@ -130,6 +134,25 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
 
     const [showNewTaskModal, setShowNewTaskModal] = useState(false)
     const [showMissingInfoModal, setShowMissingInfoModal] = useState(false)
+
+    const dashboardTasks = useMemo<Task[]>(() => ownerTasks.map((t, idx) => ({
+        id: idx + 1,
+        title: t.title,
+        dueDate: t.dueDate,
+        priority: t.priority.toLowerCase(),
+        entity: `${t.relatedEntityName} (${t.relatedEntityType})`,
+        entityType: "prospectOwner" as const,
+        risk: "Operational",
+        overdue: t.isOverdue,
+        assignedTo: t.assignee,
+        escalatedTo: (t as { escalatedTo?: string }).escalatedTo || "",
+        status: t.status as Task["status"],
+        processName: t.processName || undefined,
+        processEntityType: t.processName ? ("prospectOwner" as const) : undefined,
+        autoCreated: t.source === "communication",
+    })), [])
+
+    const tasksCardState = useTasksCardState({ tasks: dashboardTasks })
 
     // Communication Thread Modal State
     const [showThreadModal, setShowThreadModal] = useState(false)
@@ -293,6 +316,8 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
     }
     const [editableCreatedAt, setEditableCreatedAt] = useState(() => toDateInputValue(lead?.createdAt ?? ""))
     const [editableClosedAt, setEditableClosedAt] = useState(() => toDateInputValue(lead?.lastTouch ?? ""))
+
+    const { comments, showCommentDialog, setShowCommentDialog, handleAddComment } = useComments(OWNER_INITIAL_COMMENTS)
 
     const ownerInfo = {
         name: lead?.name || "N/A",
@@ -807,23 +832,37 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                                         <span className="text-muted-foreground shrink-0">Created at:</span>
-                                        <Input
-                                            type="date"
-                                            value={editableCreatedAt}
-                                            onChange={(e) => setEditableCreatedAt(e.target.value)}
-                                            className="h-9 w-[140px] text-blue-600"
-                                        />
+                                        {editableCreatedAt}
+                                        {/* <Input
+                                                type="date"
+                                                value={editableCreatedAt}
+                                                onChange={(e) => setEditableCreatedAt(e.target.value)}
+                                                className="h-9 w-[140px] text-blue-600"
+                                            /> */}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                                         <span className="text-muted-foreground shrink-0">Closed at:</span>
-                                        <Input
+                                        {editableClosedAt}
+                                        {/* <Input
                                             type="date"
                                             value={editableClosedAt}
                                             onChange={(e) => setEditableClosedAt(e.target.value)}
                                             className="h-9 w-[140px] text-blue-600"
-                                        />
+                                        /> */}
                                     </div>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="gap-1.5 h-8 text-teal-600 border-teal-200 hover:bg-teal-50 hover:text-teal-700"
+                                        onClick={() => setShowCommentDialog(true)}
+                                    >
+                                        <MessageSquare className="h-3.5 w-3.5" />
+                                        Comments
+                                        <Badge variant="secondary" className="ml-1 bg-teal-100 text-teal-700 text-xs h-5 min-w-[20px] px-1.5">
+                                            {comments.length}
+                                        </Badge>
+                                    </Button>
                                 </div>
                             </div>
                         </div>
@@ -1183,185 +1222,15 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                     <TabsContent value="overview" className="mt-6">
                         {/* Tasks Section */}
                         <div id="tasks-section" className="mb-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <ListTodo className="h-5 w-5 text-teal-600" />
-                                    <h3 className="text-lg font-semibold">Tasks ({ownerTasks.length})</h3>
-                                </div>
-                                <Button onClick={() => setShowNewTaskModal(true)} className="bg-teal-600 hover:bg-teal-700">
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    New Task
-                                </Button>
-                            </div>
-                            <div className="border rounded-lg overflow-hidden">
-                                <div className="max-h-[340px] overflow-y-auto">
-                                    <Table>
-                                        <TableHeader className="sticky top-0 z-10 bg-white">
-                                            <TableRow className="bg-muted/30">
-                                                {/* <TableHead className="font-medium w-[80px]">Source</TableHead> */}
-                                                <TableHead className="font-medium">Task</TableHead>
-                                                <TableHead className="font-medium">Due Date</TableHead>
-                                                <TableHead className="font-medium">Priority</TableHead>
-                                                <TableHead className="font-medium">Status</TableHead>
-                                                <TableHead className="font-medium">Assigned To</TableHead>
-                                                <TableHead className="font-medium text-right">Actions</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {/* Process Tasks */}
-                                            {ownerTasks.filter(t => t.source === "process").map((task) => (
-                                                <TableRow key={task.id} className="hover:bg-muted/20">
-                                                    {/* <TableCell>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="h-2 w-2 rounded-full bg-teal-500" />
-                                                            <span className="text-xs text-teal-600">Process</span>
-                                                        </div>
-                                                    </TableCell> */}
-                                                    <TableCell>
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <span className="font-medium text-foreground">{task.title}</span>
-                                                            <button
-                                                                type="button"
-                                                                onClick={(e) => router.push(`/leads/owner-prospects/${categoryId}/lead/${leadId}/process/proc-1`)}
-                                                                className="flex items-center gap-1 hover:underline cursor-pointer"
-                                                            >
-                                                                <Workflow className="h-3 w-3 text-teal-600" />
-                                                                <span className="text-xs text-teal-600">{task.processName}</span>
-                                                            </button>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                                                                {task.dueDate}
-                                                            </span>
-                                                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={(task as { priority: string }).priority === "High" ? "bg-red-50 text-red-700 border-red-200" : (task as { priority: string }).priority === "Medium" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
-                                                            {task.priority}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={(task as { status: string }).status === "In Progress" ? "bg-teal-50 text-teal-700 border-teal-200" : (task as { status: string }).status === "Pending" ? "bg-yellow-50 text-yellow-600 border-yellow-200" : (task as { status: string }).status === "Skipped" ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}>
-                                                            {(task as { status: string }).status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell><span className="text-sm text-muted-foreground">{task.assignee}</span></TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="View Task"><Eye className="h-4 w-4" /></Button>
-                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-teal-600" onClick={() => setShowTaskModal(true)} title="Edit Task"><Edit className="h-4 w-4" /></Button>
-                                                            {(task as { status: string }).status !== "Completed" && (task as { status: string }).status !== "Skipped" && (
-                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-green-600" title="Mark Complete"><Check className="h-4 w-4" /></Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                            {/* Communication Tasks */}
-                                            {ownerTasks.filter(t => t.source === "communication").map((task) => (
-                                                <TableRow key={task.id} className="hover:bg-muted/20">
-                                                    {/* <TableCell>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="h-2 w-2 rounded-full bg-blue-500" />
-                                                            <span className="text-xs text-blue-600">Comms</span>
-                                                        </div>
-                                                    </TableCell> */}
-                                                    <TableCell>
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <span className="font-medium text-foreground">{task.title}</span>
-                                                            <span className="text-xs text-blue-500">Auto-created</span>
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                                                                {task.dueDate}
-                                                            </span>
-                                                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={(task as { priority: string }).priority === "High" ? "bg-red-50 text-red-700 border-red-200" : (task as { priority: string }).priority === "Medium" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
-                                                            {task.priority}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={(task as { status: string }).status === "In Progress" ? "bg-teal-50 text-teal-700 border-teal-200" : (task as { status: string }).status === "Pending" ? "bg-yellow-50 text-yellow-600 border-yellow-200" : (task as { status: string }).status === "Skipped" ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}>
-                                                            {(task as { status: string }).status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell><span className="text-sm text-muted-foreground">{task.assignee}</span></TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="View Task"><Eye className="h-4 w-4" /></Button>
-                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-teal-600" onClick={() => setShowTaskModal(true)} title="Edit Task"><Edit className="h-4 w-4" /></Button>
-                                                            {(task as { status: string }).status !== "Completed" && (task as { status: string }).status !== "Skipped" && (
-                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-green-600" title="Mark Complete"><Check className="h-4 w-4" /></Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                            {/* General Tasks */}
-                                            {ownerTasks.filter(t => t.source === "general").map((task) => (
-                                                <TableRow key={task.id} className="hover:bg-muted/20">
-                                                    {/* <TableCell>
-                                                        <div className="flex items-center gap-1.5">
-                                                            <div className="h-2 w-2 rounded-full bg-slate-400" />
-                                                            <span className="text-xs text-slate-500">General</span>
-                                                        </div>
-                                                    </TableCell> */}
-                                                    <TableCell>
-                                                        <div className="flex flex-col gap-0.5">
-                                                            <span className="font-medium text-foreground">{task.title}</span>
-                                                            {task.createdBy && <span className="text-xs text-muted-foreground">Created by {task.createdBy}</span>}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center gap-1">
-                                                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-muted-foreground"}`}>
-                                                                {task.dueDate}
-                                                            </span>
-                                                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
-                                                        </div>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={(task as { priority: string }).priority === "High" ? "bg-red-50 text-red-700 border-red-200" : (task as { priority: string }).priority === "Medium" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-gray-50 text-gray-600 border-gray-200"}>
-                                                            {task.priority}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Badge variant="outline" className={(task as { status: string }).status === "In Progress" ? "bg-teal-50 text-teal-700 border-teal-200" : (task as { status: string }).status === "Pending" ? "bg-yellow-50 text-yellow-600 border-yellow-200" : (task as { status: string }).status === "Skipped" ? "bg-orange-50 text-orange-600 border-orange-200" : "bg-emerald-50 text-emerald-700 border-emerald-200"}>
-                                                            {(task as { status: string }).status}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell><span className="text-sm text-muted-foreground">{task.assignee}</span></TableCell>
-                                                    <TableCell>
-                                                        <div className="flex items-center justify-end gap-1">
-                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" title="View Task"><Eye className="h-4 w-4" /></Button>
-                                                            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-teal-600" onClick={() => setShowTaskModal(true)} title="Edit Task"><Edit className="h-4 w-4" /></Button>
-                                                            {(task as { status: string }).status !== "Completed" && (task as { status: string }).status !== "Skipped" && (
-                                                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-green-600" title="Mark Complete"><Check className="h-4 w-4" /></Button>
-                                                            )}
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
-                                            {ownerTasks.length === 0 && (
-                                                <TableRow>
-                                                    <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
-                                                        No tasks yet. Click "New Task" to create one.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </div>
-
+                            <TasksCard
+                                selectedStaff={null}
+                                {...tasksCardState}
+                                processRoute={{ 
+                                    basePath: "leads/owner-prospects",
+                                    categoryId: categoryId as string,
+                                    leadId: leadId as string,
+                                }}
+                            />
                         </div>
 
                         {/* Pinned Activity */}
@@ -4261,7 +4130,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                             <Input
                                 id="start-date"
                                 type="date"
-                                defaultValue={editingProcess?.startedOn ? new Date(editingProcess.startedOn).toISOString().split('T')[0] : ""}
+                                defaultValue={editingProcess?.startedOn ? new Date(editingProcess!.startedOn!).toISOString().split('T')[0] : ""}
                             />
                         </div>
 
@@ -4307,29 +4176,29 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Property Name</Label>
-                                        <p className="font-medium">{selectedProperty.name}</p>
+                                        <p className="font-medium">{selectedProperty?.name}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Status</Label>
-                                        <Badge className={selectedProperty.status === "Active" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}>
-                                            {selectedProperty.status}
+                                        <Badge className={selectedProperty?.status === "Active" ? "bg-green-100 text-green-700" : "bg-orange-100 text-orange-700"}>
+                                            {selectedProperty?.status}
                                         </Badge>
                                     </div>
                                     <div className="space-y-1 col-span-2">
                                         <Label className="text-xs text-muted-foreground">Address</Label>
-                                        <p className="font-medium">{selectedProperty.address}</p>
+                                        <p className="font-medium">{selectedProperty?.address}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Property Type</Label>
-                                        <p className="font-medium">{selectedProperty.type}</p>
+                                        <p className="font-medium">{selectedProperty?.type}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Units</Label>
-                                        <p className="font-medium">{selectedProperty.units}</p>
+                                        <p className="font-medium">{selectedProperty?.units}</p>
                                     </div>
                                     <div className="space-y-1">
                                         <Label className="text-xs text-muted-foreground">Monthly Rent</Label>
-                                        <p className="font-medium text-teal-600">${selectedProperty.monthlyRent.toLocaleString()}</p>
+                                        <p className="font-medium text-teal-600">${selectedProperty?.monthlyRent.toLocaleString()}</p>
                                     </div>
                                 </div>
                             </div>
@@ -4513,11 +4382,11 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
 
                             for (const prop of ownerProperties) {
                                 const matchedLlc = llcs.find(l => l.id === prop.llcId)
-                                const oType = matchedLlc ? matchedLlc.ownershipType : "Personal"
-                                const entityName = matchedLlc ? matchedLlc.name : "Unassigned Ownership"
-                                const entityId = matchedLlc ? matchedLlc.id : "unassigned"
+                                const oType = matchedLlc?.ownershipType ?? "Personal"
+                                const entityName = matchedLlc?.name ?? "Unassigned Ownership"
+                                const entityId = matchedLlc?.id ?? "unassigned"
                                 if (!pmaGrouped[oType]) pmaGrouped[oType] = []
-                                const existing = pmaGrouped[oType].find(e => e.entityId === entityId)
+                                const existing = pmaGrouped[oType]?.find(e => e.entityId === entityId)
                                 if (existing) existing.properties.push(prop)
                                 else pmaGrouped[oType].push({ entityName, entityId, properties: [prop] })
                             }
@@ -4716,7 +4585,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                 {newDocUpload.file ? (
                                     <div className="flex flex-col items-center gap-2">
                                         <FileText className="h-10 w-10 text-teal-600" />
-                                        <p className="text-sm font-medium text-foreground">{newDocUpload.file.name}</p>
+                                        <p className="text-sm font-medium text-foreground">{newDocUpload.file?.name}</p>
                                         <p className="text-xs text-muted-foreground">Click to change file</p>
                                     </div>
                                 ) : (
@@ -5279,6 +5148,14 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            <CommentsDialog
+                open={showCommentDialog}
+                onOpenChange={setShowCommentDialog}
+                comments={comments}
+                onAddComment={handleAddComment}
+                description="Internal comments for this owner prospect."
+            />
         </div>
     )
 }

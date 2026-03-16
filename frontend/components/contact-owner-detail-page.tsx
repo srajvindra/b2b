@@ -2699,7 +2699,7 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
                             <th className="text-left text-xs font-medium text-muted-foreground p-3">Related Entity</th>
                             <th className="text-left text-xs font-medium text-muted-foreground p-3">Due Date</th>
                             <th className="text-left text-xs font-medium text-muted-foreground p-3">Priority</th>
-                            <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th>
+                            {/* <th className="text-left text-xs font-medium text-muted-foreground p-3">Status</th> */}
                             <th className="text-left text-xs font-medium text-muted-foreground p-3">Assigned To</th>
                             <th className="text-right text-xs font-medium text-muted-foreground p-3">Actions</th>
                           </tr>
@@ -2749,7 +2749,7 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
                                   {task.priority}
                                 </Badge>
                               </td>
-                              <td className="p-3">
+                              {/* <td className="p-3">
                                 <Badge
                                   variant="outline"
                                   className={`text-xs ${task.status === "In Progress"
@@ -2763,7 +2763,7 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
                                 >
                                   {task.status}
                                 </Badge>
-                              </td>
+                              </td> */}
                               <td className="p-3">
                                 <span className="text-sm text-slate-600">{task.assignee}</span>
                               </td>

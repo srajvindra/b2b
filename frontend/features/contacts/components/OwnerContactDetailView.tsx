@@ -1457,12 +1457,6 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
             <TabsContent value="overview" className="mt-4 space-y-4">
               <OwnerOverview
                 tasks={tasks}
-                onNewTask={() => setShowNewTaskModal(true)}
-                onViewTask={handleViewTask}
-                onEditTask={handleEditTask}
-                onMarkComplete={handleMarkComplete}
-                getStatusBadgeStyle={getStatusBadgeStyle}
-                getPriorityBadgeStyle={getPriorityBadgeStyle}
                 pinnedCommunications={pinnedCommunications}
                 unpinnedCommunications={unpinnedCommunications}
                 renderCommunicationItem={renderCommunicationItem}
