@@ -46,6 +46,7 @@ import {
 } from "lucide-react"
 import { getTasks } from "@/features/contacts/data/ownerDetailData"
 import type { OwnerTask } from "@/features/contacts/types"
+import { useRouter } from "next/navigation"
 
 type EntityType = "Tenant" | "Owner" | "Prospect Owner" | "Lease Prospect" | "Property"
 
@@ -118,6 +119,7 @@ const getPriorityBadgeStyle = (priority: OwnerTask["priority"]) => {
 }
 
 export function AllTaskPage() {
+  const router = useRouter()
   const [tasks, setTasks] = useState<OwnerTask[]>(getTasks())
   const [searchQuery, setSearchQuery] = useState("")
   const [visibleCount, setVisibleCount] = useState(10)
@@ -882,15 +884,15 @@ export function AllTaskPage() {
                     const currentAssignee = assignOverrides[task.id] || task.assignee
                     const currentEscalatedTo = task.escalatedTo || ""
                     const currentNote = noteOverrides[task.id] || ""
-
+                    
                     return (
-                      <tr key={task.id} className="hover:bg-gray-50">
+                      <tr key={task.id} className="">
                         {/* Task */}
                         <td className="p-3">
                           <div className="flex flex-col gap-1">
                             <span className="text-sm font-medium text-slate-800">{task.title}</span>
                             {task.processName && (
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 cursor-pointer hover:underline text-teal-600" onClick={() => router.push(`/operations/all-tasks/process/proc-1`)}>
                                 <Workflow className="h-3 w-3 text-teal-600" />
                                 <span className="text-xs text-teal-600">{task.processName}</span>
                               </div>
