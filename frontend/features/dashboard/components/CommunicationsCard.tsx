@@ -19,6 +19,7 @@ interface CommunicationsCardProps {
   isUnresponded: (c: Communication) => boolean
   isPending: (c: Communication) => boolean
   selectedStaff: string | null
+  maxHeight?: string
 }
 
 export function CommunicationsCard({
@@ -34,6 +35,7 @@ export function CommunicationsCard({
   isUnresponded,
   isPending,
   selectedStaff,
+  maxHeight = "260px",
 }: CommunicationsCardProps) {
   const [selectedCommunication, setSelectedCommunication] =
     useState<Communication | null>(null)
@@ -77,39 +79,34 @@ export function CommunicationsCard({
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                    selectedTile === null
-                      ? "bg-slate-800 border border-slate-800"
-                      : "bg-white border border-slate-200 hover:border-slate-300"
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${selectedTile === null
+                    ? "bg-slate-800 border border-slate-800"
+                    : "bg-white border border-slate-200 hover:border-slate-300"
+                    }`}
                   onClick={() => {
                     setSelectedTile(null)
                     setSubFilter("all")
                   }}
                 >
                   <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                      selectedTile === null ? "bg-slate-700" : "bg-slate-100"
-                    }`}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedTile === null ? "bg-slate-700" : "bg-slate-100"
+                      }`}
                   >
                     <Bell
-                      className={`h-4.5 w-4.5 ${
-                        selectedTile === null ? "text-white" : "text-slate-600"
-                      }`}
+                      className={`h-4.5 w-4.5 ${selectedTile === null ? "text-white" : "text-slate-600"
+                        }`}
                     />
                   </div>
                   <div className="flex flex-col">
                     <span
-                      className={`text-lg font-bold leading-none ${
-                        selectedTile === null ? "text-white" : "text-slate-900"
-                      }`}
+                      className={`text-lg font-bold leading-none ${selectedTile === null ? "text-white" : "text-slate-900"
+                        }`}
                     >
                       {commSummary.pending}
                     </span>
                     <span
-                      className={`text-[11px] uppercase tracking-wide font-medium ${
-                        selectedTile === null ? "text-slate-300" : "text-slate-500"
-                      }`}
+                      className={`text-[11px] uppercase tracking-wide font-medium ${selectedTile === null ? "text-slate-300" : "text-slate-500"
+                        }`}
                     >
                       All
                     </span>
@@ -118,11 +115,10 @@ export function CommunicationsCard({
 
                 <button
                   type="button"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                    selectedTile === "emails"
-                      ? "bg-teal-600 border border-teal-600"
-                      : "bg-white border border-slate-200 hover:border-slate-300"
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${selectedTile === "emails"
+                    ? "bg-teal-600 border border-teal-600"
+                    : "bg-white border border-slate-200 hover:border-slate-300"
+                    }`}
                   onClick={() => {
                     if (selectedTile === "emails") {
                       setSelectedTile(null)
@@ -134,34 +130,30 @@ export function CommunicationsCard({
                   }}
                 >
                   <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                      selectedTile === "emails" ? "bg-teal-500" : "bg-slate-100"
-                    }`}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedTile === "emails" ? "bg-teal-500" : "bg-slate-100"
+                      }`}
                   >
                     <Mail
-                      className={`h-4.5 w-4.5 ${
-                        selectedTile === "emails"
-                          ? "text-white"
-                          : "text-slate-600"
-                      }`}
+                      className={`h-4.5 w-4.5 ${selectedTile === "emails"
+                        ? "text-white"
+                        : "text-slate-600"
+                        }`}
                     />
                   </div>
                   <div className="flex flex-col">
                     <span
-                      className={`text-lg font-bold leading-none ${
-                        selectedTile === "emails"
-                          ? "text-white"
-                          : "text-slate-900"
-                      }`}
+                      className={`text-lg font-bold leading-none ${selectedTile === "emails"
+                        ? "text-white"
+                        : "text-slate-900"
+                        }`}
                     >
                       {commSummary.emails}
                     </span>
                     <span
-                      className={`text-[11px] uppercase tracking-wide font-medium ${
-                        selectedTile === "emails"
-                          ? "text-teal-100"
-                          : "text-slate-500"
-                      }`}
+                      className={`text-[11px] uppercase tracking-wide font-medium ${selectedTile === "emails"
+                        ? "text-teal-100"
+                        : "text-slate-500"
+                        }`}
                     >
                       Emails
                     </span>
@@ -170,11 +162,10 @@ export function CommunicationsCard({
 
                 <button
                   type="button"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                    selectedTile === "sms"
-                      ? "bg-teal-600 border border-teal-600"
-                      : "bg-white border border-slate-200 hover:border-slate-300"
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${selectedTile === "sms"
+                    ? "bg-teal-600 border border-teal-600"
+                    : "bg-white border border-slate-200 hover:border-slate-300"
+                    }`}
                   onClick={() => {
                     if (selectedTile === "sms") {
                       setSelectedTile(null)
@@ -186,32 +177,28 @@ export function CommunicationsCard({
                   }}
                 >
                   <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                      selectedTile === "sms" ? "bg-teal-500" : "bg-slate-100"
-                    }`}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedTile === "sms" ? "bg-teal-500" : "bg-slate-100"
+                      }`}
                   >
                     <MessageSquare
-                      className={`h-4.5 w-4.5 ${
-                        selectedTile === "sms" ? "text-white" : "text-slate-600"
-                      }`}
+                      className={`h-4.5 w-4.5 ${selectedTile === "sms" ? "text-white" : "text-slate-600"
+                        }`}
                     />
                   </div>
                   <div className="flex flex-col">
                     <span
-                      className={`text-lg font-bold leading-none ${
-                        selectedTile === "sms"
-                          ? "text-white"
-                          : "text-slate-900"
-                      }`}
+                      className={`text-lg font-bold leading-none ${selectedTile === "sms"
+                        ? "text-white"
+                        : "text-slate-900"
+                        }`}
                     >
                       {commSummary.sms}
                     </span>
                     <span
-                      className={`text-[11px] uppercase tracking-wide font-medium ${
-                        selectedTile === "sms"
-                          ? "text-teal-100"
-                          : "text-slate-500"
-                      }`}
+                      className={`text-[11px] uppercase tracking-wide font-medium ${selectedTile === "sms"
+                        ? "text-teal-100"
+                        : "text-slate-500"
+                        }`}
                     >
                       SMS
                     </span>
@@ -220,11 +207,10 @@ export function CommunicationsCard({
 
                 <button
                   type="button"
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${
-                    selectedTile === "calls"
-                      ? "bg-teal-600 border border-teal-600"
-                      : "bg-white border border-slate-200 hover:border-slate-300"
-                  }`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition-all ${selectedTile === "calls"
+                    ? "bg-teal-600 border border-teal-600"
+                    : "bg-white border border-slate-200 hover:border-slate-300"
+                    }`}
                   onClick={() => {
                     if (selectedTile === "calls") {
                       setSelectedTile(null)
@@ -234,34 +220,30 @@ export function CommunicationsCard({
                   }}
                 >
                   <div
-                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                      selectedTile === "calls" ? "bg-teal-500" : "bg-slate-100"
-                    }`}
+                    className={`w-9 h-9 rounded-lg flex items-center justify-center ${selectedTile === "calls" ? "bg-teal-500" : "bg-slate-100"
+                      }`}
                   >
                     <Phone
-                      className={`h-4.5 w-4.5 ${
-                        selectedTile === "calls"
-                          ? "text-white"
-                          : "text-slate-600"
-                      }`}
+                      className={`h-4.5 w-4.5 ${selectedTile === "calls"
+                        ? "text-white"
+                        : "text-slate-600"
+                        }`}
                     />
                   </div>
                   <div className="flex flex-col">
                     <span
-                      className={`text-lg font-bold leading-none ${
-                        selectedTile === "calls"
-                          ? "text-white"
-                          : "text-slate-900"
-                      }`}
+                      className={`text-lg font-bold leading-none ${selectedTile === "calls"
+                        ? "text-white"
+                        : "text-slate-900"
+                        }`}
                     >
                       {commSummary.calls}
                     </span>
                     <span
-                      className={`text-[11px] uppercase tracking-wide font-medium ${
-                        selectedTile === "calls"
-                          ? "text-teal-100"
-                          : "text-slate-500"
-                      }`}
+                      className={`text-[11px] uppercase tracking-wide font-medium ${selectedTile === "calls"
+                        ? "text-teal-100"
+                        : "text-slate-500"
+                        }`}
                     >
                       Calls
                     </span>
@@ -389,63 +371,93 @@ export function CommunicationsCard({
             </div>
           </div>
         </CardContent> */}
-                  <CardContent className="px-4 pb-4">
-            <div className="max-h-[260px] overflow-y-auto pr-1">
-            <div className="flex flex-col gap-2">
-              {filteredCommunications.length > 0 ? (
-                filteredCommunications.map((comm) => (
-                  <div
-                    key={comm.id}
-                    onClick={() => handleCommunicationClick(comm)}
-                    className="flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-all hover:shadow-sm rounded-lg border"
-                    style={{
-                      backgroundColor: comm.type === "email" ? "#E6F4EA" : comm.type === "call" ? "#E0F7F6" : "#E3F2FD",
-                      borderColor: comm.type === "email" ? "#c8e6cc" : comm.type === "call" ? "#b3e8e5" : "#BBDEFB",
-                    }}
-                  >
-                    <div
-                      className="p-2 rounded-full relative shrink-0"
+        <CardContent className="px-4 pb-4">
+          <div className={`max-h-[${maxHeight}] overflow-y-auto pr-1`}>
+            {filteredCommunications.length > 0 ? (
+              <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
+                <div className="grid grid-cols-[minmax(0,0.38fr)_minmax(0,1.1fr)_minmax(0,0.5fr)] px-3 py-2 bg-slate-50 text-[14px] font-bold text-slate-600 tracking-wide">
+                  <span>Contract</span>
+                  <span>Content</span>
+                  <span className="text-right">Date</span>
+                </div>
+                <div className="divide-y divide-slate-200">
+                  {filteredCommunications.map((comm) => (
+                    <button
+                      key={comm.id}
+                      type="button"
+                      onClick={() => handleCommunicationClick(comm)}
+                      className="w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors"
                       style={{
-                        backgroundColor: comm.type === "email" ? "#c8e6cc" : comm.type === "call" ? "#b3e8e5" : "#BBDEFB",
+                        backgroundColor:
+                          comm.type === "email"
+                            ? "#E6F4EA"
+                            : comm.type === "call"
+                              ? "#E0F7F6"
+                              : "#E3F2FD",
                       }}
                     >
-                      {comm.type === "email" ? (
-                        <Mail className="h-4 w-4 text-green-800" />
-                      ) : comm.type === "call" ? (
-                        <Phone className="h-4 w-4 text-teal-800" />
-                      ) : comm.isGroupSms ? (
-                        <Users className="h-4 w-4 text-blue-800" />
-                      ) : (
-                        <MessageSquare className="h-4 w-4 text-blue-800" />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0 flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 w-[160px] shrink-0 min-w-0">
-                        {!comm.read && <span className="w-2 h-2 rounded-full bg-slate-600 shrink-0"></span>}
-                        <p className="text-sm font-medium truncate text-slate-800">{comm.from}</p>
-                        {comm.type === "text" && comm.isGroupSms && (
-                          <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full shrink-0" title={`Group SMS: ${comm.groupParticipants?.join(", ")}`}>
-                            Group
+                      <div className="grid grid-cols-[minmax(0,0.38fr)_minmax(0,1.1fr)_minmax(0,0.5fr)] items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-1.5 rounded-full relative shrink-0"
+                            style={{
+                              backgroundColor:
+                                comm.type === "email"
+                                  ? "#c8e6cc"
+                                  : comm.type === "call"
+                                    ? "#b3e8e5"
+                                    : "#BBDEFB",
+                            }}
+                          >
+                            {comm.type === "email" ? (
+                              <Mail className="h-3.5 w-3.5 text-green-800" />
+                            ) : comm.type === "call" ? (
+                              <Phone className="h-3.5 w-3.5 text-teal-800" />
+                            ) : comm.isGroupSms ? (
+                              <Users className="h-3.5 w-3.5 text-blue-800" />
+                            ) : (
+                              <MessageSquare className="h-3.5 w-3.5 text-blue-800" />
+                            )}
+                          </div>
+                          {!comm.read && (
+                            <span className="w-2 h-2 rounded-full bg-slate-700 shrink-0" />
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-sm font-medium truncate text-slate-800">
+                              {comm.from} {comm.entityType ? `(${comm.entityType})` : ""}
+                            </span>
+                            {comm.type === "text" && comm.isGroupSms && (
+                              <span
+                                className="text-[9px] text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded-full mt-0.5 w-max"
+                                title={`Group SMS: ${comm.groupParticipants?.join(", ")}`}
+                              >
+                                Group
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-slate-700 truncate">
+                            {comm.preview}
+                          </p>
+                        </div>
+                        <div className="flex justify-end">
+                          <span className="text-[11px] text-slate-600 whitespace-nowrap">
+                            {comm.timestamp}
                           </span>
-                        )}
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-600 truncate flex-1 min-w-0">{comm.preview}</p>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] text-slate-500 whitespace-nowrap">{comm.timestamp}</span>
-                        <span className="text-[11px] text-slate-400">•</span>
-                        <span className="text-[11px] text-slate-500 whitespace-nowrap">{comm.assignedTo}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="text-center py-8 text-slate-500">
-                  No communications found for {selectedStaff}
+                    </button>
+                  ))}
                 </div>
-              )}
-            </div>
-            </div>
-          </CardContent>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500">
+                No communications found for {selectedStaff}
+              </div>
+            )}
+          </div>
+        </CardContent>
       </Card>
 
       <CommunicationModal

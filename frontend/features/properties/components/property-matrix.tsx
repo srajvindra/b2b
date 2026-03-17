@@ -200,7 +200,7 @@ export function PropertyMetricsSummary({ activeFilters = [], onFilterChange }: P
               </div>
               {/* Body: sub-metrics */}
               <div
-                className={`flex-1 flex flex-col gap-0.5 px-2 py-2 ${cat.scrollable ? "max-h-[90px] overflow-y-auto" : ""}`}
+                className={`flex-1 flex flex-col gap-0.5 px-2 py-2 ${cat.scrollable ? "h-[108px] overflow-y-auto pr-1" : ""}`}
               >
                 {cat.items.map((item) => (
                   <button

@@ -520,214 +520,226 @@ export function AllTaskPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Task Management</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Track, assign, and manage all tasks across your properties and contracts. Use the tabs below to view escalated items or browse all tasks.
-        </p>
-      </div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Task Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Track, assign, and manage all tasks across your properties and contracts. Use the tabs below to view escalated items or browse all tasks.
+          </p>
+        </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "escalated" | "all")} className="gap-0">
-        <div className="flex items-center justify-between mb-4">
-          <TabsList>
-            <TabsTrigger value="escalated" className="gap-1.5">
-              <TriangleAlert className="h-3.5 w-3.5" />
-              Escalated Tasks
-            </TabsTrigger>
-            <TabsTrigger value="all" className="gap-1.5">
-              <CheckSquare className="h-3.5 w-3.5" />
-              All Tasks
-            </TabsTrigger>
-          </TabsList>
-          <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white gap-1" onClick={handleOpenAddTask}>
+        <div className="">
+          <Button size="sm" className="bg-teal-600 hover:bg-teal-700 text-white gap-1 shrink-0" onClick={handleOpenAddTask}>
             <Plus className="h-4 w-4" />
             Add Task
           </Button>
         </div>
+      </div>
 
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "escalated" | "all")} className="w-full">
         <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-                {activeTab === "escalated" ? (
-                  <><TriangleAlert className="h-4 w-4 text-amber-600" /> Escalated Tasks ({filteredTasks.length})</>
-                ) : (
-                  <><CheckSquare className="h-4 w-4 text-teal-600" /> All Tasks ({filteredTasks.length})</>
-                )}
-              </h3>
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between gap-4 px-4 pt-4 border-b border-slate-200">
+              <TabsList className="w-full justify-start rounded-none h-auto p-0 bg-transparent">
+                <TabsTrigger
+                  value="escalated"
+                  className="gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 text-slate-600 data-[state=active]:border-teal-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-slate-900 data-[state=active]:font-medium"
+                >
+                  <TriangleAlert className="h-3.5 w-3.5" />
+                  Escalated Tasks
+                </TabsTrigger>
+                <TabsTrigger
+                  value="all"
+                  className="gap-1.5 rounded-none border-b-2 border-transparent bg-transparent px-4 py-2 text-slate-600 data-[state=active]:border-teal-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-slate-900 data-[state=active]:font-medium"
+                >
+                  <CheckSquare className="h-3.5 w-3.5" />
+                  All Tasks
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            {/* Search */}
-            <div className="flex items-center gap-2 mb-4">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search tasks..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 h-9"
-                />
+            <div className="px-4 pb-4">
+              <div className="flex items-center justify-between mb-4 mt-4">
+                <h3 className="font-semibold text-slate-800 flex items-center gap-2">
+                  {activeTab === "escalated" ? (
+                    <><TriangleAlert className="h-4 w-4 text-amber-600" /> Escalated Tasks ({filteredTasks.length})</>
+                  ) : (
+                    <><CheckSquare className="h-4 w-4 text-teal-600" /> All Tasks ({filteredTasks.length})</>
+                  )}
+                </h3>
               </div>
-              {hasActiveFilters && (
-                <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground gap-1 ml-auto" onClick={clearFilters}>
-                  <X className="h-3.5 w-3.5" />
-                  Clear all filters
-                </Button>
-              )}
-            </div>
 
-          {/* Tasks Table */}
-          <div className="border rounded-lg overflow-hidden">
-            <div className="max-h-[calc(100vh-320px)] overflow-y-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b sticky top-0 z-10">
-                  <tr>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={contractFilterOpen} onOpenChange={setContractFilterOpen}>
-                        <PopoverTrigger asChild>
-                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>Contract</span>
-                            <Filter className={`h-3 w-3 ${selectedContracts.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
-                            {selectedContracts.length > 0 && (
-                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
-                                {selectedContracts.length}
-                              </span>
-                            )}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-56 p-2" align="start">
-                          <div className="mb-2">
-                            <Input
-                              placeholder="Search contracts..."
-                              value={contractFilterSearch}
-                              onChange={(e) => setContractFilterSearch(e.target.value)}
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {uniqueContracts
-                              .filter((c) => c.toLowerCase().includes(contractFilterSearch.toLowerCase()))
-                              .map((contract) => (
-                                <label
-                                  key={contract}
-                                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
-                                >
-                                  <Checkbox
-                                    checked={selectedContracts.includes(contract)}
-                                    onCheckedChange={() => toggleContract(contract)}
-                                  />
-                                  <span className="truncate">{contract}</span>
-                                </label>
-                              ))}
-                          </div>
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearContractFilter} disabled={selectedContracts.length === 0}>
-                              Clear
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setContractFilterOpen(false)}>
-                              Close
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={riskColumnFilterOpen} onOpenChange={setRiskColumnFilterOpen}>
-                        <PopoverTrigger asChild>
-                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>Risk</span>
-                            <Filter className={`h-3 w-3 ${selectedRiskFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
-                            {selectedRiskFilters.length > 0 && (
-                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
-                                {selectedRiskFilters.length}
-                              </span>
-                            )}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-52 p-2" align="start">
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {RISK_OPTIONS.map((opt) => (
-                              <label
-                                key={opt.value}
-                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
-                              >
-                                <Checkbox
-                                  checked={selectedRiskFilters.includes(opt.value)}
-                                  onCheckedChange={() => toggleRiskFilter(opt.value)}
-                                />
-                                <Badge variant="outline" className={`text-xs ${getRiskStyles(opt.value)}`}>
-                                  {opt.label}
-                                </Badge>
-                              </label>
-                            ))}
-                          </div>
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearRiskFilter} disabled={selectedRiskFilters.length === 0}>
-                              Clear
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setRiskColumnFilterOpen(false)}>
-                              Close
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={dueDateFilterOpen} onOpenChange={setDueDateFilterOpen}>
-                        <PopoverTrigger asChild>
-                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>SLA Due Date</span>
-                            <Filter className={`h-3 w-3 ${(dueDateFrom || dueDateTo) ? "text-teal-600" : "text-slate-400"}`} />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-3" align="start">
-                          <div className="space-y-2">
-                            <div className="text-xs font-medium text-muted-foreground">Date range</div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <Label className="text-[10px] text-muted-foreground">From</Label>
+              {/* Search */}
+              <div className="flex items-center gap-2 mb-4">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search tasks..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 h-9"
+                  />
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" className="h-9 text-xs text-muted-foreground gap-1 ml-auto" onClick={clearFilters}>
+                    <X className="h-3.5 w-3.5" />
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
+
+              {/* Tasks Table */}
+              <div className="border rounded-lg overflow-hidden">
+                <div className="max-h-[calc(100vh-320px)] overflow-y-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b sticky top-0 z-10">
+                      <tr>
+                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
+                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                          <Popover open={contractFilterOpen} onOpenChange={setContractFilterOpen}>
+                            <PopoverTrigger asChild>
+                              <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                                <span>Contract</span>
+                                <Filter className={`h-3 w-3 ${selectedContracts.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                                {selectedContracts.length > 0 && (
+                                  <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                    {selectedContracts.length}
+                                  </span>
+                                )}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-2" align="start">
+                              <div className="mb-2">
                                 <Input
-                                  type="date"
-                                  value={dueDateFrom}
-                                  onChange={(e) => setDueDateFrom(e.target.value)}
-                                  className="h-8 text-xs mt-0.5"
+                                  placeholder="Search contracts..."
+                                  value={contractFilterSearch}
+                                  onChange={(e) => setContractFilterSearch(e.target.value)}
+                                  className="h-8 text-xs"
                                 />
                               </div>
-                              <div>
-                                <Label className="text-[10px] text-muted-foreground">To</Label>
-                                <Input
-                                  type="date"
-                                  value={dueDateTo}
-                                  onChange={(e) => setDueDateTo(e.target.value)}
-                                  className="h-8 text-xs mt-0.5"
-                                />
+                              <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {uniqueContracts
+                                  .filter((c) => c.toLowerCase().includes(contractFilterSearch.toLowerCase()))
+                                  .map((contract) => (
+                                    <label
+                                      key={contract}
+                                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                    >
+                                      <Checkbox
+                                        checked={selectedContracts.includes(contract)}
+                                        onCheckedChange={() => toggleContract(contract)}
+                                      />
+                                      <span className="truncate">{contract}</span>
+                                    </label>
+                                  ))}
                               </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-xs px-2"
-                                onClick={clearDueDateFilter}
-                                disabled={!dueDateFrom && !dueDateTo}
-                              >
-                                Clear
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-xs px-2"
-                                onClick={() => setDueDateFilterOpen(false)}
-                              >
-                                Close
-                              </Button>
-                            </div>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                              <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearContractFilter} disabled={selectedContracts.length === 0}>
+                                  Clear
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setContractFilterOpen(false)}>
+                                  Close
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </th>
+                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                          <Popover open={riskColumnFilterOpen} onOpenChange={setRiskColumnFilterOpen}>
+                            <PopoverTrigger asChild>
+                              <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                                <span>Risk</span>
+                                <Filter className={`h-3 w-3 ${selectedRiskFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                                {selectedRiskFilters.length > 0 && (
+                                  <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                    {selectedRiskFilters.length}
+                                  </span>
+                                )}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-52 p-2" align="start">
+                              <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {RISK_OPTIONS.map((opt) => (
+                                  <label
+                                    key={opt.value}
+                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                  >
+                                    <Checkbox
+                                      checked={selectedRiskFilters.includes(opt.value)}
+                                      onCheckedChange={() => toggleRiskFilter(opt.value)}
+                                    />
+                                    <Badge variant="outline" className={`text-xs ${getRiskStyles(opt.value)}`}>
+                                      {opt.label}
+                                    </Badge>
+                                  </label>
+                                ))}
+                              </div>
+                              <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearRiskFilter} disabled={selectedRiskFilters.length === 0}>
+                                  Clear
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setRiskColumnFilterOpen(false)}>
+                                  Close
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </th>
+                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                          <Popover open={dueDateFilterOpen} onOpenChange={setDueDateFilterOpen}>
+                            <PopoverTrigger asChild>
+                              <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                                <span>SLA Due Date</span>
+                                <Filter className={`h-3 w-3 ${(dueDateFrom || dueDateTo) ? "text-teal-600" : "text-slate-400"}`} />
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 p-3" align="start">
+                              <div className="space-y-2">
+                                <div className="text-xs font-medium text-muted-foreground">Date range</div>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div>
+                                    <Label className="text-[10px] text-muted-foreground">From</Label>
+                                    <Input
+                                      type="date"
+                                      value={dueDateFrom}
+                                      onChange={(e) => setDueDateFrom(e.target.value)}
+                                      className="h-8 text-xs mt-0.5"
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label className="text-[10px] text-muted-foreground">To</Label>
+                                    <Input
+                                      type="date"
+                                      value={dueDateTo}
+                                      onChange={(e) => setDueDateTo(e.target.value)}
+                                      className="h-8 text-xs mt-0.5"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between pt-2 border-t">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 text-xs px-2"
+                                    onClick={clearDueDateFilter}
+                                    disabled={!dueDateFrom && !dueDateTo}
+                                  >
+                                    Clear
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-7 text-xs px-2"
+                                    onClick={() => setDueDateFilterOpen(false)}
+                                  >
+                                    Close
+                                  </Button>
+                                </div>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </th>
+                        {/* <th className="text-left text-xs font-medium text-muted-foreground p-0">
                       <Popover open={priorityFilterOpen} onOpenChange={setPriorityFilterOpen}>
                         <PopoverTrigger asChild>
                           <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
@@ -776,389 +788,390 @@ export function AllTaskPage() {
                           </div>
                         </PopoverContent>
                       </Popover>
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={assignedToFilterOpen} onOpenChange={setAssignedToFilterOpen}>
-                        <PopoverTrigger asChild>
-                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>Assigned To</span>
-                            <Filter className={`h-3 w-3 ${selectedAssignees.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
-                            {selectedAssignees.length > 0 && (
-                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
-                                {selectedAssignees.length}
-                              </span>
-                            )}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-56 p-2" align="start">
-                          <div className="mb-2">
-                            <Input
-                              placeholder="Search assignees..."
-                              value={assignedToFilterSearch}
-                              onChange={(e) => setAssignedToFilterSearch(e.target.value)}
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {uniqueAssignees
-                              .filter((a) => a.toLowerCase().includes(assignedToFilterSearch.toLowerCase()))
-                              .map((assignee) => (
-                                <label
-                                  key={assignee}
-                                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
-                                >
-                                  <Checkbox
-                                    checked={selectedAssignees.includes(assignee)}
-                                    onCheckedChange={() => toggleAssignedToFilter(assignee)}
-                                  />
-                                  <span className="truncate">{assignee}</span>
-                                </label>
-                              ))}
-                          </div>
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearAssignedToFilter} disabled={selectedAssignees.length === 0}>
-                              Clear
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setAssignedToFilterOpen(false)}>
-                              Close
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-0">
-                      <Popover open={escalatedToFilterOpen} onOpenChange={setEscalatedToFilterOpen}>
-                        <PopoverTrigger asChild>
-                          <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
-                            <span>Escalated To</span>
-                            <Filter className={`h-3 w-3 ${selectedEscalatedToFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
-                            {selectedEscalatedToFilters.length > 0 && (
-                              <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
-                                {selectedEscalatedToFilters.length}
-                              </span>
-                            )}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-56 p-2" align="start">
-                          <div className="mb-2">
-                            <Input
-                              placeholder="Search escalated to..."
-                              value={escalatedToFilterSearch}
-                              onChange={(e) => setEscalatedToFilterSearch(e.target.value)}
-                              className="h-8 text-xs"
-                            />
-                          </div>
-                          <div className="space-y-1 max-h-40 overflow-y-auto">
-                            {uniqueEscalatedTo
-                              .filter((e) => e.toLowerCase().includes(escalatedToFilterSearch.toLowerCase()))
-                              .map((name) => (
-                                <label
-                                  key={name}
-                                  className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
-                                >
-                                  <Checkbox
-                                    checked={selectedEscalatedToFilters.includes(name)}
-                                    onCheckedChange={() => toggleEscalatedToFilter(name)}
-                                  />
-                                  <span className="truncate">{name}</span>
-                                </label>
-                              ))}
-                          </div>
-                          <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                            <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearEscalatedToFilter} disabled={selectedEscalatedToFilters.length === 0}>
-                              Clear
-                            </Button>
-                            <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setEscalatedToFilterOpen(false)}>
-                              Close
-                            </Button>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
-                    <th className="text-left text-xs font-medium text-muted-foreground p-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredTasks.slice(0, visibleCount).map((task) => {
-                    const currentRisk = riskOverrides[task.id] || task.risk || "Operational"
-                    const currentAssignee = assignOverrides[task.id] || task.assignee
-                    const currentEscalatedTo = task.escalatedTo || ""
-                    const currentNote = noteOverrides[task.id] || ""
-                    
-                    return (
-                      <tr key={task.id} className="">
-                        {/* Task */}
-                        <td className="p-3">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-sm font-medium text-slate-800">{task.title}</span>
-                            {task.processName && (
-                              <div className="flex items-center gap-1 cursor-pointer hover:underline text-teal-600" onClick={() => router.push(`/operations/all-tasks/process/proc-1`)}>
-                                <Workflow className="h-3 w-3 text-teal-600" />
-                                <span className="text-xs text-teal-600">{task.processName}</span>
-                              </div>
-                            )}
-                            {task.autoCreated && <span className="text-xs text-muted-foreground">Auto-created</span>}
-                          </div>
-                        </td>
-                        {/* Contract */}
-                        <td className="p-3">
-                          <span className="text-sm text-slate-600">
-                            {task.relatedEntityName} ({task.relatedEntityType})
-                          </span>
-                        </td>
-                        {/* Risk */}
-                        <td className="p-3">
-                          <Popover
-                            open={riskPopoverOpen === task.id}
-                            onOpenChange={(open) => setRiskPopoverOpen(open ? task.id : null)}
-                          >
+                    </th> */}
+                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                          <Popover open={assignedToFilterOpen} onOpenChange={setAssignedToFilterOpen}>
                             <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                className="flex items-center gap-1.5 group"
-                              >
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs cursor-pointer ${getRiskStyles(currentRisk)}`}
-                                >
-                                  {currentRisk}
-                                </Badge>
-                                <ChevronsUpDown className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                              <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                                <span>Assigned To</span>
+                                <Filter className={`h-3 w-3 ${selectedAssignees.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                                {selectedAssignees.length > 0 && (
+                                  <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                    {selectedAssignees.length}
+                                  </span>
+                                )}
                               </button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-[200px] p-0" align="start">
-                              <Command>
-                                <CommandInput placeholder="Search risk..." />
-                                <CommandList>
-                                  <CommandEmpty>No risk found.</CommandEmpty>
-                                  <CommandGroup>
-                                    {RISK_OPTIONS.map((opt) => (
-                                      <CommandItem
-                                        key={opt.value}
-                                        value={opt.value}
-                                        onSelect={() => handleUpdateRisk(task.id, opt.value)}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <Badge
-                                          variant="outline"
-                                          className={`text-xs ${getRiskStyles(opt.value)}`}
-                                        >
-                                          {opt.label}
-                                        </Badge>
-                                        {currentRisk === opt.value && (
-                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                                        )}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
+                            <PopoverContent className="w-56 p-2" align="start">
+                              <div className="mb-2">
+                                <Input
+                                  placeholder="Search assignees..."
+                                  value={assignedToFilterSearch}
+                                  onChange={(e) => setAssignedToFilterSearch(e.target.value)}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {uniqueAssignees
+                                  .filter((a) => a.toLowerCase().includes(assignedToFilterSearch.toLowerCase()))
+                                  .map((assignee) => (
+                                    <label
+                                      key={assignee}
+                                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                    >
+                                      <Checkbox
+                                        checked={selectedAssignees.includes(assignee)}
+                                        onCheckedChange={() => toggleAssignedToFilter(assignee)}
+                                      />
+                                      <span className="truncate">{assignee}</span>
+                                    </label>
+                                  ))}
+                              </div>
+                              <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearAssignedToFilter} disabled={selectedAssignees.length === 0}>
+                                  Clear
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setAssignedToFilterOpen(false)}>
+                                  Close
+                                </Button>
+                              </div>
                             </PopoverContent>
                           </Popover>
-                        </td>
-                        {/* SLA Due Date */}
-                        <td className="p-3">
-                          <div className="flex items-center gap-1">
-                            <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-slate-600"}`}>{task.dueDate}</span>
-                            {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
-                          </div>
-                        </td>
-                        {/* Priority */}
-                        <td className="p-3">
+                        </th>
+                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                          <Popover open={escalatedToFilterOpen} onOpenChange={setEscalatedToFilterOpen}>
+                            <PopoverTrigger asChild>
+                              <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
+                                <span>Escalated To</span>
+                                <Filter className={`h-3 w-3 ${selectedEscalatedToFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`} />
+                                {selectedEscalatedToFilters.length > 0 && (
+                                  <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                    {selectedEscalatedToFilters.length}
+                                  </span>
+                                )}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-2" align="start">
+                              <div className="mb-2">
+                                <Input
+                                  placeholder="Search escalated to..."
+                                  value={escalatedToFilterSearch}
+                                  onChange={(e) => setEscalatedToFilterSearch(e.target.value)}
+                                  className="h-8 text-xs"
+                                />
+                              </div>
+                              <div className="space-y-1 max-h-40 overflow-y-auto">
+                                {uniqueEscalatedTo
+                                  .filter((e) => e.toLowerCase().includes(escalatedToFilterSearch.toLowerCase()))
+                                  .map((name) => (
+                                    <label
+                                      key={name}
+                                      className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                    >
+                                      <Checkbox
+                                        checked={selectedEscalatedToFilters.includes(name)}
+                                        onCheckedChange={() => toggleEscalatedToFilter(name)}
+                                      />
+                                      <span className="truncate">{name}</span>
+                                    </label>
+                                  ))}
+                              </div>
+                              <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                                <Button variant="ghost" size="sm" className="h-7 text-xs px-2" onClick={clearEscalatedToFilter} disabled={selectedEscalatedToFilters.length === 0}>
+                                  Clear
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => setEscalatedToFilterOpen(false)}>
+                                  Close
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </th>
+                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {filteredTasks.slice(0, visibleCount).map((task) => {
+                        const currentRisk = riskOverrides[task.id] || task.risk || "Operational"
+                        const currentAssignee = assignOverrides[task.id] || task.assignee
+                        const currentEscalatedTo = task.escalatedTo || ""
+                        const currentNote = noteOverrides[task.id] || ""
+
+                        return (
+                          <tr key={task.id} className="">
+                            {/* Task */}
+                            <td className="p-3">
+                              <div className="flex flex-col gap-1">
+                                <span className="text-sm font-medium text-slate-800">{task.title}</span>
+                                {task.processName && (
+                                  <div className="flex items-center gap-1 cursor-pointer hover:underline text-teal-600" onClick={() => router.push(`/operations/all-tasks/process/proc-1`)}>
+                                    <Workflow className="h-3 w-3 text-teal-600" />
+                                    <span className="text-xs text-teal-600">{task.processName}</span>
+                                  </div>
+                                )}
+                                {task.autoCreated && <span className="text-xs text-muted-foreground">Auto-created</span>}
+                              </div>
+                            </td>
+                            {/* Contract */}
+                            <td className="p-3">
+                              <span className="text-sm text-slate-600">
+                                {task.relatedEntityName} ({task.relatedEntityType})
+                              </span>
+                            </td>
+                            {/* Risk */}
+                            <td className="p-3">
+                              <Popover
+                                open={riskPopoverOpen === task.id}
+                                onOpenChange={(open) => setRiskPopoverOpen(open ? task.id : null)}
+                              >
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="flex items-center gap-1.5 group"
+                                  >
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs cursor-pointer ${getRiskStyles(currentRisk)}`}
+                                    >
+                                      {currentRisk}
+                                    </Badge>
+                                    <ChevronsUpDown className="h-3 w-3 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[200px] p-0" align="start">
+                                  <Command>
+                                    <CommandInput placeholder="Search risk..." />
+                                    <CommandList>
+                                      <CommandEmpty>No risk found.</CommandEmpty>
+                                      <CommandGroup>
+                                        {RISK_OPTIONS.map((opt) => (
+                                          <CommandItem
+                                            key={opt.value}
+                                            value={opt.value}
+                                            onSelect={() => handleUpdateRisk(task.id, opt.value)}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <Badge
+                                              variant="outline"
+                                              className={`text-xs ${getRiskStyles(opt.value)}`}
+                                            >
+                                              {opt.label}
+                                            </Badge>
+                                            {currentRisk === opt.value && (
+                                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                            )}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </td>
+                            {/* SLA Due Date */}
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <span className={`text-sm ${task.isOverdue ? "text-red-600 font-medium" : "text-slate-600"}`}>{task.dueDate}</span>
+                                {task.isOverdue && <span className="text-xs text-red-500">(Overdue)</span>}
+                              </div>
+                            </td>
+                            {/* Priority */}
+                            {/* <td className="p-3">
                           <Badge variant="outline" className={`text-xs ${getPriorityBadgeStyle(task.priority)}`}>
                             {task.priority}
                           </Badge>
-                        </td>
-                        {/* Assigned To */}
-                        <td className="p-3">
-                          <Popover
-                            open={assignPopoverOpen === task.id}
-                            onOpenChange={(open) => setAssignPopoverOpen(open ? task.id : null)}
-                          >
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                        </td> */}
+                            {/* Assigned To */}
+                            <td className="p-3">
+                              <Popover
+                                open={assignPopoverOpen === task.id}
+                                onOpenChange={(open) => setAssignPopoverOpen(open ? task.id : null)}
                               >
-                                <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                  {currentAssignee
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </div>
-                                <span className="truncate">{currentAssignee}</span>
-                                <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[220px] p-0" align="start">
-                              <Command>
-                                <CommandInput placeholder="Search staff..." />
-                                <CommandList>
-                                  <CommandEmpty>No staff found.</CommandEmpty>
-                                  <CommandGroup>
-                                    {STAFF_MEMBERS.map((staff) => (
-                                      <CommandItem
-                                        key={staff.id}
-                                        value={staff.name}
-                                        onSelect={() => handleAssignTask(task.id, staff.name)}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                          {staff.name
-                                            .split(" ")
-                                            .map((n) => n[0])
-                                            .join("")}
-                                        </div>
-                                        <div className="flex flex-col">
-                                          <span className="text-sm text-slate-900">{staff.name}</span>
-                                          <span className="text-[10px] text-slate-500">{staff.role}</span>
-                                        </div>
-                                        {currentAssignee === staff.name && (
-                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                                        )}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </td>
-                        {/* Escalated To */}
-                        <td className="p-3">
-                          <Popover
-                            open={escalatePopoverOpen === task.id}
-                            onOpenChange={(open) => setEscalatePopoverOpen(open ? task.id : null)}
-                          >
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
-                              >
-                                {currentEscalatedTo ? (
-                                  <>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                                  >
                                     <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                      {currentEscalatedTo
+                                      {currentAssignee
                                         .split(" ")
                                         .map((n) => n[0])
                                         .join("")}
                                     </div>
-                                    <span className="truncate">{currentEscalatedTo}</span>
-                                  </>
-                                ) : (
-                                  <span className="text-slate-400">None</span>
-                                )}
-                                <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[220px] p-0" align="start">
-                              <Command>
-                                <CommandInput placeholder="Search staff..." />
-                                <CommandList>
-                                  <CommandEmpty>No staff found.</CommandEmpty>
-                                  <CommandGroup>
-                                    {ESCALATION_STAFF.map((staff) => (
-                                      <CommandItem
-                                        key={staff.id}
-                                        value={staff.name}
-                                        onSelect={() => handleEscalateTask(task.id, `${staff.name} (${staff.role})`)}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                          {staff.name
+                                    <span className="truncate">{currentAssignee}</span>
+                                    <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[220px] p-0" align="start">
+                                  <Command>
+                                    <CommandInput placeholder="Search staff..." />
+                                    <CommandList>
+                                      <CommandEmpty>No staff found.</CommandEmpty>
+                                      <CommandGroup>
+                                        {STAFF_MEMBERS.map((staff) => (
+                                          <CommandItem
+                                            key={staff.id}
+                                            value={staff.name}
+                                            onSelect={() => handleAssignTask(task.id, staff.name)}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                              {staff.name
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")}
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-sm text-slate-900">{staff.name}</span>
+                                              <span className="text-[10px] text-slate-500">{staff.role}</span>
+                                            </div>
+                                            {currentAssignee === staff.name && (
+                                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                            )}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </td>
+                            {/* Escalated To */}
+                            <td className="p-3">
+                              <Popover
+                                open={escalatePopoverOpen === task.id}
+                                onOpenChange={(open) => setEscalatePopoverOpen(open ? task.id : null)}
+                              >
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                                  >
+                                    {currentEscalatedTo ? (
+                                      <>
+                                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                          {currentEscalatedTo
                                             .split(" ")
                                             .map((n) => n[0])
                                             .join("")}
                                         </div>
-                                        <div className="flex flex-col">
-                                          <span className="text-sm text-slate-900">{staff.name}</span>
-                                          <span className="text-[10px] text-slate-500">{staff.role}</span>
-                                        </div>
-                                        {currentEscalatedTo.startsWith(staff.name) && (
-                                          <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                                        )}
-                                      </CommandItem>
-                                    ))}
-                                  </CommandGroup>
-                                </CommandList>
-                              </Command>
-                            </PopoverContent>
-                          </Popover>
-                        </td>
-                        {/* Actions */}
-                        <td className="p-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                <MoreVertical className="h-4 w-4 text-slate-500" />
-                              </Button>
-                            </DropdownMenuTrigger>
+                                        <span className="truncate">{currentEscalatedTo}</span>
+                                      </>
+                                    ) : (
+                                      <span className="text-slate-400">None</span>
+                                    )}
+                                    <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[220px] p-0" align="start">
+                                  <Command>
+                                    <CommandInput placeholder="Search staff..." />
+                                    <CommandList>
+                                      <CommandEmpty>No staff found.</CommandEmpty>
+                                      <CommandGroup>
+                                        {ESCALATION_STAFF.map((staff) => (
+                                          <CommandItem
+                                            key={staff.id}
+                                            value={staff.name}
+                                            onSelect={() => handleEscalateTask(task.id, `${staff.name} (${staff.role})`)}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                              {staff.name
+                                                .split(" ")
+                                                .map((n) => n[0])
+                                                .join("")}
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-sm text-slate-900">{staff.name}</span>
+                                              <span className="text-[10px] text-slate-500">{staff.role}</span>
+                                            </div>
+                                            {currentEscalatedTo.startsWith(staff.name) && (
+                                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                            )}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </td>
+                            {/* Actions */}
+                            <td className="p-3">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <MoreVertical className="h-4 w-4 text-slate-500" />
+                                  </Button>
+                                </DropdownMenuTrigger>
 
-                            <DropdownMenuContent align="end" className="w-44">
+                                <DropdownMenuContent align="end" className="w-44">
 
-                              {
-                                task.processName === "" && (
-                                  <DropdownMenuItem onClick={() => handleViewTask(task)} className="gap-2">
-                                    <Eye className="h-3.5 w-3.5" /> View Task
+                                  {
+                                    task.processName === "" && (
+                                      <DropdownMenuItem onClick={() => handleViewTask(task)} className="gap-2">
+                                        <Eye className="h-3.5 w-3.5" /> View Task
+                                      </DropdownMenuItem>
+                                    )
+                                  }
+                                  <DropdownMenuItem onClick={() => handleEditTask(task)} className="gap-2">
+                                    <Edit className="h-3.5 w-3.5" /> Edit Task
                                   </DropdownMenuItem>
-                                )
-                              }
-                              <DropdownMenuItem onClick={() => handleEditTask(task)} className="gap-2">
-                                <Edit className="h-3.5 w-3.5" /> Edit Task
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenNote(task.id)} className="gap-2">
-                                <StickyNote className="h-3.5 w-3.5" /> Add Note
-                              </DropdownMenuItem>
-                              {task.status !== "Completed" && task.status !== "Skipped" && (
-                                <DropdownMenuItem onClick={() => handleMarkComplete(task.id)} className="gap-2">
-                                  <Check className="h-3.5 w-3.5" /> Mark Complete
-                                </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleOpenNote(task.id)} className="gap-2">
+                                    <StickyNote className="h-3.5 w-3.5" /> Add Note
+                                  </DropdownMenuItem>
+                                  {task.status !== "Completed" && task.status !== "Skipped" && (
+                                    <DropdownMenuItem onClick={() => handleMarkComplete(task.id)} className="gap-2">
+                                      <Check className="h-3.5 w-3.5" /> Mark Complete
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                              {currentNote && (
+                                <div className="mt-1">
+                                  <span className="text-[10px] text-amber-600 flex items-center gap-0.5">
+                                    <StickyNote className="h-2.5 w-2.5" /> Note added
+                                  </span>
+                                </div>
                               )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                          {currentNote && (
-                            <div className="mt-1">
-                              <span className="text-[10px] text-amber-600 flex items-center gap-0.5">
-                                <StickyNote className="h-2.5 w-2.5" /> Note added
-                              </span>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  {filteredTasks.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">
-                        {hasActiveFilters || searchQuery
-                          ? "No tasks match your filters."
-                          : "No tasks yet."}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {filteredTasks.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="p-8 text-center text-sm text-muted-foreground">
+                            {hasActiveFilters || searchQuery
+                              ? "No tasks match your filters."
+                              : "No tasks yet."}
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
-          {/* Load more pagination */}
-          {filteredTasks.length > 0 && (
-            <div className="flex flex-col items-center mt-3 gap-1">
-              <span className="text-xs text-muted-foreground">
-                Showing {Math.min(visibleCount, filteredTasks.length)} of {filteredTasks.length} tasks
-              </span>
-              {filteredTasks.length > visibleCount && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-xs"
-                  onClick={() => setVisibleCount((prev) => Math.min(prev + 10, filteredTasks.length))}
-                >
-                  View More
-                </Button>
+              {/* Load more pagination */}
+              {filteredTasks.length > 0 && (
+                <div className="flex flex-col items-center mt-3 gap-1">
+                  <span className="text-xs text-muted-foreground">
+                    Showing {Math.min(visibleCount, filteredTasks.length)} of {filteredTasks.length} tasks
+                  </span>
+                  {filteredTasks.length > visibleCount && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => setVisibleCount((prev) => Math.min(prev + 10, filteredTasks.length))}
+                    >
+                      View More
+                    </Button>
+                  )}
+                </div>
               )}
             </div>
-          )}
           </CardContent>
         </Card>
       </Tabs>

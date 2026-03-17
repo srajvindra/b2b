@@ -6,6 +6,12 @@ import { TENANT_PROCESSES } from "@/features/contacts/tenant/data"
 import { ContactProcessDetailView } from "@/features/contacts/components/ContactProcessDetail"
 import type { OwnerProcessItem } from "@/features/contacts/types"
 
+const DEFAULT_AI_PROMPTS = [
+  "What's the status of this contact?",
+  "What's the status of this task?",
+  "What's the status of this document?",
+]
+
 function findProcessById(processId: string): OwnerProcessItem | null {
   const all = [
     ...TENANT_PROCESSES.inProgress,
@@ -59,6 +65,7 @@ export default function TenantProcessDetailRoutePage() {
       process={process}
       contactName={contact.name}
       onBack={() => router.push(`/contacts/tenants/${id}`)}
+      aiSuggestedPrompts={DEFAULT_AI_PROMPTS}
     />
   )
 }

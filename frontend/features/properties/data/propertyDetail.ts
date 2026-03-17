@@ -328,7 +328,7 @@ export const PROPERTY_TASKS = [
 
 export const PROPERTY_PROCESSES = [
   {
-    id: "proc1",
+    id: "proc-1",
     processName: "Tenant Onboarding",
     stageBadge: "Financial Paperwork",
     stageBadgeColor: "amber",
@@ -370,7 +370,7 @@ export const PROPERTY_PROCESSES = [
     ],
   },
   {
-    id: "proc2",
+    id: "proc-2",
     processName: "Property Evaluation Process",
     stageBadge: "Collecting Information",
     stageBadgeColor: "blue",
@@ -404,7 +404,7 @@ export const PROPERTY_PROCESSES = [
     ],
   },
   {
-    id: "proc3",
+    id: "proc-3",
     processName: "Lease Renewal",
     stageBadge: "Completed",
     stageBadgeColor: "green",
@@ -430,7 +430,7 @@ export const PROPERTY_PROCESSES = [
     ],
   },
   {
-    id: "proc4",
+    id: "proc-4",
     processName: "Move-Out Inspection",
     stageBadge: "Completed",
     stageBadgeColor: "green",
@@ -456,7 +456,7 @@ export const PROPERTY_PROCESSES = [
     ],
   },
   {
-    id: "proc5",
+    id: "proc-5",
     processName: "Annual Property Review",
     stageBadge: "Scheduled",
     stageBadgeColor: "slate",
@@ -482,7 +482,7 @@ export const PROPERTY_PROCESSES = [
     ],
   },
   {
-    id: "proc6",
+    id: "proc-6",
     processName: "Insurance Renewal",
     stageBadge: "Pending",
     stageBadgeColor: "slate",

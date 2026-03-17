@@ -38,20 +38,29 @@ export type OwnerStatsKey =
   | "maintenance-pending-approval"
 
 export type TenantStatsKey =
-  | "tenant-total"
-  | "tenant-active"
-  | "pending-all"
-  | "pending-tasks"
-  | "pending-processes"
-  | "moveout-all"
-  | "moveout-pending"
-  | "moveout-completed"
-  | "evictions-all"
-  | "evictions-pending"
-  | "evictions-completed"
-  | "type-all"
-  | "type-self-paying"
-  | "type-section-8"
+  | "collections-all"
+  | "collections-received-rent"
+  | "collections-delinquent-amount"
+  | "tenants-stats-all"
+  | "tenants-stats-active-tenants"
+  | "tenants-stats-delinquent-tenants"
+  | "tenants-stats-under-move-out"
+  | "tenants-stats-under-move-in"
+  | "maintenance-all"
+  | "maintenance-total-wos"
+  | "maintenance-unassigned-wos"
+  | "maintenance-in-progress"
+  | "processes-all"
+  | "processes-open"
+  | "processes-overdue"
+  | "tasks-all"
+  | "tasks-open"
+  | "tasks-overdue"
+  | "lease-status-all"
+  | "lease-status-active"
+  | "lease-status-expired"
+  | "lease-status-month-to-month"
+  | "lease-status-expiring-in-90-days"
 
 export type ContactTabsStatsOwnersProps = {
   variant: "owners"
@@ -418,73 +427,66 @@ function TenantStatsCards({
   onPageReset,
 }: ContactTabsStatsTenantsProps) {
   const allTenants = tenants
+  const totalReceivedRent = allTenants.reduce((sum, c) => sum + (c.rentCollected || 0), 0)
+  const totalDelinquentAmount = allTenants.reduce((sum, c) => sum + (c.delinquentAmount || 0), 0)
+
   const activeTenantCount = allTenants.filter((c) => c.status === "Active").length
-  const tenantPendingTasksTotal = allTenants.reduce((sum, c) => sum + (c.tenantPendingTasks || 0), 0)
-  const tenantPendingProcessesTotal = allTenants.reduce((sum, c) => sum + (c.tenantPendingProcesses || 0), 0)
-  const pendingMoveouts = allTenants.filter((c) => c.moveOutStatus === "Pending").length
-  const completedMoveouts = allTenants.filter((c) => c.moveOutStatus === "Completed").length
-  const pendingEvictions = allTenants.filter((c) => c.evictionStatus === "Pending").length
-  const completedEvictions = allTenants.filter((c) => c.evictionStatus === "Completed").length
+  const delinquentTenantCount = allTenants.filter((c) => (c.delinquentAmount || 0) > 0).length
+  const underMoveOutCount = allTenants.filter((c) => c.moveOutStatus === "Pending").length
+  const underMoveInCount = allTenants.filter((c) => c.status === "Pending").length
 
-  const getTenantPendingCount = () => {
-    const hasTasks = tenantPendingTasksTotal
-    const hasProcesses = tenantPendingProcessesTotal
-    if (tenantStatsFilters.includes("pending-tasks") && !tenantStatsFilters.includes("pending-all")) {
-      return tenantPendingTasksTotal
-    }
-    if (tenantStatsFilters.includes("pending-processes") && !tenantStatsFilters.includes("pending-all")) {
-      return tenantPendingProcessesTotal
-    }
-    return tenantPendingTasksTotal + tenantPendingProcessesTotal
-  }
+  const totalWOs = allTenants.reduce((sum, c) => sum + (c.approvedWOs || 0) + (c.pendingApprovalWOs || 0), 0)
+  const unassignedWOs = 0
+  const inProgressWOs = 0
 
-  const getMoveoutCount = () => {
-    if (tenantStatsFilters.includes("moveout-pending") && !tenantStatsFilters.includes("moveout-all")) {
-      return pendingMoveouts
-    }
-    if (tenantStatsFilters.includes("moveout-completed") && !tenantStatsFilters.includes("moveout-all")) {
-      return completedMoveouts
-    }
-    return pendingMoveouts + completedMoveouts
-  }
+  const openProcesses = allTenants.reduce((sum, c) => sum + (c.tenantPendingProcesses || 0), 0)
+  const overdueProcesses = 0
 
-  const getEvictionCount = () => {
-    if (tenantStatsFilters.includes("evictions-pending") && !tenantStatsFilters.includes("evictions-all")) {
-      return pendingEvictions
-    }
-    if (tenantStatsFilters.includes("evictions-completed") && !tenantStatsFilters.includes("evictions-all")) {
-      return completedEvictions
-    }
-    return pendingEvictions + completedEvictions
-  }
+  const openTasks = allTenants.reduce((sum, c) => sum + (c.tenantPendingTasks || 0), 0)
+  const overdueTasks = 0
 
-  const getTenantTypeCount = () => {
-    if (tenantStatsFilters.includes("type-self-paying") && !tenantStatsFilters.includes("type-all")) {
-      return allTenants.filter((c) => c.tenantType === "Self Paying").length
-    }
-    if (tenantStatsFilters.includes("type-section-8") && !tenantStatsFilters.includes("type-all")) {
-      return allTenants.filter((c) => c.tenantType === "Section 8").length
-    }
-    return allTenants.length
-  }
+  const leaseActiveCount = allTenants.filter((c) => c.status === "Active").length
+  const leaseExpiredCount = allTenants.filter((c) => c.status === "Inactive").length
+  const leaseMonthToMonthCount = allTenants.filter((c) => (c.tenantTags || []).includes("Month-to-Month")).length
+  const leaseExpiring90Count = 0
 
   const apply = (updater: (prev: TenantStatsKey[]) => TenantStatsKey[]) => {
     setTenantStatsFilters(updater)
     onPageReset()
   }
 
-  const selfPayingCount = allTenants.filter((c) => c.tenantType === "Self Paying").length
-  const section8Count = allTenants.filter((c) => c.tenantType === "Section 8").length
-
   const subBtnCls = (active: boolean) =>
     `w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors ${active ? "bg-primary/10 text-primary font-medium" : "hover:bg-muted/80 text-muted-foreground"}`
 
   const hasAny = (keys: TenantStatsKey[]) => tenantStatsFilters.some((k) => keys.includes(k))
 
-  const PENDING_KEYS: TenantStatsKey[] = ["pending-all", "pending-tasks", "pending-processes"]
-  const MOVEOUT_KEYS: TenantStatsKey[] = ["moveout-all", "moveout-pending", "moveout-completed"]
-  const EVICTION_KEYS: TenantStatsKey[] = ["evictions-all", "evictions-pending", "evictions-completed"]
-  const TYPE_KEYS: TenantStatsKey[] = ["type-all", "type-self-paying", "type-section-8"]
+  const COLLECTIONS_KEYS: TenantStatsKey[] = [
+    "collections-all",
+    "collections-received-rent",
+    "collections-delinquent-amount",
+  ]
+  const TENANTS_STATS_KEYS: TenantStatsKey[] = [
+    "tenants-stats-all",
+    "tenants-stats-active-tenants",
+    "tenants-stats-delinquent-tenants",
+    "tenants-stats-under-move-out",
+    "tenants-stats-under-move-in",
+  ]
+  const MAINTENANCE_KEYS: TenantStatsKey[] = [
+    "maintenance-all",
+    "maintenance-total-wos",
+    "maintenance-unassigned-wos",
+    "maintenance-in-progress",
+  ]
+  const PROCESSES_KEYS: TenantStatsKey[] = ["processes-all", "processes-open", "processes-overdue"]
+  const TASKS_KEYS: TenantStatsKey[] = ["tasks-all", "tasks-open", "tasks-overdue"]
+  const LEASE_STATUS_KEYS: TenantStatsKey[] = [
+    "lease-status-all",
+    "lease-status-active",
+    "lease-status-expired",
+    "lease-status-month-to-month",
+    "lease-status-expiring-in-90-days",
+  ]
 
   const toggleCategoryKey = (
     key: TenantStatsKey,
@@ -522,212 +524,80 @@ function TenantStatsCards({
 
   return (
     <div className="grid grid-cols-6 gap-3">
-      {/* Total Tenants */}
+      {/* Collections */}
       <div
-        className={`${CARD_BASE} ${tenantStatsFilters.includes("tenant-total") ? CARD_ACTIVE : CARD_INACTIVE}`}
-        onClick={() =>
-          apply((prev) =>
-            prev.includes("tenant-total")
-              ? prev.filter((k) => k !== "tenant-total")
-              : [...prev, "tenant-total"],
-          )
-        }
+        className={`${CARD_BASE} ${hasAny(COLLECTIONS_KEYS) ? CARD_ACTIVE : "bg-background"}`}
+        onClick={() => toggleCategoryKey("collections-all", COLLECTIONS_KEYS, "collections-all")}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-emerald-500/5">
+          <div className="p-1 rounded bg-emerald-500/10">
+            <Briefcase className="h-4 w-4 text-emerald-600" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Collections</span>
+        </div>
+        <div className="flex flex-col px-2 py-2 gap-0.5 max-h-[90px] overflow-y-auto pr-1">
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("collections-all"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("collections-all", COLLECTIONS_KEYS, "collections-all")
+            }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{totalReceivedRent + totalDelinquentAmount}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("collections-received-rent"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "collections-received-rent",
+                COLLECTIONS_KEYS,
+                "collections-all",
+              )
+            }}
+          >
+            <span className="text-left">Received Rent</span>
+            <span className="font-semibold">{totalReceivedRent}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("collections-delinquent-amount"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "collections-delinquent-amount",
+                COLLECTIONS_KEYS,
+                "collections-all",
+              )
+            }}
+          >
+            <span className="text-left">Delinquent Amount</span>
+            <span className="font-semibold">{totalDelinquentAmount}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tenants Stats */}
+      <div
+        className={`${CARD_BASE} ${hasAny(TENANTS_STATS_KEYS) ? CARD_ACTIVE : "bg-background"}`}
+        onClick={() => toggleCategoryKey("tenants-stats-all", TENANTS_STATS_KEYS, "tenants-stats-all")}
       >
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-success/5">
           <div className="p-1 rounded bg-success/10">
             <Users className="h-4 w-4 text-success" />
           </div>
-          <span className="text-xs font-medium text-foreground">Total Tenants</span>
+          <span className="text-xs font-medium text-foreground">Tenants Stats</span>
         </div>
-        <div className="flex-1 flex items-center justify-center px-3 py-3">
-          <span className="text-muted-foreground font-extrabold text-2xl">{allTenants.length}</span>
-        </div>
-      </div>
-
-      {/* Active Tenants */}
-      <div
-        className={`${CARD_BASE} ${tenantStatsFilters.includes("tenant-active") ? CARD_ACTIVE : CARD_INACTIVE}`}
-        onClick={() =>
-          apply((prev) =>
-            prev.includes("tenant-active")
-              ? prev.filter((k) => k !== "tenant-active")
-              : [...prev, "tenant-active"],
-          )
-        }
-      >
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-info/5">
-          <div className="p-1 rounded bg-info/10">
-            <UserCheck className="h-4 w-4 text-info" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Active Tenants</span>
-        </div>
-        <div className="flex-1 flex items-center justify-center px-3 py-3">
-          <span className="text-muted-foreground font-extrabold text-2xl">{activeTenantCount}</span>
-        </div>
-      </div>
-
-      {/* Pending */}
-      <div
-        className={`${CARD_BASE} ${hasAny(["pending-all", "pending-tasks", "pending-processes"]) ? CARD_ACTIVE : "bg-background"}`}
-        onClick={() => toggleCategoryKey("pending-all", PENDING_KEYS, "pending-all")}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
-          <div className="p-1 rounded bg-warning/10">
-            <Clock className="h-4 w-4 text-warning" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Pending</span>
-        </div>
-        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
+        <div className="flex flex-col px-2 py-2 gap-0.5 max-h-[90px] overflow-y-auto pr-1">
           <button
             type="button"
-            className={subBtnCls(tenantStatsFilters.includes("pending-all"))}
+            className={subBtnCls(tenantStatsFilters.includes("tenants-stats-all"))}
             onClick={(e) => {
               e.stopPropagation()
-              toggleCategoryKey("pending-all", PENDING_KEYS, "pending-all")
-            }}
-          >
-            <span className="text-left">All</span>
-            <span className="font-semibold">{tenantPendingTasksTotal + tenantPendingProcessesTotal}</span>
-          </button>
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("pending-tasks"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("pending-tasks", PENDING_KEYS, "pending-all")
-            }}
-          >
-            <span className="text-left">Pending Tasks</span>
-            <span className="font-semibold">{tenantPendingTasksTotal}</span>
-          </button>
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("pending-processes"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("pending-processes", PENDING_KEYS, "pending-all")
-            }}
-          >
-            <span className="text-left">Pending Processes</span>
-            <span className="font-semibold">{tenantPendingProcessesTotal}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Move-out */}
-      <div
-        className={`${CARD_BASE} ${hasAny(["moveout-all", "moveout-pending", "moveout-completed"]) ? CARD_ACTIVE : "bg-background"}`}
-        onClick={() => toggleCategoryKey("moveout-all", MOVEOUT_KEYS, "moveout-all")}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
-          <div className="p-1 rounded bg-warning/10">
-            <LogOut className="h-4 w-4 text-warning" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Move-out</span>
-        </div>
-        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("moveout-all"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("moveout-all", MOVEOUT_KEYS, "moveout-all")
-            }}
-          >
-            <span className="text-left">All</span>
-            <span className="font-semibold">{pendingMoveouts + completedMoveouts}</span>
-          </button>
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("moveout-pending"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("moveout-pending", MOVEOUT_KEYS, "moveout-all")
-            }}
-          >
-            <span className="text-left">Pending Move-outs</span>
-            <span className="font-semibold">{pendingMoveouts}</span>
-          </button>
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("moveout-completed"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("moveout-completed", MOVEOUT_KEYS, "moveout-all")
-            }}
-          >
-            <span className="text-left">Completed Move-outs</span>
-            <span className="font-semibold">{completedMoveouts}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Evictions */}
-      <div
-        className={`${CARD_BASE} ${hasAny(["evictions-all", "evictions-pending", "evictions-completed"]) ? CARD_ACTIVE : "bg-background"}`}
-        onClick={() => toggleCategoryKey("evictions-all", EVICTION_KEYS, "evictions-all")}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-destructive/5">
-          <div className="p-1 rounded bg-destructive/10">
-            <Gavel className="h-4 w-4 text-destructive" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Evictions</span>
-        </div>
-        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("evictions-all"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("evictions-all", EVICTION_KEYS, "evictions-all")
-            }}
-          >
-            <span className="text-left">All</span>
-            <span className="font-semibold">{pendingEvictions + completedEvictions}</span>
-          </button>
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("evictions-pending"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("evictions-pending", EVICTION_KEYS, "evictions-all")
-            }}
-          >
-            <span className="text-left">Pending Evictions</span>
-            <span className="font-semibold">{pendingEvictions}</span>
-          </button>
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("evictions-completed"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("evictions-completed", EVICTION_KEYS, "evictions-all")
-            }}
-          >
-            <span className="text-left">Completed Evictions</span>
-            <span className="font-semibold">{completedEvictions}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Type */}
-      <div
-        className={`${CARD_BASE} ${hasAny(["type-all", "type-self-paying", "type-section-8"]) ? CARD_ACTIVE : "bg-background"}`}
-        onClick={() => toggleCategoryKey("type-all", TYPE_KEYS, "type-all")}
-      >
-        <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
-          <div className="p-1 rounded bg-accent">
-            <Layers className="h-4 w-4 text-accent-foreground" />
-          </div>
-          <span className="text-xs font-medium text-foreground">Type</span>
-        </div>
-        <div className="flex-1 flex flex-col px-2 py-2 gap-1">
-          <button
-            type="button"
-            className={subBtnCls(tenantStatsFilters.includes("type-all"))}
-            onClick={(e) => {
-              e.stopPropagation()
-              toggleCategoryKey("type-all", TYPE_KEYS, "type-all")
+              toggleCategoryKey("tenants-stats-all", TENANTS_STATS_KEYS, "tenants-stats-all")
             }}
           >
             <span className="text-left">All</span>
@@ -735,25 +605,304 @@ function TenantStatsCards({
           </button>
           <button
             type="button"
-            className={subBtnCls(tenantStatsFilters.includes("type-self-paying"))}
+            className={subBtnCls(tenantStatsFilters.includes("tenants-stats-active-tenants"))}
             onClick={(e) => {
               e.stopPropagation()
-              toggleCategoryKey("type-self-paying", TYPE_KEYS, "type-all")
+              toggleCategoryKey(
+                "tenants-stats-active-tenants",
+                TENANTS_STATS_KEYS,
+                "tenants-stats-all",
+              )
             }}
           >
-            <span className="text-left">Self Paying</span>
-            <span className="font-semibold">{selfPayingCount}</span>
+            <span className="text-left">Active Tenants</span>
+            <span className="font-semibold">{activeTenantCount}</span>
           </button>
           <button
             type="button"
-            className={subBtnCls(tenantStatsFilters.includes("type-section-8"))}
+            className={subBtnCls(tenantStatsFilters.includes("tenants-stats-delinquent-tenants"))}
             onClick={(e) => {
               e.stopPropagation()
-              toggleCategoryKey("type-section-8", TYPE_KEYS, "type-all")
+              toggleCategoryKey(
+                "tenants-stats-delinquent-tenants",
+                TENANTS_STATS_KEYS,
+                "tenants-stats-all",
+              )
             }}
           >
-            <span className="text-left">Section 8</span>
-            <span className="font-semibold">{section8Count}</span>
+            <span className="text-left">Delinquent Tenants</span>
+            <span className="font-semibold">{delinquentTenantCount}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("tenants-stats-under-move-out"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "tenants-stats-under-move-out",
+                TENANTS_STATS_KEYS,
+                "tenants-stats-all",
+              )
+            }}
+          >
+            <span className="text-left">Under Move-out</span>
+            <span className="font-semibold">{underMoveOutCount}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("tenants-stats-under-move-in"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "tenants-stats-under-move-in",
+                TENANTS_STATS_KEYS,
+                "tenants-stats-all",
+              )
+            }}
+          >
+            <span className="text-left">Under Move-In</span>
+            <span className="font-semibold">{underMoveInCount}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Maintenance */}
+      <div
+        className={`${CARD_BASE} ${hasAny(MAINTENANCE_KEYS) ? CARD_ACTIVE : "bg-background"}`}
+        onClick={() => toggleCategoryKey("maintenance-all", MAINTENANCE_KEYS, "maintenance-all")}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-info/5">
+          <div className="p-1 rounded bg-info/10">
+            <Wrench className="h-4 w-4 text-info" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Maintenance</span>
+        </div>
+        <div className="flex flex-col px-2 py-2 gap-0.5 max-h-[90px] overflow-y-auto pr-1">
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("maintenance-all"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("maintenance-all", MAINTENANCE_KEYS, "maintenance-all")
+            }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{totalWOs}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("maintenance-total-wos"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("maintenance-total-wos", MAINTENANCE_KEYS, "maintenance-all")
+            }}
+          >
+            <span className="text-left">Total WOs</span>
+            <span className="font-semibold">{totalWOs}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("maintenance-unassigned-wos"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "maintenance-unassigned-wos",
+                MAINTENANCE_KEYS,
+                "maintenance-all",
+              )
+            }}
+          >
+            <span className="text-left">Unassigned WOs</span>
+            <span className="font-semibold">{unassignedWOs}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("maintenance-in-progress"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "maintenance-in-progress",
+                MAINTENANCE_KEYS,
+                "maintenance-all",
+              )
+            }}
+          >
+            <span className="text-left">In Progress</span>
+            <span className="font-semibold">{inProgressWOs}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Processes */}
+      <div
+        className={`${CARD_BASE} ${hasAny(PROCESSES_KEYS) ? CARD_ACTIVE : "bg-background"}`}
+        onClick={() => toggleCategoryKey("processes-all", PROCESSES_KEYS, "processes-all")}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-accent/30">
+          <div className="p-1 rounded bg-accent">
+            <Layers className="h-4 w-4 text-accent-foreground" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Processes</span>
+        </div>
+        <div className="flex flex-col px-2 py-2 gap-0.5 max-h-[90px] overflow-y-auto pr-1">
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("processes-all"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("processes-all", PROCESSES_KEYS, "processes-all")
+            }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{openProcesses + overdueProcesses}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("processes-open"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("processes-open", PROCESSES_KEYS, "processes-all")
+            }}
+          >
+            <span className="text-left">Open</span>
+            <span className="font-semibold">{openProcesses}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("processes-overdue"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("processes-overdue", PROCESSES_KEYS, "processes-all")
+            }}
+          >
+            <span className="text-left">Overdue</span>
+            <span className="font-semibold">{overdueProcesses}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Tasks */}
+      <div
+        className={`${CARD_BASE} ${hasAny(TASKS_KEYS) ? CARD_ACTIVE : "bg-background"}`}
+        onClick={() => toggleCategoryKey("tasks-all", TASKS_KEYS, "tasks-all")}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-warning/5">
+          <div className="p-1 rounded bg-warning/10">
+            <Clock className="h-4 w-4 text-warning" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Tasks</span>
+        </div>
+        <div className="flex flex-col px-2 py-2 gap-0.5 max-h-[90px] overflow-y-auto pr-1">
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("tasks-all"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("tasks-all", TASKS_KEYS, "tasks-all")
+            }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{openTasks + overdueTasks}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("tasks-open"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("tasks-open", TASKS_KEYS, "tasks-all")
+            }}
+          >
+            <span className="text-left">Open</span>
+            <span className="font-semibold">{openTasks}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("tasks-overdue"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("tasks-overdue", TASKS_KEYS, "tasks-all")
+            }}
+          >
+            <span className="text-left">Overdue</span>
+            <span className="font-semibold">{overdueTasks}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Lease Status */}
+      <div
+        className={`${CARD_BASE} ${hasAny(LEASE_STATUS_KEYS) ? CARD_ACTIVE : "bg-background"}`}
+        onClick={() => toggleCategoryKey("lease-status-all", LEASE_STATUS_KEYS, "lease-status-all")}
+      >
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+          <div className="p-1 rounded bg-muted">
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </div>
+          <span className="text-xs font-medium text-foreground">Lease Status</span>
+        </div>
+        <div className="flex flex-col px-2 py-2 gap-0.5 max-h-[90px] overflow-y-auto pr-1">
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("lease-status-all"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("lease-status-all", LEASE_STATUS_KEYS, "lease-status-all")
+            }}
+          >
+            <span className="text-left">All</span>
+            <span className="font-semibold">{allTenants.length}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("lease-status-active"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("lease-status-active", LEASE_STATUS_KEYS, "lease-status-all")
+            }}
+          >
+            <span className="text-left">Active</span>
+            <span className="font-semibold">{leaseActiveCount}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("lease-status-expired"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey("lease-status-expired", LEASE_STATUS_KEYS, "lease-status-all")
+            }}
+          >
+            <span className="text-left">Expired</span>
+            <span className="font-semibold">{leaseExpiredCount}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("lease-status-month-to-month"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "lease-status-month-to-month",
+                LEASE_STATUS_KEYS,
+                "lease-status-all",
+              )
+            }}
+          >
+            <span className="text-left">Month to Month</span>
+            <span className="font-semibold">{leaseMonthToMonthCount}</span>
+          </button>
+          <button
+            type="button"
+            className={subBtnCls(tenantStatsFilters.includes("lease-status-expiring-in-90-days"))}
+            onClick={(e) => {
+              e.stopPropagation()
+              toggleCategoryKey(
+                "lease-status-expiring-in-90-days",
+                LEASE_STATUS_KEYS,
+                "lease-status-all",
+              )
+            }}
+          >
+            <span className="text-left">Expiring in 90 Days</span>
+            <span className="font-semibold">{leaseExpiring90Count}</span>
           </button>
         </div>
       </div>

@@ -19,7 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Plus, X, Check, FolderOpen, Search, ChevronRight, GripVertical, Pencil, Trash2, MoreVertical, AlertTriangle, Settings } from "lucide-react"
+import { Plus, X, Check, FolderOpen, Search, ChevronRight, GripVertical, Pencil, Trash2, MoreVertical, AlertTriangle, Settings, ChevronDown } from "lucide-react"
 import { LoadMorePagination } from "@/components/shared/LoadMorePagination"
 import type { StageCategory, StageStatus } from "../types"
 
@@ -162,7 +162,7 @@ export function StagesCategoriesPage({
     ? categories.filter((c) => c.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : categories
 
-  const paginatedCategories = filteredCategories.slice(0, visibleCount)
+  const paginatedCategories = filteredCategories.sort((a, b) => Number(b.id) - Number(a.id)).slice(0, visibleCount)
 
   useEffect(() => {
     setVisibleCount(10)
@@ -241,7 +241,7 @@ export function StagesCategoriesPage({
               <thead>
                 <tr className="border-b bg-muted/50">
                   <th className="text-left p-4 font-medium text-muted-foreground text-sm">Category Name</th>
-                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">Lead Count</th>
+                  <th className="text-left p-4 font-medium text-muted-foreground text-sm">Stages Count</th>
                   <th className="text-left p-4 font-medium text-muted-foreground text-sm">Status</th>
                   <th className="p-4 font-medium text-muted-foreground text-sm text-right">Actions</th>
                 </tr>
@@ -295,7 +295,7 @@ export function StagesCategoriesPage({
                       </td>
                       <td className="p-4">
                         <Badge variant="secondary" className="font-normal">
-                          {category.statuses.length} {leadCountLabel}
+                          {category.statuses.length} stages
                         </Badge>
                       </td>
                       <td className="p-4">
@@ -314,8 +314,8 @@ export function StagesCategoriesPage({
                               toggleCategory(category.id)
                             }}
                           >
-                            View Leads
-                            <ChevronRight className="ml-1 h-4 w-4" />
+                            View Stages
+                            {expandedCategories.includes(category.id) ? <ChevronDown className="ml-1 h-4 w-4" /> : <ChevronRight className="ml-1 h-4 w-4" />}
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>

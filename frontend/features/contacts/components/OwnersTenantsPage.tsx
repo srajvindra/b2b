@@ -311,41 +311,61 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
 
     // Tenant stats filters (multi-select, OR across selected keys)
     if (activeTab === "tenants" && contact.type === "Tenant" && tenantStatsFilters.length > 0) {
-      const hasPendingTask = (contact.tenantPendingTasks || 0) > 0
-      const hasPendingProcess = (contact.tenantPendingProcesses || 0) > 0
-      const hasMoveout = !!contact.moveOutStatus
-      const hasEviction = !!contact.evictionStatus
+      const receivedRent = contact.rentCollected || 0
+      const delinquentAmount = contact.delinquentAmount || 0
+      const totalWOs = (contact.approvedWOs || 0) + (contact.pendingApprovalWOs || 0)
+      const openProcesses = contact.tenantPendingProcesses || 0
+      const openTasks = contact.tenantPendingTasks || 0
+      const tags = contact.tenantTags || []
 
       const matchesAnyTenantStat = tenantStatsFilters.some((key) => {
         switch (key) {
-          case "tenant-total":
+          case "collections-all":
+            return receivedRent > 0 || delinquentAmount > 0
+          case "collections-received-rent":
+            return receivedRent > 0
+          case "collections-delinquent-amount":
+            return delinquentAmount > 0
+          case "tenants-stats-all":
             return true
-          case "tenant-active":
+          case "tenants-stats-active-tenants":
             return contact.status === "Active"
-          case "pending-all":
-            return hasPendingTask || hasPendingProcess
-          case "pending-tasks":
-            return hasPendingTask
-          case "pending-processes":
-            return hasPendingProcess
-          case "moveout-all":
-            return hasMoveout
-          case "moveout-pending":
+          case "tenants-stats-delinquent-tenants":
+            return delinquentAmount > 0
+          case "tenants-stats-under-move-out":
             return contact.moveOutStatus === "Pending"
-          case "moveout-completed":
-            return contact.moveOutStatus === "Completed"
-          case "evictions-all":
-            return hasEviction
-          case "evictions-pending":
-            return contact.evictionStatus === "Pending"
-          case "evictions-completed":
-            return contact.evictionStatus === "Completed"
-          case "type-all":
+          case "tenants-stats-under-move-in":
+            return contact.status === "Pending"
+          case "maintenance-all":
+            return totalWOs > 0
+          case "maintenance-total-wos":
+            return totalWOs > 0
+          case "maintenance-unassigned-wos":
+            return false
+          case "maintenance-in-progress":
+            return false
+          case "processes-all":
+            return openProcesses > 0
+          case "processes-open":
+            return openProcesses > 0
+          case "processes-overdue":
+            return false
+          case "tasks-all":
+            return openTasks > 0
+          case "tasks-open":
+            return openTasks > 0
+          case "tasks-overdue":
+            return false
+          case "lease-status-all":
             return true
-          case "type-self-paying":
-            return contact.tenantType === "Self Paying"
-          case "type-section-8":
-            return contact.tenantType === "Section 8"
+          case "lease-status-active":
+            return contact.status === "Active"
+          case "lease-status-expired":
+            return contact.status === "Inactive"
+          case "lease-status-month-to-month":
+            return tags.includes("Month-to-Month")
+          case "lease-status-expiring-in-90-days":
+            return false
           default:
             return false
         }
@@ -906,7 +926,7 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
                         autoFocus
                       />
                     </div>
-                    <div className="max-h-[200px] overflow-y-auto border-t">
+                    <div className="max-h-[96px] overflow-y-auto border-t">
                       {advancedFilterFields
                         .filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
                         .map((field) => (
@@ -951,7 +971,7 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
                   const allSelected = filtered.length > 0 && filtered.every((opt) => modalFilterValues.includes(opt))
                   const showSelectAll = advancedFieldsWithSelectAll.includes(modalFilterField) && !modalOptionSearch
                   return (
-                    <div className="max-h-[180px] overflow-y-auto">
+                    <div className="max-h-[96px] overflow-y-auto">
                       {showSelectAll && (
                         <div className="flex items-center space-x-2 py-2 px-3 border-b border-border hover:bg-muted/50">
                           <Checkbox

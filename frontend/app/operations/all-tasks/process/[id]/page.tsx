@@ -4,7 +4,12 @@ import { useParams, useRouter } from "next/navigation"
 import { ContactProcessDetailView } from "@/features/contacts/components/ContactProcessDetail"
 import type { ProcessData } from "@/features/contacts/types"
 import { leaseProspectProcesses } from "@/features/leads/data/tenantApplicationDetail"
-import { PROSPECT_CATEGORY_LEADS } from "@/features/leads/data/mockLeads"
+
+const DEFAULT_AI_PROMPTS = [
+  "What's the status of this task?",
+  "What's the status of this document?",
+  "What's the status of this process?",
+]
 
 function findProcessById(processId: string): ProcessData | null {
   const all: ProcessData[] = [
@@ -50,6 +55,7 @@ export default function LeaseProspectProcessDetailRoutePage() {
         startDate: "2021-01-01",
         closeDate: "2021-01-01",
       }}
+      aiSuggestedPrompts={DEFAULT_AI_PROMPTS}
     />
   )
 }

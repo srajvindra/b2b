@@ -103,6 +103,7 @@ export default function Page() {
       .filter((t) => {
         const matchesStaff = selectedStaff ? t.assignedTo === selectedStaff : true
         const matchesSearch = tasksSearchQuery ? t.assignedTo.toLowerCase().includes(tasksSearchQuery.toLowerCase()) : true
+        // const matchesContract
         if (!matchesStaff || !matchesSearch) return false
 
         switch (dashFilter) {
@@ -303,40 +304,53 @@ export default function Page() {
 
       {/* Summary Tiles */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
-          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-            <CircleAlert className="h-4.5 w-4.5 text-red-600" />
+        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-red-50/50">
+            <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+              <CircleAlert className="h-4.5 w-4.5 text-red-600" />
+            </div>
+            <p className="text-sm font-medium text-slate-900">Critical Items</p>
           </div>
-          <div>
-            <p className="text-base font-bold text-slate-900 leading-tight">6 Critical Items</p>
-            <p className="text-[11px] text-red-500 leading-tight">5 Critical</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
-          <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-            <DollarSign className="h-4.5 w-4.5 text-green-600" />
-          </div>
-          <div>
-            <p className="text-base font-bold text-slate-900 leading-tight">$27,600 Revenue at Risk</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Recent Escalations</p>
+          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
+            <p className="text-2xl font-bold text-slate-900">6</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
-          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-            <Landmark className="h-4.5 w-4.5 text-red-700" />
+
+        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-green-50/50">
+            <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
+              <DollarSign className="h-4.5 w-4.5 text-green-600" />
+            </div>
+            <p className="text-sm font-medium text-slate-900">Revenue at Risk</p>
           </div>
-          <div>
-            <p className="text-base font-bold text-slate-900 leading-tight">4 Legal Exposure</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Pending Violations</p>
+          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
+            <p className="text-2xl font-bold text-slate-900">$27,600</p>
+            <p className="text-[11px] text-slate-500 text-center">Recent Escalations</p>
           </div>
         </div>
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50/20 border border-red-100">
-          <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-            <Clock className="h-4.5 w-4.5 text-slate-600" />
+
+        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-amber-50/50">
+            <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+              <Landmark className="h-4.5 w-4.5 text-red-700" />
+            </div>
+            <p className="text-sm font-medium text-slate-900">Legal Exposure</p>
           </div>
-          <div>
-            <p className="text-base font-bold text-slate-900 leading-tight">5 SLA Breaches</p>
-            <p className="text-[11px] text-slate-500 leading-tight">Longest Aging 3h 48m <span className="text-[10px] text-slate-400">15 sec</span></p>
+          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
+            <p className="text-2xl font-bold text-slate-900">4</p>
+            <p className="text-[11px] text-slate-500 text-center">Pending Violations</p>
+          </div>
+        </div>
+        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-sky-50/50">
+            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+              <Clock className="h-4.5 w-4.5 text-slate-600" />
+            </div>
+            <p className="text-sm font-medium text-slate-900">SLA Breaches</p>
+          </div>
+          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
+            <p className="text-2xl font-bold text-slate-900">5</p>
+            <p className="text-[11px] text-slate-500 text-center">Longest Aging 3h 48m <span className="text-[10px] text-slate-400">15 sec</span></p>
           </div>
         </div>
       </div>
@@ -454,6 +468,7 @@ export default function Page() {
             isUnresponded={isUnresponded}
             isPending={isPending}
             selectedStaff={selectedStaff}
+            maxHeight="350px"
           />
         )}
         {dashboardTab === "tasks" && (
@@ -473,6 +488,7 @@ export default function Page() {
             processRoute={{
               basePath: "dashboard",
             }}
+            maxHeight="350px"
           />
         )}
         {dashboardTab === "combined" && (
@@ -482,6 +498,19 @@ export default function Page() {
               setSelectedCommunication(comm)
               setShowCommModal(true)
             }}
+            onTaskClick={(task) => {
+              // reuse the same behavior as clicking a task row in Tasks tab
+              // (kept simple: navigate/selection is handled by TasksCard; here we just open the task's process/entity view if needed)
+              // If you later want the exact same navigation logic, we can extract it to a shared helper.
+              console.log("Task clicked", task.id)
+            }}
+            staffMembers={STAFF_MEMBERS}
+            escalatedToStaffMembers={escalatedToStaffMembers}
+            onAssignTask={handleAssignTask}
+            onUpdateRisk={handleUpdateRisk}
+            onEscalateTask={handleEscalateTask}
+            onUpdateNote={handleUpdateNote}
+            maxHeight="350px"
           />
         )}
         {/* <TasksCard

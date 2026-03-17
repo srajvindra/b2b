@@ -15,6 +15,10 @@ import {
   ChevronsUpDown,
   MoreVertical,
   TriangleAlert,
+  MessageSquare,
+  Mail,
+  Phone,
+  Users,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -115,6 +119,7 @@ interface TasksCardProps {
     categoryId?: string
     leadId?: string
   }
+  maxHeight?: string
 }
 
 export function TasksCard({
@@ -131,6 +136,7 @@ export function TasksCard({
   escalatedToStaffMembers,
   escalatedTo,
   processRoute,
+  maxHeight = "260px",
 }: TasksCardProps) {
   const router = useRouter()
   const [showSkippedModal, setShowSkippedModal] = useState(false)
@@ -175,6 +181,9 @@ export function TasksCard({
     }
     else if (basePath === 'properties') {
       router.push(`/properties/${leadId}/process/proc-1`)
+    }
+    else if (basePath === 'properties/unit') {
+      router.push(`/properties/${categoryId}/unit/${leadId}/process/proc-1`)
     }
     else {
       router.push(`/dashboard/process/proc-1`)
@@ -286,7 +295,7 @@ export function TasksCard({
         </CardHeader>
         <CardContent className="px-4 pb-4">
           <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
-            <div className="max-h-[260px] overflow-y-auto">
+            <div className={`max-h-[${maxHeight}] overflow-y-auto`}>
               <Table>
                 <TableHeader className="sticky top-0 z-10 bg-slate-50">
                   <TableRow className="bg-slate-50 hover:bg-slate-50">
@@ -302,9 +311,9 @@ export function TasksCard({
                     <TableHead className="font-medium text-slate-700">
                       SLA Due Date
                     </TableHead>
-                    <TableHead className="font-medium text-slate-700">
+                    {/* <TableHead className="font-medium text-slate-700">
                       Priority
-                    </TableHead>
+                    </TableHead> */}
                     {/* <TableHead className="font-medium text-slate-700">
                       Status
                     </TableHead> */}
@@ -324,27 +333,45 @@ export function TasksCard({
                     filteredTasks.map((task) => (
                       <TableRow key={task.id} className="hover:bg-slate-50">
                         <TableCell className="py-3">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-medium text-slate-800">
-                              {task.title}
-                            </span>
-                            {task.processName && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  handleProcessClick(task)
-                                }}
-                                className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 hover:underline w-fit"
-                              >
-                                <Workflow className="h-3 w-3" />
-                                {task.processName}
-                              </button>
-                            )}
-                            {task.autoCreated && (
-                              <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded w-fit">
-                                Auto-created
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="p-2 rounded-full relative shrink-0"
+                              style={{
+                                backgroundColor: task.type === "email" ? "#c8e6cc" : task.type === "call" ? "#b3e8e5" : "#BBDEFB",
+                              }}
+                            >
+                              {task.type === "email" ? (
+                                <Mail className="h-4 w-4 text-green-800" />
+                              ) : task.type === "call" ? (
+                                <Phone className="h-4 w-4 text-teal-800" />
+                              ) : task.type === "sms" ? (
+                                <MessageSquare className="h-4 w-4 text-blue-800" />
+                              ) : (
+                                <CheckSquare className="h-4 w-4 text-blue-800" />
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm font-medium text-slate-800">
+                                {task.title}
                               </span>
-                            )}
+                              {task.processName && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    handleProcessClick(task)
+                                  }}
+                                  className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 hover:underline w-fit"
+                                >
+                                  <Workflow className="h-3 w-3" />
+                                  {task.processName}
+                                </button>
+                              )}
+                              {task.autoCreated && (
+                                <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded w-fit">
+                                  Auto-created
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </TableCell>
                         <TableCell className="text-sm text-slate-600">
@@ -411,11 +438,10 @@ export function TasksCard({
                         </TableCell>
                         <TableCell>
                           <span
-                            className={`text-sm ${
-                              task.overdue
-                                ? "text-red-600 font-medium"
-                                : "text-slate-600"
-                            }`}
+                            className={`text-sm ${task.overdue
+                              ? "text-red-600 font-medium"
+                              : "text-slate-600"
+                              }`}
                           >
                             {task.dueDate}
                             {task.overdue && (
@@ -425,14 +451,14 @@ export function TasksCard({
                             )}
                           </span>
                         </TableCell>
-                        <TableCell>
+                        {/* <TableCell>
                           <Badge
                             variant="outline"
                             className={`text-xs font-medium capitalize ${getPriorityStyles(task.priority)}`}
                           >
                             {task.priority}
                           </Badge>
-                        </TableCell>
+                        </TableCell> */}
                         {/* <TableCell>
                           {task.status === "Skipped" ? (
                             <button
@@ -470,10 +496,10 @@ export function TasksCard({
                                 className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
                               >
                                 <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                  {task.assignedTo
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
+                                  {(() => {
+                                    const [firstName, lastName] = task.assignedTo.split(" ");
+                                    return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                  })()}
                                 </div>
                                 <span className="truncate">{task.assignedTo}</span>
                                 <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
@@ -500,10 +526,10 @@ export function TasksCard({
                                         className="flex items-center gap-2"
                                       >
                                         <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                          {staff.name
-                                            .split(" ")
-                                            .map((n) => n[0])
-                                            .join("")}
+                                          {(() => {
+                                            const [firstName, lastName] = staff.name.split(" ");
+                                            return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                          })()}
                                         </div>
                                         <div className="flex flex-col">
                                           <span className="text-sm text-slate-900">
@@ -540,6 +566,12 @@ export function TasksCard({
                                 {task.escalatedTo ? (
                                   <>
                                     {/* <TriangleAlert className="h-4 w-4 text-amber-500 shrink-0" /> */}
+                                    <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                      {(() => {
+                                        const [firstName, lastName] = task.escalatedTo.split(" ");
+                                        return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                      })()}
+                                    </div>
                                     <span className="truncate">{task.escalatedTo}</span>
                                   </>
                                 ) : (
@@ -575,10 +607,10 @@ export function TasksCard({
                                           className="flex items-center gap-2"
                                         >
                                           <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                            {staff.name
-                                              .split(" ")
-                                              .map((n) => n[0])
-                                              .join("")}
+                                            {(() => {
+                                              const [firstName, lastName] = staff.name.split(" ");
+                                              return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                            })()}
                                           </div>
                                           <div className="flex flex-col">
                                             <span className="text-sm text-slate-900">

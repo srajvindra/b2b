@@ -6,6 +6,12 @@ import { OWNER_PROCESSES } from "@/features/contacts/data/ownerDetailData"
 import { ContactProcessDetailView } from "@/features/contacts/components/ContactProcessDetail"
 import type { OwnerProcessItem } from "@/features/contacts/types"
 
+const DEFAULT_AI_PROMPTS = [
+  "What's the status of this contact?",
+  "What's the status of this task?",
+  "What's the status of this document?",
+]
+
 function findProcessById(processId: string): OwnerProcessItem | null {
   const all = [
     ...OWNER_PROCESSES.inProgress,
@@ -66,6 +72,7 @@ export default function OwnerProcessDetailRoutePage() {
         address: contact.location,
         leadSource: contact.source,
       }}
+      aiSuggestedPrompts={DEFAULT_AI_PROMPTS}
     />
   )
 }

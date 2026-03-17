@@ -305,6 +305,7 @@ export interface ContactProcessDetailViewProps {
     startDate?: string
     closeDate?: string
   }
+  aiSuggestedPrompts: string[]
 }
 
 // Missing info modal data shapes

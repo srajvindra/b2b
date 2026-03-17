@@ -5,6 +5,12 @@ import { ContactProcessDetailView } from "@/features/contacts/components/Contact
 import { initialProcessInstances } from "@/features/operations/data/processes"
 import type { ProcessData, ProcessTask } from "@/features/contacts/types"
 
+const DEFAULT_AI_PROMPTS = [
+  "What's the status of this process?",
+  "What's the status of this task?",
+  "What's the status of this document?",
+]
+
 function mapInstanceToProcessData(instance: (typeof initialProcessInstances)[number]): ProcessData {
   const primaryStaff = instance.assignee || "Process Owner"
   const tasks: ProcessTask[] = [
@@ -74,6 +80,7 @@ export default function OperationProcessDetailRoutePage() {
       process={process}
       contactName={contactName}
       onBack={() => router.push("/operations/processes")}
+      aiSuggestedPrompts={DEFAULT_AI_PROMPTS}
     />
   )
 }

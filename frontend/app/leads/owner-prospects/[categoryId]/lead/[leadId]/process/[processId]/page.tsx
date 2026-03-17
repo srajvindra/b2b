@@ -6,6 +6,12 @@ import type { ProcessData } from "@/features/contacts/types"
 import { prospectProcesses } from "@/features/leads/data/ownerDetailData"
 import { CATEGORY_LEADS } from "@/features/leads/data/mockLeads"
 
+const DEFAULT_AI_PROMPTS = [
+  "What's the status of this owner prospect?",
+  "What's the status of this task?",
+  "What's the status of this document?",
+]
+
 function findProcessById(processId: string): ProcessData | null {
   const all = [
     ...prospectProcesses.inProgress,
@@ -72,6 +78,7 @@ export default function OwnerProspectProcessDetailRoutePage() {
         startDate: lead.createdAt,
         closeDate: lead.lastTouch,
       }}
+      aiSuggestedPrompts={DEFAULT_AI_PROMPTS}
     />
   )
 }

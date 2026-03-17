@@ -15,6 +15,12 @@ function findProcessById(processId: string): ProcessData | null {
   return all.find((p) => p.id === processId) ?? null
 }
 
+const DEFAULT_AI_PROMPTS = [
+  "What's the status of this lease prospect?",
+  "What's the status of this task?",
+  "What's the status of this document?",
+]
+
 export default function LeaseProspectProcessDetailRoutePage() {
   const params = useParams()
   const router = useRouter()
@@ -50,6 +56,7 @@ export default function LeaseProspectProcessDetailRoutePage() {
         startDate: "2021-01-01",
         closeDate: "2021-01-01",
       }}
+      aiSuggestedPrompts={DEFAULT_AI_PROMPTS}
     />
   )
 }

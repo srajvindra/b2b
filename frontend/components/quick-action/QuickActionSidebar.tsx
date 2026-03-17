@@ -143,7 +143,7 @@ export function QuickActionSidebar({
 
       <div className="flex-1 min-h-0 flex flex-col">
         {/* Quick Actions (fixed-height pane) */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2">
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 py-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div className="flex flex-col bg-white rounded-md">
             {actions.map((group) => (
               <div key={group.id} className="flex flex-col">
@@ -198,7 +198,7 @@ export function QuickActionSidebar({
         {/* AI Assistant (fixed-height pane) */}
         {showAiAssistant && (
           <div className="flex-1 min-h-0 border-t-2 border-gray-300 bg-background/50 flex flex-col">
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 flex flex-col gap-3 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               {/* AI Chat History (top of AI section) */}
               <div className="space-y-2">
                 <div className="text-xs font-semibold text-muted-foreground tracking-wide uppercase">

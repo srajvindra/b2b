@@ -229,7 +229,6 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
     escalatedTo: (a as { escalatedTo?: string }).escalatedTo || "",
     status: a.status as Task["status"],
     processName: a.workflow || undefined,
-    processEntityType: a.workflow ? ("Property" as const) : undefined,
     autoCreated: a.autoCreated,
   })), [taskActivities])
 
@@ -430,6 +429,11 @@ export function UnitDetails({ unitId, propertyId, onBack }: UnitDetailsProps) {
             <TasksCard
               selectedStaff={null}
               {...tasksCardState}
+              processRoute={{
+                basePath: "properties/unit",
+                categoryId: propertyId,
+                leadId: unitId,
+              }}
             />
 
             {/* Unit Information */}

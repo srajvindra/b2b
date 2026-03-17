@@ -12,6 +12,7 @@ export type TaskRiskTag = "revenueRisk" | "slaRisk" | "legalRisk" | "orgTask"
 
 export interface Task {
   id: number
+  type: "email" | "sms" | "call" | "task"
   title: string
   dueDate: string
   priority: string

@@ -173,6 +173,7 @@ export default function PropertyProcessDetailRoutePage() {
   const router = useRouter()
   const [showOwnerInfoModal, setShowOwnerInfoModal] = useState(false)
   const propertyId = params?.id as string
+  const unitId = params?.unitId as string
   const processId = params?.processId as string
   const [taskFilter, setTaskFilter] = useState("upcoming")
   const property = (Array.isArray(PROPERTY_DATA) ? PROPERTY_DATA : [PROPERTY_DATA]).find(
@@ -235,7 +236,7 @@ export default function PropertyProcessDetailRoutePage() {
         {/* Header */}
         <div className="flex items-center justify-between py-4 border-b">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.push(`/properties/${propertyId}`)} className="text-muted-foreground hover:text-foreground transition-colors">
+            <button onClick={() => router.push(`/properties/${propertyId}/unit/${unitId}`)} className="text-muted-foreground hover:text-foreground transition-colors">
               <ArrowLeft className="h-5 w-5" />
             </button>
             <h2 className="text-lg font-semibold text-foreground">

@@ -30,9 +30,10 @@ import {
   AlertTriangle,
   HelpCircle,
   Paperclip,
+  Building2,
+  UserRoundIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   Select,
@@ -51,10 +52,14 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import type { ProcessData, ActivityItem, ContactProcessDetailViewProps } from "../types"
-import { stageColors } from "../data/contactDetailMock"
 import { Input } from "@/components/ui/input"
-import type { AssignedTeamMember } from "@/features/contacts/types"
+import { AiAssistant } from "@/components/shared/ai-assistant"
 
+const DEFAULT_AI_PROMPTS = [
+  "What's the status of this property?",
+  "Show me delinquent accounts",
+  "What's the status of this task?",
+]
 
 function generateActivities(process: ProcessData, contactName: string): ActivityItem[] {
   const staffNames = [...new Set(process.tasks.map(t => t.staffName))]
@@ -175,7 +180,7 @@ import {
 
 } from "@/features/leads/data/ownerDetailData"
 
-export function ContactProcessDetailView({ process, contactName, onBack, ownerInfo: ownerInfoProp }: ContactProcessDetailViewProps) {
+export function ContactProcessDetailView({ process, contactName, onBack, ownerInfo: ownerInfoProp, aiSuggestedPrompts }: ContactProcessDetailViewProps) {
   const [taskFilter, setTaskFilter] = useState("upcoming")
   const [tasks, setTasks] = useState(process.tasks)
   const activities = generateActivities(process, contactName)
@@ -265,7 +270,18 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
   })
   const [activeSidebarPopover, setActiveSidebarPopover] = useState<string | null>(null)
   const [detailsExpanded, setDetailsExpanded] = useState(true)
+  const [propertyDetailsExpanded, setPropertyDetailsExpanded] = useState(true)
   const [attachmentsExpanded, setAttachmentsExpanded] = useState(true)
+
+  const propertyInfo = {
+    name: "3576 E 104th St",
+    address: "3576 E 104th St, Cleveland, OH 44105",
+    type: "Single Family",
+    units: 1,
+    beds: 3,
+    baths: 2,
+    sqft: "1,250",
+  }
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_320px] gap-6 h-[calc(100vh-112px)]">
@@ -569,9 +585,10 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
 
       </div>
 
-      {/* Right sidebar */}
-      <div className="w-[320px] shrink-0 hidden xl:block overflow-y-auto">
-        <div className="space-y-4">
+      {/* Right sidebar - 2 equal parts: scrollable content + sticky AI */}
+      <div className="w-[320px] shrink-0 hidden xl:flex flex-col h-[calc(100vh-112px)] min-h-0">
+        {/* Top half: scrollable sections */}
+        <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4">
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm p-4">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-slate-900">Due Dates</h3>
@@ -708,7 +725,10 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
               className="w-full flex items-center justify-between p-4"
               onClick={() => setDetailsExpanded(!detailsExpanded)}
             >
-              <h3 className="text-sm font-semibold text-slate-900">Details</h3>
+              <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <UserRoundIcon className="h-3.5 w-3.5 text-slate-500" />
+                Details
+              </h3>
               <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${detailsExpanded ? "" : "-rotate-90"}`} />
             </button>
             {detailsExpanded && (
@@ -797,6 +817,63 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
             )}
           </div>
 
+          {/* Property Details - Collapsible */}
+          <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-4"
+              onClick={() => setPropertyDetailsExpanded(!propertyDetailsExpanded)}
+            >
+              <div className="flex items-center gap-1.5">
+                <Building2 className="h-3.5 w-3.5 text-slate-500" />
+                <h3 className="text-sm font-semibold text-slate-900">Property</h3>
+              </div>
+              <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${propertyDetailsExpanded ? "" : "-rotate-90"}`} />
+            </button>
+            {propertyDetailsExpanded && (
+              <div className="px-4 pb-4 space-y-3">
+                {/* <div className="flex items-center gap-3 pb-3 border-b border-slate-100">
+                  <Avatar className="h-9 w-9 bg-blue-100 text-blue-600">
+                    <AvatarFallback>
+                      <Building2 className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-semibold text-slate-900">3576 E 104th St</span>
+                </div> */}
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex items-start gap-2">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground">Address</span>
+                      <span className="block text-[13px] text-slate-900">3576 E 104th St, Cleveland, OH 44105</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground">Property Type</span>
+                      <span className="block text-[13px] text-slate-900">Multi-Family</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <Users className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground">Units</span>
+                      <span className="block text-[13px] text-slate-900">4</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <ExternalLink className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-xs text-muted-foreground">Status</span>
+                      <span className="block text-[13px] text-slate-900">Active</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Attachments - Collapsible */}
           <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
             <button
@@ -824,6 +901,7 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
             )}
           </div>
         </div>
+        <AiAssistant showAiAssistant={true} aiSuggestedPrompts={aiSuggestedPrompts || DEFAULT_AI_PROMPTS} placeholder="Ask about this contact..." />
       </div>
     </div>
   )
