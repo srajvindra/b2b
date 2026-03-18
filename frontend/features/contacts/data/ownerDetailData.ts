@@ -512,7 +512,7 @@ export const getTasks = (): OwnerTask[] => [
   {
     id: "task4",
     title: "Schedule maintenance for HVAC - Oak Manor",
-    processName: "",
+    // processName: "",
     relatedEntityType: "Property",
     relatedEntityName: "Oak Manor",
     assignee: "Mike Johnson",
@@ -521,6 +521,7 @@ export const getTasks = (): OwnerTask[] => [
     risk: "Operational",
     dueDate: "2025-12-23",
     isOverdue: false,
+    autoCreated: true,
     escalatedTo: "",
   },
   {
@@ -582,7 +583,7 @@ export const getTasks = (): OwnerTask[] => [
   {
     id: "task9",
     title: "Follow up on unread email",
-    processName: "Owner Prospect Outreach",
+    // processName: "Owner Prospect Outreach",
     relatedEntityType: "Prospect Owner",
     relatedEntityName: "James Wilson",
     assignee: "Sarah Chen",
@@ -597,7 +598,7 @@ export const getTasks = (): OwnerTask[] => [
   {
     id: "task10",
     title: "Respond to SMS",
-    processName: "Owner Prospect Outreach",
+    // processName: "Owner Prospect Outreach",
     relatedEntityType: "Tenant",
     relatedEntityName: "Robert Garcia",
     assignee: "Nina Patel",

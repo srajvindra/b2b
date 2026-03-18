@@ -1,10 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import { Bell, Mail, MessageSquare, Phone, Users } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Bell, Filter, Mail, MessageSquare, Phone, Plus, Users } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CommunicationModal } from "./CommunicationModal"
-import type { Communication, CommSummary } from "../types"
+import type { Communication, CommSummary, Task } from "../types"
+import { Button } from "@/components/ui/button"
+import { AddTaskDialog, type StaffMember } from "../../../components/shared/AddTaskDialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
 
 interface CommunicationsCardProps {
   filteredCommunications: Communication[]
@@ -19,6 +25,8 @@ interface CommunicationsCardProps {
   isUnresponded: (c: Communication) => boolean
   isPending: (c: Communication) => boolean
   selectedStaff: string | null
+  staffMembers: StaffMember[]
+  onAddTask: (task: Task) => void
   maxHeight?: string
 }
 
@@ -35,11 +43,89 @@ export function CommunicationsCard({
   isUnresponded,
   isPending,
   selectedStaff,
+  staffMembers,
+  onAddTask,
   maxHeight = "260px",
 }: CommunicationsCardProps) {
   const [selectedCommunication, setSelectedCommunication] =
     useState<Communication | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [addTaskOpen, setAddTaskOpen] = useState(false)
+
+  // ----- Column filters (same pattern as TasksCard/Combined) -----
+  const [contractFilterOpen, setContractFilterOpen] = useState(false)
+  const [selectedContracts, setSelectedContracts] = useState<string[]>([])
+  const [contractFilterSearch, setContractFilterSearch] = useState("")
+
+  const [assignedToFilterOpen, setAssignedToFilterOpen] = useState(false)
+  const [selectedAssignedToFilters, setSelectedAssignedToFilters] = useState<string[]>([])
+  const [assignedToFilterSearch, setAssignedToFilterSearch] = useState("")
+
+  const [dateFilterOpen, setDateFilterOpen] = useState(false)
+  const [dateFrom, setDateFrom] = useState("")
+  const [dateTo, setDateTo] = useState("")
+
+  const uniqueContracts = useMemo(() => {
+    const values = filteredCommunications.map((c) =>
+      `${c.from}${c.entityType ? ` (${c.entityType})` : ""}`,
+    )
+    return Array.from(new Set(values)).filter(Boolean).sort((a, b) => a.localeCompare(b))
+  }, [filteredCommunications])
+
+  const uniqueAssignedTo = useMemo(() => {
+    const values = filteredCommunications.map((c) => c.assignedTo)
+    return Array.from(new Set(values)).filter(Boolean).sort((a, b) => a.localeCompare(b))
+  }, [filteredCommunications])
+
+  const toggleContract = (value: string) => {
+    setSelectedContracts((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+    )
+  }
+
+  const toggleAssignedToFilter = (value: string) => {
+    setSelectedAssignedToFilters((prev) =>
+      prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
+    )
+  }
+
+  const clearContractFilter = () => {
+    setSelectedContracts([])
+    setContractFilterSearch("")
+  }
+
+  const clearAssignedToFilter = () => {
+    setSelectedAssignedToFilters([])
+    setAssignedToFilterSearch("")
+  }
+
+  const clearDateFilter = () => {
+    setDateFrom("")
+    setDateTo("")
+  }
+
+  const visibleCommunications = useMemo(() => {
+    return filteredCommunications.filter((c) => {
+      const contractValue = `${c.from}${c.entityType ? ` (${c.entityType})` : ""}`
+      if (selectedContracts.length > 0 && !selectedContracts.includes(contractValue)) return false
+
+      if (selectedAssignedToFilters.length > 0 && !selectedAssignedToFilters.includes(c.assignedTo)) return false
+
+      if (dateFrom || dateTo) {
+        const t = c.receivedAt.getTime()
+        if (dateFrom) {
+          const fromMs = new Date(dateFrom + "T00:00:00").getTime()
+          if (t < fromMs) return false
+        }
+        if (dateTo) {
+          const toMs = new Date(dateTo + "T23:59:59").getTime()
+          if (t > toMs) return false
+        }
+      }
+
+      return true
+    })
+  }, [filteredCommunications, selectedContracts, selectedAssignedToFilters, dateFrom, dateTo])
 
   const handleCommunicationClick = (comm: Communication) => {
     setSelectedCommunication(comm)
@@ -76,6 +162,7 @@ export function CommunicationsCard({
                   Communications
                 </CardTitle>
               </div>
+
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -251,6 +338,14 @@ export function CommunicationsCard({
                 </button>
               </div>
             </div>
+            <Button
+                size="sm"
+                className="h-9 px-4 bg-teal-600 hover:bg-teal-700 text-white"
+                onClick={() => setAddTaskOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                New Task
+              </Button>
           </div>
 
           <div className="flex items-center gap-4 mt-3">
@@ -372,21 +467,210 @@ export function CommunicationsCard({
           </div>
         </CardContent> */}
         <CardContent className="px-4 pb-4">
-          <div className={`max-h-[${maxHeight}] overflow-y-auto pr-1`}>
-            {filteredCommunications.length > 0 ? (
+          <div className="overflow-y-auto pr-1 relative" style={{ maxHeight }}>
+            {visibleCommunications.length > 0 ? (
               <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
-                <div className="grid grid-cols-[minmax(0,0.38fr)_minmax(0,1.1fr)_minmax(0,0.5fr)] px-3 py-2 bg-slate-50 text-[14px] font-bold text-slate-600 tracking-wide">
-                  <span>Contract</span>
-                  <span>Content</span>
-                  <span className="text-right">Date</span>
+                <div className="grid grid-cols-4 px-3 py-2 bg-slate-50 text-[14px] font-bold text-slate-600 tracking-wide sticky top-0 z-20 border-b border-slate-200">
+                  <Popover open={contractFilterOpen} onOpenChange={setContractFilterOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex items-center gap-1 text-left hover:text-slate-800"
+                      >
+                        <span>Contract</span>
+                        <Filter
+                          className={`h-3 w-3 ${selectedContracts.length > 0 ? "text-teal-600" : "text-slate-400"}`}
+                        />
+                        {selectedContracts.length > 0 && (
+                          <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                            {selectedContracts.length}
+                          </span>
+                        )}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2" align="start">
+                      <div className="mb-2">
+                        <Input
+                          placeholder="Search contracts..."
+                          value={contractFilterSearch}
+                          onChange={(e) => setContractFilterSearch(e.target.value)}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1 max-h-40 overflow-y-auto">
+                        {uniqueContracts
+                          .filter((v) =>
+                            v.toLowerCase().includes(contractFilterSearch.toLowerCase()),
+                          )
+                          .map((value) => (
+                            <label
+                              key={value}
+                              className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                            >
+                              <Checkbox
+                                checked={selectedContracts.includes(value)}
+                                onCheckedChange={() => toggleContract(value)}
+                              />
+                              <span className="truncate">{value}</span>
+                            </label>
+                          ))}
+                      </div>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs px-2"
+                          onClick={clearContractFilter}
+                          disabled={selectedContracts.length === 0}
+                        >
+                          Clear
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs px-2"
+                          onClick={() => setContractFilterOpen(false)}
+                        >
+                          Close
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                  <span >Content</span>
+                  <span className="text-right">
+                    <Popover open={assignedToFilterOpen} onOpenChange={setAssignedToFilterOpen}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 justify-end w-full hover:text-slate-800"
+                        >
+                          <span>Assigned To</span>
+                          <Filter
+                            className={`h-3 w-3 ${selectedAssignedToFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`}
+                          />
+                          {selectedAssignedToFilters.length > 0 && (
+                            <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                              {selectedAssignedToFilters.length}
+                            </span>
+                          )}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-2" align="end">
+                        <div className="mb-2">
+                          <Input
+                            placeholder="Search staff..."
+                            value={assignedToFilterSearch}
+                            onChange={(e) => setAssignedToFilterSearch(e.target.value)}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1 max-h-40 overflow-y-auto">
+                          {uniqueAssignedTo
+                            .filter((n) =>
+                              n.toLowerCase().includes(assignedToFilterSearch.toLowerCase()),
+                            )
+                            .map((name) => (
+                              <label
+                                key={name}
+                                className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                              >
+                                <Checkbox
+                                  checked={selectedAssignedToFilters.includes(name)}
+                                  onCheckedChange={() => toggleAssignedToFilter(name)}
+                                />
+                                <span className="truncate">{name}</span>
+                              </label>
+                            ))}
+                        </div>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={clearAssignedToFilter}
+                            disabled={selectedAssignedToFilters.length === 0}
+                          >
+                            Clear
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs px-2"
+                            onClick={() => setAssignedToFilterOpen(false)}
+                          >
+                            Close
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </span>
+                  <span className="text-right mr-20">
+                    <Popover open={dateFilterOpen} onOpenChange={setDateFilterOpen}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 justify-end w-full hover:text-slate-800"
+                        >
+                          <span>Date</span>
+                          <Filter
+                            className={`h-3 w-3 ${(dateFrom || dateTo) ? "text-teal-600" : "text-slate-400"}`}
+                          />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 p-3" align="end">
+                        <div className="space-y-2">
+                          <div className="text-xs font-medium text-muted-foreground">Date range</div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">From</Label>
+                              <Input
+                                type="date"
+                                value={dateFrom}
+                                onChange={(e) => setDateFrom(e.target.value)}
+                                className="h-8 text-xs mt-0.5"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-[10px] text-muted-foreground">To</Label>
+                              <Input
+                                type="date"
+                                value={dateTo}
+                                onChange={(e) => setDateTo(e.target.value)}
+                                className="h-8 text-xs mt-0.5"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-2 border-t">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={clearDateFilter}
+                              disabled={!dateFrom && !dateTo}
+                            >
+                              Clear
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs px-2"
+                              onClick={() => setDateFilterOpen(false)}
+                            >
+                              Close
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </span>
                 </div>
-                <div className="divide-y divide-slate-200">
-                  {filteredCommunications.map((comm) => (
+                <div className="divide-y divide-white">
+                  {visibleCommunications.map((comm) => (
                     <button
                       key={comm.id}
                       type="button"
                       onClick={() => handleCommunicationClick(comm)}
-                      className="w-full text-left px-3 py-2.5 hover:bg-slate-50 transition-colors"
+                      className="w-full text-left px-3 py-4 hover:bg-slate-50 transition-colors"
                       style={{
                         backgroundColor:
                           comm.type === "email"
@@ -396,7 +680,7 @@ export function CommunicationsCard({
                               : "#E3F2FD",
                       }}
                     >
-                      <div className="grid grid-cols-[minmax(0,0.38fr)_minmax(0,1.1fr)_minmax(0,0.5fr)] items-center gap-3">
+                      <div className="grid grid-cols-4 items-center gap-3">
                         <div className="flex items-center gap-2">
                           <div
                             className="p-1.5 rounded-full relative shrink-0"
@@ -406,7 +690,7 @@ export function CommunicationsCard({
                                   ? "#c8e6cc"
                                   : comm.type === "call"
                                     ? "#b3e8e5"
-                                    : "#BBDEFB",
+                                    : "#E3F2FD",
                             }}
                           >
                             {comm.type === "email" ? (
@@ -436,12 +720,17 @@ export function CommunicationsCard({
                             )}
                           </div>
                         </div>
-                        <div className="min-w-0">
+                        <div className="">
                           <p className="text-xs text-slate-700 truncate">
                             {comm.preview}
                           </p>
                         </div>
-                        <div className="flex justify-end">
+                        <div className="min-w-0 ml-45">
+                          <p className="text-xs text-slate-700 truncate">
+                            {comm.assignedTo}
+                          </p>
+                        </div>
+                        <div className="flex ml-38">
                           <span className="text-[11px] text-slate-600 whitespace-nowrap">
                             {comm.timestamp}
                           </span>
@@ -464,6 +753,14 @@ export function CommunicationsCard({
         communication={selectedCommunication}
         open={showModal}
         onOpenChange={setShowModal}
+      />
+
+      <AddTaskDialog
+        open={addTaskOpen}
+        onOpenChange={setAddTaskOpen}
+        staffMembers={staffMembers}
+        defaultAssignee={selectedStaff}
+        onAddTask={onAddTask}
       />
     </>
   )

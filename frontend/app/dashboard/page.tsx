@@ -20,7 +20,7 @@ import { Filter } from "lucide-react"
 import { mockTasks as initialMockTasks } from "@/features/dashboard/data/mockTasks"
 import { mockCommunications } from "@/features/dashboard/data/mockCommunications"
 import { getMockKPIData } from "@/features/dashboard/data/mockKPIs"
-import type { CommSummary, KPIData, KPIViewMode, TaskSummary } from "@/features/dashboard/types"
+import type { CommSummary, KPIData, KPIViewMode, Task, TaskSummary } from "@/features/dashboard/types"
 
 // Simple stubs for legacy hooks used by older components (e.g. leads pages).
 // Currently we always treat the user as an admin view and do not navigate via this nav object.
@@ -74,6 +74,7 @@ export default function Page() {
   const [riskOverrides, setRiskOverrides] = useState<Record<number, string>>({})
   const [escalatedTo, setEscalatedTo] = useState<Record<number, string>>({})
   const [noteOverrides, setNoteOverrides] = useState<Record<number, string>>({})
+  const [tasks, setTasks] = useState<Task[]>(initialMockTasks)
 
   const handleAssignTask = (taskId: number, staffName: string) => {
     setAssignmentOverrides((prev) => ({ ...prev, [taskId]: staffName }))
@@ -99,7 +100,7 @@ export default function Page() {
   const CURRENT_USER = "Nina Patel"
 
   const filteredTasks = useMemo(() => {
-    return initialMockTasks
+    return tasks
       .filter((t) => {
         const matchesStaff = selectedStaff ? t.assignedTo === selectedStaff : true
         const matchesSearch = tasksSearchQuery ? t.assignedTo.toLowerCase().includes(tasksSearchQuery.toLowerCase()) : true
@@ -130,7 +131,11 @@ export default function Page() {
         ...(escalatedTo[t.id] && { escalatedTo: escalatedTo[t.id] }),
         ...(noteOverrides[t.id] !== undefined && { notes: noteOverrides[t.id] }),
       }))
-  }, [assignmentOverrides, riskOverrides, escalatedTo, noteOverrides, selectedStaff, tasksSearchQuery, dashFilter])
+  }, [tasks, assignmentOverrides, riskOverrides, escalatedTo, noteOverrides, selectedStaff, tasksSearchQuery, dashFilter])
+
+  const handleAddTask = (task: Task) => {
+    setTasks((prev) => [task, ...prev])
+  }
 
   const taskSummary = useMemo(
     (): TaskSummary => ({
@@ -182,6 +187,7 @@ export default function Page() {
     [callComms, emailComms, smsComms],
   )
 
+
   const filteredCommunications = useMemo(() => {
     return baseFilteredCommunications.filter((c) => {
       if (selectedTile === "emails" && c.type !== "email") return false
@@ -194,7 +200,7 @@ export default function Page() {
         return isPending(c)
       }
       if (selectedTile === "calls") return isUnresponded(c) || !c.read
-      return isPending(c)
+      return (c)
     })
   }, [baseFilteredCommunications, selectedTile, subFilter])
 
@@ -208,6 +214,22 @@ export default function Page() {
   const [dashboardTab, setDashboardTab] = useState<"tasks" | "communications" | "combined">("combined")
   const [showCommModal, setShowCommModal] = useState(false)
   const [selectedCommunication, setSelectedCommunication] = useState<Communication | null>(null)
+
+  // Combined counts
+  const TaskCount = useMemo(() => tasks.length, [tasks])
+
+  const CommCount = useMemo(() => {
+    return baseFilteredCommunications.filter((c) => {
+      const count = c.type === "email" || c.type === "text" || c.type === "call"
+      return count
+    }).length
+  }, [])
+
+  const combinedCommCount = useMemo(() => {
+    return filteredCommunications.length + TaskCount
+  }, [filteredCommunications.length, TaskCount])
+
+
 
   const combinedItems = useMemo<CombinedItem[]>(() => {
     const commItems = filteredCommunications.map((c) => ({
@@ -324,7 +346,7 @@ export default function Page() {
             <p className="text-sm font-medium text-slate-900">Revenue at Risk</p>
           </div>
           <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
-            <p className="text-2xl font-bold text-slate-900">$27,600</p>
+            <p className="text-xl font-bold text-slate-900">$27,600</p>
             <p className="text-[11px] text-slate-500 text-center">Recent Escalations</p>
           </div>
         </div>
@@ -360,7 +382,7 @@ export default function Page() {
       <div className="flex items-center border-b border-slate-200 pb-0">
         <div className="flex items-center gap-1">
           {(["combined", "tasks", "communications"] as const).map((tab) => {
-            const count = tab === "tasks" ? filteredTasks.length : tab === "communications" ? filteredCommunications.length : tab === "combined" ? combinedItems.length : null
+            const count = tab === "tasks" ? TaskCount : tab === "communications" ? filteredCommunications.length : tab === "combined" ? combinedCommCount : null
             return (
               <button
                 key={tab}
@@ -468,6 +490,8 @@ export default function Page() {
             isUnresponded={isUnresponded}
             isPending={isPending}
             selectedStaff={selectedStaff}
+            staffMembers={STAFF_MEMBERS}
+            onAddTask={handleAddTask}
             maxHeight="350px"
           />
         )}
@@ -485,10 +509,11 @@ export default function Page() {
             onUpdateRisk={handleUpdateRisk}
             onEscalateTask={handleEscalateTask}
             onUpdateNote={handleUpdateNote}
+            onAddTask={handleAddTask}
             processRoute={{
               basePath: "dashboard",
             }}
-            maxHeight="350px"
+            maxHeight="400px"
           />
         )}
         {dashboardTab === "combined" && (
@@ -510,7 +535,8 @@ export default function Page() {
             onUpdateRisk={handleUpdateRisk}
             onEscalateTask={handleEscalateTask}
             onUpdateNote={handleUpdateNote}
-            maxHeight="350px"
+            onAddTask={handleAddTask}
+            maxHeight="400px"
           />
         )}
         {/* <TasksCard

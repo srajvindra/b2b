@@ -29,6 +29,7 @@ import {
   LayoutGrid,
   List,
   Filter,
+  Download,
 } from "lucide-react"
 
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
@@ -738,6 +739,10 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
           <h1 className="text-2xl font-bold tracking-tight">{getPageTitle()}</h1>
           <p className="text-muted-foreground">{getPageDescription()}</p>
         </div>
+        <Button variant="outline" >
+          <Download className="h-4 w-4" />
+            Export
+          </Button>
       </div>
 
       {activeTab === "owners" ? (
@@ -760,8 +765,8 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
 
       {/* Filters & Controls */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="flex gap-2">
-          <div className="relative flex-1 md:w-80">
+        <div className="flex w-full gap-2">
+          {/* <div className="relative flex-1 md:w-80"> */}
             <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={`Search ${getPageTitle().toLowerCase()}...`}
@@ -769,7 +774,7 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
-          </div>
+          {/* </div> */}
           {showAdvancedFilterButton && (
             <Button
               variant="outline"
@@ -815,8 +820,8 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
                 }
                 size="icon"
                 className={`rounded-none border-r ${(activeTab === "owners" ? ownersViewMode : tenantsViewMode) === "grid"
-                    ? "bg-primary text-primary-foreground hover:bg-primary-hover"
-                    : ""
+                  ? "bg-primary text-primary-foreground hover:bg-primary-hover"
+                  : ""
                   }`}
                 onClick={() =>
                   activeTab === "owners" ? setOwnersViewMode("grid") : setTenantsViewMode("grid")
@@ -836,8 +841,8 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
                 }
                 size="icon"
                 className={`rounded-none ${(activeTab === "owners" ? ownersViewMode : tenantsViewMode) === "list"
-                    ? "bg-primary text-primary-foreground hover:bg-primary-hover"
-                    : ""
+                  ? "bg-primary text-primary-foreground hover:bg-primary-hover"
+                  : ""
                   }`}
                 onClick={() =>
                   activeTab === "owners" ? setOwnersViewMode("list") : setTenantsViewMode("list")

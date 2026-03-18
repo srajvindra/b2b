@@ -1,4 +1,4 @@
-import type { Communication } from "../types"
+import type { Communication } from "../types";
 
 export const mockCommunications: Communication[] = [
   {
@@ -20,7 +20,8 @@ export const mockCommunications: Communication[] = [
         sender: "John Smith",
         direction: "incoming",
         subject: "Lease renewal inquiry",
-        message: "Hi,\n\nMy lease is coming up for renewal next month. I wanted to know if there are any changes to the terms for the new lease period.\n\nThanks,\nJohn Smith",
+        message:
+          "Hi,\nMy lease is coming up for renewal next month. I wanted to know if there are any changes to the terms for the new lease period.\n\nThanks,\nJohn Smith",
         timestamp: "2025-12-18 02:30 PM",
       },
       {
@@ -28,7 +29,8 @@ export const mockCommunications: Communication[] = [
         sender: "Nina Patel",
         direction: "outgoing",
         subject: "Re: Lease renewal inquiry",
-        message: "Hello John,\n\nThank you for reaching out. Your current lease terms will remain the same for the renewal period. However, there will be a 3% rent increase as outlined in your original agreement.\n\nPlease let me know if you have any questions.\n\nBest regards,\nNina Patel\nB2B Property Management",
+        message:
+          "Hello John,\n\nThank you for reaching out. Your current lease terms will remain the same for the renewal period. However, there will be a 3% rent increase as outlined in your original agreement.\n\nPlease let me know if you have any questions.\n\nBest regards,\nNina Patel\nB2B Property Management",
         timestamp: "2025-12-19 10:15 AM",
       },
       {
@@ -36,7 +38,8 @@ export const mockCommunications: Communication[] = [
         sender: "John Smith",
         direction: "incoming",
         subject: "Re: Lease renewal inquiry",
-        message: "Hi,\n\nI wanted to reach out regarding my upcoming lease renewal. I have a few questions about the terms and conditions...",
+        message:
+          "Hi,\nI wanted to reach out regarding my upcoming lease renewal. I have a few questions about the terms and conditions...",
         timestamp: "2025-12-21 09:15 AM",
       },
     ],
@@ -45,7 +48,7 @@ export const mockCommunications: Communication[] = [
     id: 2,
     from: "Sarah Johnson",
     type: "text",
-    entityType: "prospectTenant",
+    entityType: "owner",
     preview: "Is the unit at 123 Oak St still available?",
     fullMessage:
       "Hi! I saw your listing for the 2BR unit at 123 Oak St. Is it still available? I'd love to schedule a tour this weekend if possible. Thanks!",
@@ -57,15 +60,69 @@ export const mockCommunications: Communication[] = [
     isGroupSms: false,
     contactId: "sarah-johnson-1",
     communicationThread: [
-      { id: 1, type: "email", sender: "Sarah Johnson", direction: "incoming", subject: "Inquiry about 2BR unit", message: "Hello,\n\nI found your listing online...", timestamp: "2025-12-18 02:00 PM", openedAt: "2025-12-18 03:15 PM" },
-      { id: 2, type: "text", sender: "Sarah Johnson", direction: "incoming", message: "Hi, I'm interested in the 2BR unit at 123 Oak St. What's the monthly rent?", timestamp: "2025-12-19 10:15 AM" },
-      { id: 3, type: "text", sender: "Richard Surovi", direction: "outgoing", message: "Hello Sarah! The monthly rent is $2,200. Would you like to schedule a tour?", timestamp: "2025-12-19 11:30 AM" },
-      { id: 4, type: "text", sender: "Sarah Johnson", direction: "incoming", message: "Hi! I saw your listing for the 2BR unit at 123 Oak St. Is it still available?", timestamp: "2025-12-21 02:30 PM" },
+      {
+        id: 1,
+        type: "email",
+        sender: "Sarah Johnson",
+        direction: "incoming",
+        subject: "Inquiry about 2BR unit",
+        message: "Hello,\n\nI found your listing online...",
+        timestamp: "2025-12-18 02:00 PM",
+        openedAt: "2025-12-18 03:15 PM",
+      },
+      {
+        id: 2,
+        type: "text",
+        sender: "Sarah Johnson",
+        direction: "incoming",
+        message:
+          "Hi, I'm interested in the 2BR unit at 123 Oak St. What's the monthly rent?",
+        timestamp: "2025-12-19 10:15 AM",
+      },
+      {
+        id: 3,
+        type: "text",
+        sender: "Richard Surovi",
+        direction: "outgoing",
+        message:
+          "Hello Sarah! The monthly rent is $2,200. Would you like to schedule a tour?",
+        timestamp: "2025-12-19 11:30 AM",
+      },
+      {
+        id: 4,
+        type: "text",
+        sender: "Sarah Johnson",
+        direction: "incoming",
+        message:
+          "Hi! I saw your listing for the 2BR unit at 123 Oak St. Is it still available?",
+        timestamp: "2025-12-21 02:30 PM",
+      },
     ],
     conversationHistory: [
-      { id: 1, sender: "Sarah Johnson", direction: "incoming", message: "Hi, I'm interested in the 2BR unit at 123 Oak St. What's the monthly rent?", timestamp: "2025-12-19 10:15 AM" },
-      { id: 2, sender: "Richard Surovi", direction: "outgoing", message: "Hello Sarah! The monthly rent is $2,200. Would you like to schedule a tour?", timestamp: "2025-12-19 11:30 AM" },
-      { id: 3, sender: "Sarah Johnson", direction: "incoming", message: "Hi! I saw your listing for the 2BR unit at 123 Oak St. Is it still available?", timestamp: "2025-12-21 02:30 PM" },
+      {
+        id: 1,
+        sender: "Sarah Johnson",
+        direction: "incoming",
+        message:
+          "Hi, I'm interested in the 2BR unit at 123 Oak St. What's the monthly rent?",
+        timestamp: "2025-12-19 10:15 AM",
+      },
+      {
+        id: 2,
+        sender: "Richard Surovi",
+        direction: "outgoing",
+        message:
+          "Hello Sarah! The monthly rent is $2,200. Would you like to schedule a tour?",
+        timestamp: "2025-12-19 11:30 AM",
+      },
+      {
+        id: 3,
+        sender: "Sarah Johnson",
+        direction: "incoming",
+        message:
+          "Hi! I saw your listing for the 2BR unit at 123 Oak St. Is it still available?",
+        timestamp: "2025-12-21 02:30 PM",
+      },
     ],
   },
   {
@@ -88,50 +145,101 @@ export const mockCommunications: Communication[] = [
     type: "email",
     entityType: "tenant",
     preview: "Maintenance request for kitchen faucet leak",
-    fullMessage: "Hello,\n\nI'm writing to report a maintenance issue in my apartment (Unit 305). The kitchen faucet has been leaking...",
+    fullMessage:
+      "Hello,\n\nI'm writing to report a maintenance issue in my apartment (Unit 305). The kitchen faucet has been leaking...",
     timestamp: "2025-12-22 11:45 AM",
     read: true,
     responded: false,
     receivedAt: new Date("2025-12-22T11:45:00"),
     assignedTo: "Mike Johnson",
     emailHistory: [
-      { id: 1, sender: "Emily Brown", direction: "incoming", subject: "Maintenance request", message: "Hello,\n\nI'm writing to report a maintenance issue in my apartment (Unit 305)...", timestamp: "2025-12-22 11:45 AM" },
+      {
+        id: 1,
+        sender: "Emily Brown",
+        direction: "incoming",
+        subject: "Maintenance request",
+        message:
+          "Hello,\n\nI'm writing to report a maintenance issue in my apartment (Unit 305)...",
+        timestamp: "2025-12-22 11:45 AM",
+      },
     ],
   },
   {
     id: 5,
     from: "Robert Wilson",
     type: "text",
-    entityType: "prospectTenant",
+    entityType: "owner",
     preview: "Confirming tour appointment for tomorrow",
-    fullMessage: "Just confirming our tour appointment for tomorrow at 2pm for the Maple Heights apartment. See you then!",
+    fullMessage:
+      "Just confirming our tour appointment for tomorrow at 2pm for the Maple Heights apartment. See you then!",
     timestamp: "2025-12-22 03:20 PM",
     read: true,
     responded: true,
     receivedAt: new Date("2025-12-22T15:20:00"),
     assignedTo: "Sarah Chen",
     conversationHistory: [
-      { id: 1, sender: "Robert Wilson", direction: "incoming", message: "Hello, I'd like to schedule a tour for the Maple Heights apartment.", timestamp: "2025-12-20 04:00 PM" },
-      { id: 2, sender: "Sarah Chen", direction: "outgoing", message: "Hi Robert! How about tomorrow at 2pm?", timestamp: "2025-12-20 04:15 PM" },
-      { id: 3, sender: "Robert Wilson", direction: "incoming", message: "Just confirming our tour appointment for tomorrow at 2pm.", timestamp: "2025-12-22 03:20 PM" },
+      {
+        id: 1,
+        sender: "Robert Wilson",
+        direction: "incoming",
+        message:
+          "Hello, I'd like to schedule a tour for the Maple Heights apartment.",
+        timestamp: "2025-12-20 04:00 PM",
+      },
+      {
+        id: 2,
+        sender: "Sarah Chen",
+        direction: "outgoing",
+        message: "Hi Robert! How about tomorrow at 2pm?",
+        timestamp: "2025-12-20 04:15 PM",
+      },
+      {
+        id: 3,
+        sender: "Robert Wilson",
+        direction: "incoming",
+        message: "Just confirming our tour appointment for tomorrow at 2pm.",
+        timestamp: "2025-12-22 03:20 PM",
+      },
     ],
   },
   {
     id: 6,
     from: "Lisa Chen",
     type: "email",
-    entityType: "prospectTenant",
+    entityType: "owner",
     preview: "Application documents attached as requested",
-    fullMessage: "Dear Property Manager,\n\nAs requested, please find attached the following documents for my rental application...",
+    fullMessage:
+      "Dear Property Manager,\n\nAs requested, please find attached the following documents for my rental application...",
     timestamp: "2025-12-23 08:00 AM",
     read: true,
     responded: false,
     receivedAt: new Date("2025-12-23T08:00:00"),
     assignedTo: "Richard Surovi",
     emailHistory: [
-      { id: 1, sender: "Lisa Chen", direction: "incoming", subject: "Rental Application", message: "Dear Property Manager,\n\nI am interested in renting...", timestamp: "2025-12-20 03:00 PM" },
-      { id: 2, sender: "Richard Surovi", direction: "outgoing", subject: "Re: Rental Application", message: "Dear Lisa,\n\nThank you for your interest...", timestamp: "2025-12-21 09:00 AM" },
-      { id: 3, sender: "Lisa Chen", direction: "incoming", subject: "Re: Rental Application", message: "As requested, please find attached...", timestamp: "2025-12-23 08:00 AM" },
+      {
+        id: 1,
+        sender: "Lisa Chen",
+        direction: "incoming",
+        subject: "Rental Application",
+        message: "Dear Property Manager,\n\nI am interested in renting...",
+        timestamp: "2025-12-20 03:00 PM",
+      },
+      {
+        id: 2,
+        sender: "Richard Surovi",
+        direction: "outgoing",
+        subject: "Re: Rental Application",
+        message: "Dear Lisa,\n\nThank you for your interest...",
+        timestamp: "2025-12-21 09:00 AM",
+      },
+      {
+        id: 3,
+        sender: "Lisa Chen",
+        direction: "incoming",
+        subject: "Re: Rental Application",
+        message: "As requested, please find attached...",
+        timestamp: "2025-12-23 08:00 AM",
+      },
     ],
   },
   {
@@ -140,14 +248,22 @@ export const mockCommunications: Communication[] = [
     type: "email",
     entityType: "tenant",
     preview: "Urgent: Heating system not working in Unit 412",
-    fullMessage: "Hello,\n\nI'm reaching out because the heating system in my unit (412) stopped working last night...",
+    fullMessage:
+      "Hello,\n\nI'm reaching out because the heating system in my unit (412) stopped working last night...",
     timestamp: "2025-12-23 07:30 AM",
     read: false,
     responded: false,
     receivedAt: new Date("2025-12-23T07:30:00"),
     assignedTo: "Mike Johnson",
     emailHistory: [
-      { id: 1, sender: "James Peterson", direction: "incoming", subject: "Urgent: Heating system not working", message: "Hello,\n\nI'm reaching out because the heating system...", timestamp: "2025-12-23 07:30 AM" },
+      {
+        id: 1,
+        sender: "James Peterson",
+        direction: "incoming",
+        subject: "Urgent: Heating system not working",
+        message: "Hello,\n\nI'm reaching out because the heating system...",
+        timestamp: "2025-12-23 07:30 AM",
+      },
     ],
   },
   {
@@ -156,7 +272,8 @@ export const mockCommunications: Communication[] = [
     type: "text",
     entityType: "tenant",
     preview: "Can I pay rent a few days late this month?",
-    fullMessage: "Hi, I wanted to ask if it's possible to pay my rent a few days late this month? I had an unexpected expense...",
+    fullMessage:
+      "Hi, I wanted to ask if it's possible to pay my rent a few days late this month? I had an unexpected expense...",
     timestamp: "2025-12-22 04:45 PM",
     read: true,
     responded: false,
@@ -165,10 +282,25 @@ export const mockCommunications: Communication[] = [
     isGroupSms: false,
     contactId: "amanda-white-1",
     communicationThread: [
-      { id: 1, type: "text", sender: "Amanda White", direction: "incoming", message: "Hi, I wanted to ask if it's possible to pay my rent a few days late this month?", timestamp: "2025-12-22 04:45 PM" },
+      {
+        id: 1,
+        type: "text",
+        sender: "Amanda White",
+        direction: "incoming",
+        message:
+          "Hi, I wanted to ask if it's possible to pay my rent a few days late this month?",
+        timestamp: "2025-12-22 04:45 PM",
+      },
     ],
     conversationHistory: [
-      { id: 1, sender: "Amanda White", direction: "incoming", message: "Hi, I wanted to ask if it's possible to pay my rent a few days late this month?", timestamp: "2025-12-22 04:45 PM" },
+      {
+        id: 1,
+        sender: "Amanda White",
+        direction: "incoming",
+        message:
+          "Hi, I wanted to ask if it's possible to pay my rent a few days late this month?",
+        timestamp: "2025-12-22 04:45 PM",
+      },
     ],
   },
   {
@@ -177,7 +309,8 @@ export const mockCommunications: Communication[] = [
     type: "call",
     entityType: "tenant",
     preview: "Missed call - Question about parking permit",
-    fullMessage: "Voicemail transcript: 'Hi, this is David Martinez from Unit 208. I have a question about getting an additional parking permit...'",
+    fullMessage:
+      "Voicemail transcript: 'Hi, this is David Martinez from Unit 208. I have a question about getting an additional parking permit...'",
     timestamp: "2025-12-22 02:15 PM",
     read: true,
     responded: false,
@@ -190,14 +323,23 @@ export const mockCommunications: Communication[] = [
     type: "email",
     entityType: "tenant",
     preview: "Move-out notice for Unit 118",
-    fullMessage: "Dear Property Management,\n\nThis letter serves as my official 30-day notice to vacate Unit 118 at Pine View Apartments...",
+    fullMessage:
+      "Dear Property Management,\n\nThis letter serves as my official 30-day notice to vacate Unit 118 at Pine View Apartments...",
     timestamp: "2025-12-22 09:00 AM",
     read: true,
     responded: false,
     receivedAt: new Date("2025-12-22T09:00:00"),
     assignedTo: "Richard Surovi",
     emailHistory: [
-      { id: 1, sender: "Karen Thompson", direction: "incoming", subject: "Move-out notice for Unit 118", message: "Dear Property Management,\n\nThis letter serves as my official 30-day notice...", timestamp: "2025-12-22 09:00 AM" },
+      {
+        id: 1,
+        sender: "Karen Thompson",
+        direction: "incoming",
+        subject: "Move-out notice for Unit 118",
+        message:
+          "Dear Property Management,\n\nThis letter serves as my official 30-day notice...",
+        timestamp: "2025-12-22 09:00 AM",
+      },
     ],
   },
   {
@@ -206,7 +348,8 @@ export const mockCommunications: Communication[] = [
     type: "text",
     entityType: "tenant",
     preview: "Package was left outside my door, thanks!",
-    fullMessage: "Hey, just wanted to let you know my package was delivered and left outside my door. Thanks for the heads up about the delivery!",
+    fullMessage:
+      "Hey, just wanted to let you know my package was delivered and left outside my door. Thanks for the heads up about the delivery!",
     timestamp: "2025-12-23 10:30 AM",
     read: false,
     responded: false,
@@ -215,12 +358,40 @@ export const mockCommunications: Communication[] = [
     isGroupSms: false,
     contactId: "chris-lee-1",
     communicationThread: [
-      { id: 1, type: "text", sender: "Sarah Chen", direction: "outgoing", message: "Hi Chris, FedEx just dropped off a package for you.", timestamp: "2025-12-23 10:15 AM" },
-      { id: 2, type: "text", sender: "Chris Lee", direction: "incoming", message: "Hey, just wanted to let you know my package was delivered. Thanks!", timestamp: "2025-12-23 10:30 AM" },
+      {
+        id: 1,
+        type: "text",
+        sender: "Sarah Chen",
+        direction: "outgoing",
+        message: "Hi Chris, FedEx just dropped off a package for you.",
+        timestamp: "2025-12-23 10:15 AM",
+      },
+      {
+        id: 2,
+        type: "text",
+        sender: "Chris Lee",
+        direction: "incoming",
+        message:
+          "Hey, just wanted to let you know my package was delivered. Thanks!",
+        timestamp: "2025-12-23 10:30 AM",
+      },
     ],
     conversationHistory: [
-      { id: 1, sender: "Sarah Chen", direction: "outgoing", message: "Hi Chris, FedEx just dropped off a package for you.", timestamp: "2025-12-23 10:15 AM" },
-      { id: 2, sender: "Chris Lee", direction: "incoming", message: "Hey, just wanted to let you know my package was delivered. Thanks!", timestamp: "2025-12-23 10:30 AM" },
+      {
+        id: 1,
+        sender: "Sarah Chen",
+        direction: "outgoing",
+        message: "Hi Chris, FedEx just dropped off a package for you.",
+        timestamp: "2025-12-23 10:15 AM",
+      },
+      {
+        id: 2,
+        sender: "Chris Lee",
+        direction: "incoming",
+        message:
+          "Hey, just wanted to let you know my package was delivered. Thanks!",
+        timestamp: "2025-12-23 10:30 AM",
+      },
     ],
   },
   {
@@ -229,7 +400,8 @@ export const mockCommunications: Communication[] = [
     type: "call",
     entityType: "tenant",
     preview: "Missed call - Complaint about noisy neighbors",
-    fullMessage: "Voicemail transcript: 'Hello, this is Patricia Garcia in Unit 305. I need to report ongoing noise issues...'",
+    fullMessage:
+      "Voicemail transcript: 'Hello, this is Patricia Garcia in Unit 305. I need to report ongoing noise issues...'",
     timestamp: "2025-12-23 11:00 AM",
     read: false,
     responded: false,
@@ -240,16 +412,24 @@ export const mockCommunications: Communication[] = [
     id: 13,
     from: "Michael Brown",
     type: "email",
-    entityType: "prospectTenant",
+    entityType: "owner",
     preview: "Interest in 3BR unit at Oak Manor",
-    fullMessage: "Hi,\n\nI found your listing for the 3-bedroom unit at Oak Manor on Zillow. I'm very interested and would like to schedule a viewing...",
+    fullMessage:
+      "Hi,\nI found your listing for the 3-bedroom unit at Oak Manor on Zillow. I'm very interested and would like to schedule a viewing...",
     timestamp: "2025-12-23 08:45 AM",
     read: false,
     responded: false,
     receivedAt: new Date("2025-12-23T08:45:00"),
     assignedTo: "Sarah Chen",
     emailHistory: [
-      { id: 1, sender: "Michael Brown", direction: "incoming", subject: "Interest in 3BR unit at Oak Manor", message: "Hi,\n\nI found your listing for the 3-bedroom unit...", timestamp: "2025-12-23 08:45 AM" },
+      {
+        id: 1,
+        sender: "Michael Brown",
+        direction: "incoming",
+        subject: "Interest in 3BR unit at Oak Manor",
+        message: "Hi,\nI found your listing for the 3-bedroom unit...",
+        timestamp: "2025-12-23 08:45 AM",
+      },
     ],
   },
   {
@@ -258,15 +438,30 @@ export const mockCommunications: Communication[] = [
     type: "text",
     entityType: "tenant",
     preview: "When will the pool be open again?",
-    fullMessage: "Hi! Quick question - when will the community pool be open again after the maintenance? Thanks!",
+    fullMessage:
+      "Hi! Quick question - when will the community pool be open again after the maintenance? Thanks!",
     timestamp: "2025-12-23 09:15 AM",
     read: true,
     responded: true,
     receivedAt: new Date("2025-12-23T09:15:00"),
     assignedTo: "Mike Johnson",
     conversationHistory: [
-      { id: 1, sender: "Jennifer Adams", direction: "incoming", message: "Hi! Quick question - when will the community pool be open again?", timestamp: "2025-12-23 09:15 AM" },
-      { id: 2, sender: "Mike Johnson", direction: "outgoing", message: "Hi Jennifer! The pool maintenance should be completed by this Friday.", timestamp: "2025-12-23 09:30 AM" },
+      {
+        id: 1,
+        sender: "Jennifer Adams",
+        direction: "incoming",
+        message:
+          "Hi! Quick question - when will the community pool be open again?",
+        timestamp: "2025-12-23 09:15 AM",
+      },
+      {
+        id: 2,
+        sender: "Mike Johnson",
+        direction: "outgoing",
+        message:
+          "Hi Jennifer! The pool maintenance should be completed by this Friday.",
+        timestamp: "2025-12-23 09:30 AM",
+      },
     ],
   },
   {
@@ -275,7 +470,8 @@ export const mockCommunications: Communication[] = [
     type: "call",
     entityType: "tenant",
     preview: "Missed call - Lease renewal discussion",
-    fullMessage: "Voicemail transcript: 'Hi, this is Thomas Wilson from Unit 210. My lease is coming up for renewal next month...'",
+    fullMessage:
+      "Voicemail transcript: 'Hi, this is Thomas Wilson from Unit 210. My lease is coming up for renewal next month...'",
     timestamp: "2025-12-21 03:30 PM",
     read: true,
     responded: true,
@@ -288,22 +484,55 @@ export const mockCommunications: Communication[] = [
     type: "text",
     entityType: "tenant",
     preview: "Water shutoff notice - Dec 26th 9AM-12PM",
-    fullMessage: "NOTICE: Water will be shut off on Dec 26th from 9AM-12PM for pipe maintenance in Building A. Please plan accordingly.",
+    fullMessage:
+      "NOTICE: Water will be shut off on Dec 26th from 9AM-12PM for pipe maintenance in Building A. Please plan accordingly.",
     timestamp: "2025-12-23 08:00 AM",
     read: false,
     responded: false,
     receivedAt: new Date("2025-12-23T08:00:00"),
     assignedTo: "Mike Johnson",
     isGroupSms: true,
-    groupParticipants: ["John Smith", "Emily Brown", "Robert Wilson", "Lisa Chen", "+12 more"],
+    groupParticipants: [
+      "John Smith",
+      "Emily Brown",
+      "Robert Wilson",
+      "Lisa Chen",
+      "+12 more",
+    ],
     contactId: "building-a-group",
     communicationThread: [
-      { id: 1, type: "text", sender: "Mike Johnson", direction: "outgoing", message: "NOTICE: Water will be shut off on Dec 26th from 9AM-12PM...", timestamp: "2025-12-23 08:00 AM" },
-      { id: 2, type: "text", sender: "John Smith", direction: "incoming", message: "Thanks for the heads up!", timestamp: "2025-12-23 08:15 AM" },
+      {
+        id: 1,
+        type: "text",
+        sender: "Mike Johnson",
+        direction: "outgoing",
+        message: "NOTICE: Water will be shut off on Dec 26th from 9AM-12PM...",
+        timestamp: "2025-12-23 08:00 AM",
+      },
+      {
+        id: 2,
+        type: "text",
+        sender: "John Smith",
+        direction: "incoming",
+        message: "Thanks for the heads up!",
+        timestamp: "2025-12-23 08:15 AM",
+      },
     ],
     conversationHistory: [
-      { id: 1, sender: "Mike Johnson", direction: "outgoing", message: "NOTICE: Water will be shut off on Dec 26th from 9AM-12PM...", timestamp: "2025-12-23 08:00 AM" },
-      { id: 2, sender: "John Smith", direction: "incoming", message: "Thanks for the heads up!", timestamp: "2025-12-23 08:15 AM" },
+      {
+        id: 1,
+        sender: "Mike Johnson",
+        direction: "outgoing",
+        message: "NOTICE: Water will be shut off on Dec 26th from 9AM-12PM...",
+        timestamp: "2025-12-23 08:00 AM",
+      },
+      {
+        id: 2,
+        sender: "John Smith",
+        direction: "incoming",
+        message: "Thanks for the heads up!",
+        timestamp: "2025-12-23 08:15 AM",
+      },
     ],
   },
   {
@@ -312,22 +541,54 @@ export const mockCommunications: Communication[] = [
     type: "text",
     entityType: "tenant",
     preview: "Holiday office hours reminder",
-    fullMessage: "Reminder: Office will be closed Dec 25-26 for the holidays. Emergency maintenance line available 24/7.",
+    fullMessage:
+      "Reminder: Office will be closed Dec 25-26 for the holidays. Emergency maintenance line available 24/7.",
     timestamp: "2025-12-22 04:00 PM",
     read: true,
     responded: false,
     receivedAt: new Date("2025-12-22T16:00:00"),
     assignedTo: "Nina Patel",
     isGroupSms: true,
-    groupParticipants: ["Amanda White", "David Martinez", "Karen Thompson", "+8 more"],
+    groupParticipants: [
+      "Amanda White",
+      "David Martinez",
+      "Karen Thompson",
+      "+8 more",
+    ],
     contactId: "oak-manor-group",
     communicationThread: [
-      { id: 1, type: "text", sender: "Nina Patel", direction: "outgoing", message: "Reminder: Office will be closed Dec 25-26 for the holidays.", timestamp: "2025-12-22 04:00 PM" },
-      { id: 2, type: "text", sender: "Amanda White", direction: "incoming", message: "Thank you for the reminder! Happy holidays!", timestamp: "2025-12-22 04:15 PM" },
+      {
+        id: 1,
+        type: "text",
+        sender: "Nina Patel",
+        direction: "outgoing",
+        message: "Reminder: Office will be closed Dec 25-26 for the holidays.",
+        timestamp: "2025-12-22 04:00 PM",
+      },
+      {
+        id: 2,
+        type: "text",
+        sender: "Amanda White",
+        direction: "incoming",
+        message: "Thank you for the reminder! Happy holidays!",
+        timestamp: "2025-12-22 04:15 PM",
+      },
     ],
     conversationHistory: [
-      { id: 1, sender: "Nina Patel", direction: "outgoing", message: "Reminder: Office will be closed Dec 25-26 for the holidays.", timestamp: "2025-12-22 04:00 PM" },
-      { id: 2, sender: "Amanda White", direction: "incoming", message: "Thank you for the reminder! Happy holidays!", timestamp: "2025-12-22 04:15 PM" },
+      {
+        id: 1,
+        sender: "Nina Patel",
+        direction: "outgoing",
+        message: "Reminder: Office will be closed Dec 25-26 for the holidays.",
+        timestamp: "2025-12-22 04:00 PM",
+      },
+      {
+        id: 2,
+        sender: "Amanda White",
+        direction: "incoming",
+        message: "Thank you for the reminder! Happy holidays!",
+        timestamp: "2025-12-22 04:15 PM",
+      },
     ],
   },
-]
+];

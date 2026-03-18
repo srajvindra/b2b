@@ -834,8 +834,9 @@ export function TenantApplicationDetailView({
     escalatedTo: (t as { escalatedTo?: string }).escalatedTo || "",
     status: t.status,
     processName: t.processName || undefined,
-    processEntityType: t.processName ? ("leaseProspect" as const) : undefined,
+    // processEntityType: t.processName ? ("leaseProspect" as const) : undefined,
     autoCreated: t.autoCreated,
+    type: "task",
   })), [prospectTasks])
 
   const tasksCardState = useTasksCardState({ tasks: dashboardTasks })

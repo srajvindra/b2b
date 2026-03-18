@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Search, LayoutGrid, List, UserPlus, Settings, ChevronRight, ArrowLeft, FolderOpen, Plus, Users, TrendingUp, Filter, CalendarIcon, ChevronDown, X, RotateCcw } from "lucide-react"
+import { Search, LayoutGrid, List, UserPlus, Settings, Download, ArrowLeft, FolderOpen, Plus, Users, TrendingUp, Filter, CalendarIcon, ChevronDown, X, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -579,6 +579,7 @@ export default function LeadsPageContent({
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={exportCSV}>
+            <Download className="h-4 w-4" />
             Export
           </Button>
           <Button className="bg-teal-600 hover:bg-teal-700 text-white">
@@ -846,58 +847,58 @@ export default function LeadsPageContent({
                     </th>
                     {/* Name Column - Plain Header */}
                     {isColumnVisible("name") && (
-                    <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Name</th>
                     )}
 
                     {/* Emails Sent Column Filter */}
                     {isColumnVisible("emailsSent") && (
-                    <th className="text-left p-3">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
-                            Emails Sent
-                            <ChevronDown className={`h-3 w-3 ${selectedEmailsSent.length > 0 ? 'text-teal-600' : ''}`} />
-                            {selectedEmailsSent.length > 0 && (
-                              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                                {selectedEmailsSent.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[200px] p-0" align="start">
-                          <div className="p-2 border-b">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">Emails Sent</span>
+                      <th className="text-left p-3">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
+                              Emails Sent
+                              <ChevronDown className={`h-3 w-3 ${selectedEmailsSent.length > 0 ? 'text-teal-600' : ''}`} />
                               {selectedEmailsSent.length > 0 && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedEmailsSent([])}>
-                                  Clear
-                                </Button>
+                                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
+                                  {selectedEmailsSent.length}
+                                </Badge>
                               )}
-                            </div>
-                          </div>
-                          <div className="max-h-[200px] overflow-y-auto p-2">
-                            {EMAIL_SENT_RANGES.map((range) => (
-                              <div key={range.id} className="flex items-center space-x-2 py-1.5">
-                                <Checkbox
-                                  id={`th-email-${range.id}`}
-                                  checked={selectedEmailsSent.includes(range.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedEmailsSent([...selectedEmailsSent, range.id])
-                                    } else {
-                                      setSelectedEmailsSent(selectedEmailsSent.filter((e) => e !== range.id))
-                                    }
-                                  }}
-                                />
-                                <label htmlFor={`th-email-${range.id}`} className="text-sm leading-none cursor-pointer flex-1">
-                                  {range.name}
-                                </label>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[200px] p-0" align="start">
+                            <div className="p-2 border-b">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">Emails Sent</span>
+                                {selectedEmailsSent.length > 0 && (
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedEmailsSent([])}>
+                                    Clear
+                                  </Button>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
+                            </div>
+                            <div className="max-h-[200px] overflow-y-auto p-2">
+                              {EMAIL_SENT_RANGES.map((range) => (
+                                <div key={range.id} className="flex items-center space-x-2 py-1.5">
+                                  <Checkbox
+                                    id={`th-email-${range.id}`}
+                                    checked={selectedEmailsSent.includes(range.id)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedEmailsSent([...selectedEmailsSent, range.id])
+                                      } else {
+                                        setSelectedEmailsSent(selectedEmailsSent.filter((e) => e !== range.id))
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`th-email-${range.id}`} className="text-sm leading-none cursor-pointer flex-1">
+                                    {range.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </th>
                     )}
 
                     {/* Units Column Filter - For Owners and Tenants (Lease Prospects) views */}
@@ -960,286 +961,286 @@ export default function LeadsPageContent({
 
                     {/* Next Action Column - Plain Header */}
                     {isColumnVisible("nextAction") && (
-                    <th className="text-left p-3 font-medium text-muted-foreground">Next Action</th>
+                      <th className="text-left p-3 font-medium text-muted-foreground">Next Action</th>
                     )}
 
                     {/* Stage Column Filter */}
                     {isColumnVisible("stage") && (
-                    <th className="text-left p-3">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
-                            Stage
-                            <ChevronDown className={`h-3 w-3 ${selectedStages.length > 0 ? 'text-teal-600' : ''}`} />
-                            {selectedStages.length > 0 && (
-                              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                                {selectedStages.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[280px] p-0" align="start">
-                          <div className="p-2 border-b">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium">Stage</span>
+                      <th className="text-left p-3">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
+                              Stage
+                              <ChevronDown className={`h-3 w-3 ${selectedStages.length > 0 ? 'text-teal-600' : ''}`} />
                               {selectedStages.length > 0 && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedStages([])}>
-                                  Clear
-                                </Button>
+                                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
+                                  {selectedStages.length}
+                                </Badge>
                               )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0" align="start">
+                            <div className="p-2 border-b">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium">Stage</span>
+                                {selectedStages.length > 0 && (
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedStages([])}>
+                                    Clear
+                                  </Button>
+                                )}
+                              </div>
+                              <Input
+                                placeholder="Search stages..."
+                                value={stageSearchQuery}
+                                onChange={(e) => setStageSearchQuery(e.target.value)}
+                                className="h-8"
+                              />
                             </div>
-                            <Input
-                              placeholder="Search stages..."
-                              value={stageSearchQuery}
-                              onChange={(e) => setStageSearchQuery(e.target.value)}
-                              className="h-8"
-                            />
-                          </div>
-                          <div className="max-h-[200px] overflow-y-auto p-2">
-                            {kanbanStages
-                              .filter(stage => stage.toLowerCase().includes(stageSearchQuery.toLowerCase()))
-                              .map((stage) => (
-                                <div key={stage} className="flex items-center space-x-2 py-1.5">
-                                  <Checkbox
-                                    id={`th-stage-${stage}`}
-                                    checked={selectedStages.includes(stage)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSelectedStages([...selectedStages, stage])
-                                      } else {
-                                        setSelectedStages(selectedStages.filter((s) => s !== stage))
-                                      }
-                                    }}
-                                  />
-                                  <label htmlFor={`th-stage-${stage}`} className="text-sm leading-none cursor-pointer flex-1">
-                                    {stage}
-                                  </label>
-                                </div>
-                              ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
+                            <div className="max-h-[200px] overflow-y-auto p-2">
+                              {kanbanStages
+                                .filter(stage => stage.toLowerCase().includes(stageSearchQuery.toLowerCase()))
+                                .map((stage) => (
+                                  <div key={stage} className="flex items-center space-x-2 py-1.5">
+                                    <Checkbox
+                                      id={`th-stage-${stage}`}
+                                      checked={selectedStages.includes(stage)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedStages([...selectedStages, stage])
+                                        } else {
+                                          setSelectedStages(selectedStages.filter((s) => s !== stage))
+                                        }
+                                      }}
+                                    />
+                                    <label htmlFor={`th-stage-${stage}`} className="text-sm leading-none cursor-pointer flex-1">
+                                      {stage}
+                                    </label>
+                                  </div>
+                                ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </th>
                     )}
 
                     {/* Assignee Column Filter */}
                     {isColumnVisible("assignee") && (
-                    <th className="text-left p-3">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
-                            Assignee
-                            <ChevronDown className={`h-3 w-3 ${selectedAssignees.length > 0 ? 'text-teal-600' : ''}`} />
-                            {selectedAssignees.length > 0 && (
-                              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                                {selectedAssignees.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[220px] p-0" align="start">
-                          <div className="p-2 border-b">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium">Assignee</span>
+                      <th className="text-left p-3">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
+                              Assignee
+                              <ChevronDown className={`h-3 w-3 ${selectedAssignees.length > 0 ? 'text-teal-600' : ''}`} />
                               {selectedAssignees.length > 0 && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedAssignees([])}>
-                                  Clear
-                                </Button>
+                                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
+                                  {selectedAssignees.length}
+                                </Badge>
                               )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[220px] p-0" align="start">
+                            <div className="p-2 border-b">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium">Assignee</span>
+                                {selectedAssignees.length > 0 && (
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedAssignees([])}>
+                                    Clear
+                                  </Button>
+                                )}
+                              </div>
+                              <Input
+                                placeholder="Search assignee..."
+                                value={assigneeSearchQuery}
+                                onChange={(e) => setAssigneeSearchQuery(e.target.value)}
+                                className="h-8"
+                              />
                             </div>
-                            <Input
-                              placeholder="Search assignee..."
-                              value={assigneeSearchQuery}
-                              onChange={(e) => setAssigneeSearchQuery(e.target.value)}
-                              className="h-8"
-                            />
-                          </div>
-                          <div className="max-h-[200px] overflow-y-auto p-2">
-                            {ASSIGNEES
-                              .filter(assignee => assignee.name.toLowerCase().includes(assigneeSearchQuery.toLowerCase()))
-                              .map((assignee) => (
-                                <div key={assignee.id} className="flex items-center space-x-2 py-1.5">
-                                  <Checkbox
-                                    id={`th-assignee-${assignee.id}`}
-                                    checked={selectedAssignees.includes(assignee.id)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSelectedAssignees([...selectedAssignees, assignee.id])
-                                      } else {
-                                        setSelectedAssignees(selectedAssignees.filter((a) => a !== assignee.id))
-                                      }
-                                    }}
-                                  />
-                                  <label htmlFor={`th-assignee-${assignee.id}`} className="text-sm leading-none cursor-pointer flex-1">
-                                    {assignee.name}
-                                  </label>
-                                </div>
-                              ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
+                            <div className="max-h-[200px] overflow-y-auto p-2">
+                              {ASSIGNEES
+                                .filter(assignee => assignee.name.toLowerCase().includes(assigneeSearchQuery.toLowerCase()))
+                                .map((assignee) => (
+                                  <div key={assignee.id} className="flex items-center space-x-2 py-1.5">
+                                    <Checkbox
+                                      id={`th-assignee-${assignee.id}`}
+                                      checked={selectedAssignees.includes(assignee.id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedAssignees([...selectedAssignees, assignee.id])
+                                        } else {
+                                          setSelectedAssignees(selectedAssignees.filter((a) => a !== assignee.id))
+                                        }
+                                      }}
+                                    />
+                                    <label htmlFor={`th-assignee-${assignee.id}`} className="text-sm leading-none cursor-pointer flex-1">
+                                      {assignee.name}
+                                    </label>
+                                  </div>
+                                ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </th>
                     )}
 
                     {/* Source Column Filter */}
                     {isColumnVisible("source") && (
-                    <th className="text-left p-3">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
-                            Source
-                            <ChevronDown className={`h-3 w-3 ${selectedSources.length > 0 ? 'text-teal-600' : ''}`} />
-                            {selectedSources.length > 0 && (
-                              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                                {selectedSources.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[220px] p-0" align="start">
-                          <div className="p-2 border-b">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-medium">Source</span>
+                      <th className="text-left p-3">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
+                              Source
+                              <ChevronDown className={`h-3 w-3 ${selectedSources.length > 0 ? 'text-teal-600' : ''}`} />
                               {selectedSources.length > 0 && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedSources([])}>
-                                  Clear
-                                </Button>
+                                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
+                                  {selectedSources.length}
+                                </Badge>
                               )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[220px] p-0" align="start">
+                            <div className="p-2 border-b">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium">Source</span>
+                                {selectedSources.length > 0 && (
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedSources([])}>
+                                    Clear
+                                  </Button>
+                                )}
+                              </div>
+                              <Input
+                                placeholder="Search source..."
+                                value={sourceSearchQuery}
+                                onChange={(e) => setSourceSearchQuery(e.target.value)}
+                                className="h-8"
+                              />
                             </div>
-                            <Input
-                              placeholder="Search source..."
-                              value={sourceSearchQuery}
-                              onChange={(e) => setSourceSearchQuery(e.target.value)}
-                              className="h-8"
-                            />
-                          </div>
-                          <div className="max-h-[200px] overflow-y-auto p-2">
-                            {SOURCES
-                              .filter(source => source.toLowerCase().includes(sourceSearchQuery.toLowerCase()))
-                              .map((source) => (
-                                <div key={source} className="flex items-center space-x-2 py-1.5">
-                                  <Checkbox
-                                    id={`th-source-${source}`}
-                                    checked={selectedSources.includes(source)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSelectedSources([...selectedSources, source])
-                                      } else {
-                                        setSelectedSources(selectedSources.filter((s) => s !== source))
-                                      }
-                                    }}
-                                  />
-                                  <label htmlFor={`th-source-${source}`} className="text-sm leading-none cursor-pointer flex-1">
-                                    {source}
-                                  </label>
-                                </div>
-                              ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
+                            <div className="max-h-[200px] overflow-y-auto p-2">
+                              {SOURCES
+                                .filter(source => source.toLowerCase().includes(sourceSearchQuery.toLowerCase()))
+                                .map((source) => (
+                                  <div key={source} className="flex items-center space-x-2 py-1.5">
+                                    <Checkbox
+                                      id={`th-source-${source}`}
+                                      checked={selectedSources.includes(source)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedSources([...selectedSources, source])
+                                        } else {
+                                          setSelectedSources(selectedSources.filter((s) => s !== source))
+                                        }
+                                      }}
+                                    />
+                                    <label htmlFor={`th-source-${source}`} className="text-sm leading-none cursor-pointer flex-1">
+                                      {source}
+                                    </label>
+                                  </div>
+                                ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </th>
                     )}
 
                     {/* Last Touch Column Filter */}
                     {isColumnVisible("lastTouch") && (
-                    <th className="text-left p-3">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
-                            Last Touch
-                            <ChevronDown className={`h-3 w-3 ${selectedLastTouch.length > 0 ? 'text-teal-600' : ''}`} />
-                            {selectedLastTouch.length > 0 && (
-                              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                                {selectedLastTouch.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[200px] p-0" align="start">
-                          <div className="p-2 border-b">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">Last Touch</span>
+                      <th className="text-left p-3">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
+                              Last Touch
+                              <ChevronDown className={`h-3 w-3 ${selectedLastTouch.length > 0 ? 'text-teal-600' : ''}`} />
                               {selectedLastTouch.length > 0 && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedLastTouch([])}>
-                                  Clear
-                                </Button>
+                                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
+                                  {selectedLastTouch.length}
+                                </Badge>
                               )}
-                            </div>
-                          </div>
-                          <div className="max-h-[200px] overflow-y-auto p-2">
-                            {LAST_TOUCH_RANGES.map((range) => (
-                              <div key={range.id} className="flex items-center space-x-2 py-1.5">
-                                <Checkbox
-                                  id={`th-lasttouch-${range.id}`}
-                                  checked={selectedLastTouch.includes(range.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedLastTouch([...selectedLastTouch, range.id])
-                                    } else {
-                                      setSelectedLastTouch(selectedLastTouch.filter((l) => l !== range.id))
-                                    }
-                                  }}
-                                />
-                                <label htmlFor={`th-lasttouch-${range.id}`} className="text-sm leading-none cursor-pointer flex-1">
-                                  {range.name}
-                                </label>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[200px] p-0" align="start">
+                            <div className="p-2 border-b">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">Last Touch</span>
+                                {selectedLastTouch.length > 0 && (
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedLastTouch([])}>
+                                    Clear
+                                  </Button>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
+                            </div>
+                            <div className="max-h-[200px] overflow-y-auto p-2">
+                              {LAST_TOUCH_RANGES.map((range) => (
+                                <div key={range.id} className="flex items-center space-x-2 py-1.5">
+                                  <Checkbox
+                                    id={`th-lasttouch-${range.id}`}
+                                    checked={selectedLastTouch.includes(range.id)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedLastTouch([...selectedLastTouch, range.id])
+                                      } else {
+                                        setSelectedLastTouch(selectedLastTouch.filter((l) => l !== range.id))
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`th-lasttouch-${range.id}`} className="text-sm leading-none cursor-pointer flex-1">
+                                    {range.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </th>
                     )}
 
                     {/* Created At Column Filter */}
                     {isColumnVisible("createdAt") && (
-                    <th className="text-left p-3">
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
-                            Created At
-                            <ChevronDown className={`h-3 w-3 ${selectedCreated.length > 0 ? 'text-teal-600' : ''}`} />
-                            {selectedCreated.length > 0 && (
-                              <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
-                                {selectedCreated.length}
-                              </Badge>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[200px] p-0" align="start">
-                          <div className="p-2 border-b">
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium">Created</span>
+                      <th className="text-left p-3">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" className="h-auto p-0 font-medium text-muted-foreground hover:text-foreground hover:bg-transparent flex items-center gap-1">
+                              Created At
+                              <ChevronDown className={`h-3 w-3 ${selectedCreated.length > 0 ? 'text-teal-600' : ''}`} />
                               {selectedCreated.length > 0 && (
-                                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedCreated([])}>
-                                  Clear
-                                </Button>
+                                <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs bg-teal-100 text-teal-700">
+                                  {selectedCreated.length}
+                                </Badge>
                               )}
-                            </div>
-                          </div>
-                          <div className="max-h-[200px] overflow-y-auto p-2">
-                            {CREATED_RANGES.map((range) => (
-                              <div key={range.id} className="flex items-center space-x-2 py-1.5">
-                                <Checkbox
-                                  id={`th-created-${range.id}`}
-                                  checked={selectedCreated.includes(range.id)}
-                                  onCheckedChange={(checked) => {
-                                    if (checked) {
-                                      setSelectedCreated([...selectedCreated, range.id])
-                                    } else {
-                                      setSelectedCreated(selectedCreated.filter((c) => c !== range.id))
-                                    }
-                                  }}
-                                />
-                                <label htmlFor={`th-created-${range.id}`} className="text-sm leading-none cursor-pointer flex-1">
-                                  {range.name}
-                                </label>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[200px] p-0" align="start">
+                            <div className="p-2 border-b">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium">Created</span>
+                                {selectedCreated.length > 0 && (
+                                  <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setSelectedCreated([])}>
+                                    Clear
+                                  </Button>
+                                )}
                               </div>
-                            ))}
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </th>
+                            </div>
+                            <div className="max-h-[200px] overflow-y-auto p-2">
+                              {CREATED_RANGES.map((range) => (
+                                <div key={range.id} className="flex items-center space-x-2 py-1.5">
+                                  <Checkbox
+                                    id={`th-created-${range.id}`}
+                                    checked={selectedCreated.includes(range.id)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedCreated([...selectedCreated, range.id])
+                                      } else {
+                                        setSelectedCreated(selectedCreated.filter((c) => c !== range.id))
+                                      }
+                                    }}
+                                  />
+                                  <label htmlFor={`th-created-${range.id}`} className="text-sm leading-none cursor-pointer flex-1">
+                                    {range.name}
+                                  </label>
+                                </div>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </th>
                     )}
 
                     {/* Actions Column with Reset Button */}
@@ -1281,22 +1282,22 @@ export default function LeadsPageContent({
                         />
                       </td>
                       {isColumnVisible("name") && (
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-teal-100 text-teal-700 text-xs">
-                              {lead.name
-                                .split(" ")
-                                .map((n: string) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium text-foreground">{lead.name}</p>
-                            <p className="text-xs text-muted-foreground">{lead.email}</p>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="bg-teal-100 text-teal-700 text-xs">
+                                {lead.name
+                                  .split(" ")
+                                  .map((n: string) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium text-foreground">{lead.name}</p>
+                              <p className="text-xs text-muted-foreground">{lead.email}</p>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
                       )}
                       {isColumnVisible("emailsSent") && (
                         <td className="p-4">
@@ -1342,42 +1343,42 @@ export default function LeadsPageContent({
                         </td>
                       )}
                       {isColumnVisible("nextAction") && (
-                      <td className="p-4 text-sm text-muted-foreground">{lead.nextAction || lead.nextFollowUp}</td>
+                        <td className="p-4 text-sm text-muted-foreground">{lead.nextAction || lead.nextFollowUp}</td>
                       )}
                       {isColumnVisible("stage") && (
-                      <td className="p-4">
-                        <Badge variant="outline" className={getStageBadgeStyle(lead.stage)}>
-                          {lead.stage}
-                        </Badge>
-                      </td>
+                        <td className="p-4">
+                          <Badge variant="outline" className={getStageBadgeStyle(lead.stage)}>
+                            {lead.stage}
+                          </Badge>
+                        </td>
                       )}
                       {isColumnVisible("assignee") && (
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
-                              {lead.assignedTo
-                                .split(" ")
-                                .map((n: string) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm text-muted-foreground">{lead.assignedTo}</span>
-                        </div>
-                      </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="bg-gray-100 text-gray-600 text-xs">
+                                {lead.assignedTo
+                                  .split(" ")
+                                  .map((n: string) => n[0])
+                                  .join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm text-muted-foreground">{lead.assignedTo}</span>
+                          </div>
+                        </td>
                       )}
                       {isColumnVisible("source") && (
-                      <td className="p-4">
-                        <Badge variant="secondary" className="text-xs">
-                          {lead.source || "N/A"}
-                        </Badge>
-                      </td>
+                        <td className="p-4">
+                          <Badge variant="secondary" className="text-xs">
+                            {lead.source || "N/A"}
+                          </Badge>
+                        </td>
                       )}
                       {isColumnVisible("lastTouch") && (
-                      <td className="p-4 text-sm text-muted-foreground">{lead.lastTouch || "N/A"}</td>
+                        <td className="p-4 text-sm text-muted-foreground">{lead.lastTouch || "N/A"}</td>
                       )}
                       {isColumnVisible("createdAt") && (
-                      <td className="p-4 text-sm text-muted-foreground">{lead.createdAt}</td>
+                        <td className="p-4 text-sm text-muted-foreground">{lead.createdAt}</td>
                       )}
                       <td className="p-4">
                         <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
@@ -1625,8 +1626,8 @@ export default function LeadsPageContent({
                         ))}
                       {advancedFilterFields.filter((f) => f.toLowerCase().includes(modalFieldSearch.toLowerCase()))
                         .length === 0 && (
-                        <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
-                      )}
+                          <div className="px-3 py-2 text-sm text-muted-foreground">No matching fields</div>
+                        )}
                     </div>
                   </>
                 )}

@@ -43,10 +43,15 @@ import {
   Upload,
   FileIcon,
   Trash2,
+  Mail,
+  Phone,
+  MessageSquare,
 } from "lucide-react"
 import { getTasks } from "@/features/contacts/data/ownerDetailData"
 import type { OwnerTask } from "@/features/contacts/types"
 import { useRouter } from "next/navigation"
+import { CommunicationModal } from "@/features/dashboard/components/CommunicationModal"
+import type { Communication } from "@/features/dashboard/types"
 
 type EntityType = "Tenant" | "Owner" | "Prospect Owner" | "Lease Prospect" | "Property"
 
@@ -171,6 +176,8 @@ export function AllTaskPage() {
 
   const [viewTaskModalOpen, setViewTaskModalOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<OwnerTask | null>(null)
+  const [showCommModal, setShowCommModal] = useState(false)
+  const [selectedCommunication, setSelectedCommunication] = useState<Communication | null>(null)
 
   const [taskDialogMode, setTaskDialogMode] = useState<"edit" | "add" | null>(null)
   const [taskForm, setTaskForm] = useState({
@@ -397,8 +404,34 @@ export function AllTaskPage() {
     setSearchQuery("")
   }
 
+  const openAutoCreatedCommunication = (task: OwnerTask) => {
+    const title = task.title?.toLowerCase?.() ?? ""
+    const commType: Communication["type"] = title.includes("call")
+      ? "call"
+      : title.includes("email")
+        ? "email"
+        : "text"
+
+    setSelectedCommunication({
+      id: Number(task.id.replace(/\D/g, "")) || Date.now(),
+      from: task.relatedEntityName || task.title,
+      type: commType,
+      preview: task.title,
+      fullMessage: task.description || task.title,
+      timestamp: task.dueDate,
+      read: true,
+      responded: false,
+      receivedAt: new Date(`${task.dueDate}T12:00:00`),
+      assignedTo: task.assignee || "—",
+    })
+    setShowCommModal(true)
+  }
+
   const handleViewTask = (task: OwnerTask) => {
-    console.log(task)
+    if (task.autoCreated) {
+      openAutoCreatedCommunication(task)
+      return
+    }
     setSelectedTask(task)
     setViewTaskModalOpen(true)
   }
@@ -901,15 +934,55 @@ export function AllTaskPage() {
                           <tr key={task.id} className="">
                             {/* Task */}
                             <td className="p-3">
-                              <div className="flex flex-col gap-1">
-                                <span className="text-sm font-medium text-slate-800">{task.title}</span>
-                                {task.processName && (
-                                  <div className="flex items-center gap-1 cursor-pointer hover:underline text-teal-600" onClick={() => router.push(`/operations/all-tasks/process/proc-1`)}>
-                                    <Workflow className="h-3 w-3 text-teal-600" />
-                                    <span className="text-xs text-teal-600">{task.processName}</span>
-                                  </div>
-                                )}
-                                {task.autoCreated && <span className="text-xs text-muted-foreground">Auto-created</span>}
+                              <div
+                                className="flex items-start gap-2 min-w-0 cursor-pointer"
+                                onClick={() => (task.autoCreated ? openAutoCreatedCommunication(task) : handleViewTask(task))}
+                              >
+                                <div
+                                  className="p-2 rounded-full relative shrink-0"
+                                  style={{
+                                    backgroundColor: task.autoCreated
+                                      ? (() => {
+                                        const t = (task.title ?? "").toLowerCase()
+                                        if (t.includes("email")) return "#c8e6cc"
+                                        if (t.includes("call")) return "#b3e8e5"
+                                        return "#E3F2FD"
+                                      })()
+                                      : "#f1f5f9",
+                                  }}
+                                >
+                                  {task.autoCreated ? (
+                                    (() => {
+                                      const t = (task.title ?? "").toLowerCase()
+                                      if (t.includes("email")) return <Mail className="h-4 w-4 text-green-800" />
+                                      if (t.includes("call")) return <Phone className="h-4 w-4 text-teal-800" />
+                                      return <MessageSquare className="h-4 w-4 text-blue-800" />
+                                    })()
+                                  ) : (
+                                    <CheckSquare className="h-4 w-4 text-slate-600" />
+                                  )}
+                                </div>
+
+                                <div className="flex flex-col gap-1 min-w-0">
+                                  <span className="text-sm font-medium text-slate-800">
+                                    {task.title}
+                                  </span>
+                                  {task.processName && (
+                                    <div
+                                      className="flex items-center gap-1 cursor-pointer hover:underline text-teal-600"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        router.push(`/operations/all-tasks/process/proc-1`)
+                                      }}
+                                    >
+                                      <Workflow className="h-3 w-3 text-teal-600" />
+                                      <span className="text-xs text-teal-600">{task.processName}</span>
+                                    </div>
+                                  )}
+                                  {task.autoCreated && (
+                                    <span className="text-xs text-muted-foreground">Auto-created</span>
+                                  )}
+                                </div>
                               </div>
                             </td>
                             {/* Contract */}
@@ -1176,6 +1249,15 @@ export function AllTaskPage() {
         </Card>
       </Tabs>
 
+      <CommunicationModal
+        communication={selectedCommunication}
+        open={showCommModal}
+        onOpenChange={(open) => {
+          setShowCommModal(open)
+          if (!open) setSelectedCommunication(null)
+        }}
+      />
+
       {/* View Task Dialog */}
       <Dialog open={viewTaskModalOpen} onOpenChange={setViewTaskModalOpen}>
         <DialogContent className="sm:max-w-md">
@@ -1355,7 +1437,7 @@ export function AllTaskPage() {
                   </Select>
                 </div>
               )} */}
-              <div>
+              {/* <div>
                 <Label className="text-xs font-medium text-muted-foreground">Priority</Label>
                 <Select
                   value={taskForm.priority}
@@ -1370,63 +1452,63 @@ export function AllTaskPage() {
                     <SelectItem value="Low">Low</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-muted-foreground">Assignee</Label>
-              <Popover open={dialogAssigneeOpen} onOpenChange={setDialogAssigneeOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full mt-1 justify-between font-normal"
-                  >
-                    {taskForm.assignee ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                          {taskForm.assignee.split(" ").map((n) => n[0]).join("")}
+              </div> */}
+              <div>
+                <Label className="text-xs font-medium text-muted-foreground">Assignee</Label>
+                <Popover open={dialogAssigneeOpen} onOpenChange={setDialogAssigneeOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full mt-1 justify-between font-normal"
+                    >
+                      {taskForm.assignee ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                            {taskForm.assignee.split(" ").map((n) => n[0]).join("")}
+                          </div>
+                          <span className="truncate">{taskForm.assignee}</span>
                         </div>
-                        <span className="truncate">{taskForm.assignee}</span>
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">Select assignee...</span>
-                    )}
-                    <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Search staff..." />
-                    <CommandList>
-                      <CommandEmpty>No staff found.</CommandEmpty>
-                      <CommandGroup>
-                        {STAFF_MEMBERS.map((staff) => (
-                          <CommandItem
-                            key={staff.id}
-                            value={staff.name}
-                            onSelect={() => {
-                              setTaskForm({ ...taskForm, assignee: staff.name })
-                              setDialogAssigneeOpen(false)
-                            }}
-                            className="flex items-center gap-2"
-                          >
-                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                              {staff.name.split(" ").map((n) => n[0]).join("")}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm text-slate-900">{staff.name}</span>
-                              <span className="text-[10px] text-slate-500">{staff.role}</span>
-                            </div>
-                            {taskForm.assignee === staff.name && (
-                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                            )}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                      ) : (
+                        <span className="text-muted-foreground">Select assignee...</span>
+                      )}
+                      <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Search staff..." />
+                      <CommandList>
+                        <CommandEmpty>No staff found.</CommandEmpty>
+                        <CommandGroup>
+                          {STAFF_MEMBERS.map((staff) => (
+                            <CommandItem
+                              key={staff.id}
+                              value={staff.name}
+                              onSelect={() => {
+                                setTaskForm({ ...taskForm, assignee: staff.name })
+                                setDialogAssigneeOpen(false)
+                              }}
+                              className="flex items-center gap-2"
+                            >
+                              <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                {staff.name.split(" ").map((n) => n[0]).join("")}
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-sm text-slate-900">{staff.name}</span>
+                                <span className="text-[10px] text-slate-500">{staff.role}</span>
+                              </div>
+                              {taskForm.assignee === staff.name && (
+                                <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                              )}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
             <div>
               <Label className="text-xs font-medium text-muted-foreground">Upload Files</Label>

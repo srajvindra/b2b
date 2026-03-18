@@ -54,7 +54,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { ProcessData, ActivityItem, ContactProcessDetailViewProps } from "../types"
 import { Input } from "@/components/ui/input"
 import { AiAssistant } from "@/components/shared/ai-assistant"
-
+import { useRouter } from "next/navigation"
 const DEFAULT_AI_PROMPTS = [
   "What's the status of this property?",
   "Show me delinquent accounts",
@@ -184,7 +184,7 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
   const [taskFilter, setTaskFilter] = useState("upcoming")
   const [tasks, setTasks] = useState(process.tasks)
   const activities = generateActivities(process, contactName)
-
+  const router = useRouter()
   const [teamPopoverOpen, setTeamPopoverOpen] = useState(false)
   const [departmentFilter, setDepartmentFilter] = useState<string>("all")
   const stageIndex = STAGES.findIndex(
@@ -787,7 +787,7 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
                       <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                       <div className="min-w-0">
                         <span className="text-xs text-muted-foreground">Address</span>
-                        <span className="block text-[13px] text-slate-900">{ownerInfo.address}</span>
+                        <span className="block text-[13px] text-teal-600 hover:underline cursor-pointer" onClick={() => router.push(`/properties/19`)}>{ownerInfo.address}</span>
                       </div>
                     </div>
                   )}
@@ -826,7 +826,7 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
             >
               <div className="flex items-center gap-1.5">
                 <Building2 className="h-3.5 w-3.5 text-slate-500" />
-                <h3 className="text-sm font-semibold text-slate-900">Property</h3>
+                <h3 className="text-sm font-semibold text-slate-900">Property/Unit</h3>
               </div>
               <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform duration-200 ${propertyDetailsExpanded ? "" : "-rotate-90"}`} />
             </button>
@@ -845,7 +845,7 @@ export function ContactProcessDetailView({ process, contactName, onBack, ownerIn
                     <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />
                     <div className="min-w-0">
                       <span className="text-xs text-muted-foreground">Address</span>
-                      <span className="block text-[13px] text-slate-900">3576 E 104th St, Cleveland, OH 44105</span>
+                      <span className="block text-[13px] text-teal-600 hover:underline cursor-pointer" onClick={() => router.push(`/properties/19`)}>3576 E 104th St, Cleveland, OH 44105</span>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
