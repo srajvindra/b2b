@@ -562,7 +562,7 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
 
     // List view
     return (
-      <Card className="flex-1 overflow-hidden bg-muted/30 border-border">
+      // <Card className="flex-1 overflow-hidden bg-muted/30 border-border">
         <div className="rounded-md border border-border h-full overflow-auto bg-background/60">
           <Table>
             <TableHeader>
@@ -727,7 +727,7 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
             </TableBody>
           </Table>
         </div>
-      </Card>
+      // </Card>
     )
   }
 
@@ -766,15 +766,15 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
       {/* Filters & Controls */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex w-full gap-2">
-          {/* <div className="relative flex-1 md:w-80"> */}
-            <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 md:w-80">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               placeholder={`Search ${getPageTitle().toLowerCase()}...`}
               className="pl-8"
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
-          {/* </div> */}
+          </div>
           {showAdvancedFilterButton && (
             <Button
               variant="outline"

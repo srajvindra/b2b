@@ -221,7 +221,7 @@ export function StagesCategoriesPage({
       )}
 
       <Card className="mb-4">
-        <CardContent className="p-4">
+        <CardContent className="">
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -507,7 +507,7 @@ export function StagesCategoriesPage({
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-muted-foreground hover:text-foreground"
+                                  className="text-muted-foreground hover:text-white"
                                   onClick={() => setAddingStatusToCategoryId(category.id)}
                                 >
                                   <Plus className="h-4 w-4 mr-2" />

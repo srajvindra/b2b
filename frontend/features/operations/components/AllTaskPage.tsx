@@ -627,8 +627,8 @@ export function AllTaskPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b sticky top-0 z-10">
                       <tr>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-3">Task</th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                        <th className="text-left text-sm font-medium text-muted-foreground p-3">Task</th>
+                        <th className="text-left text-sm font-medium text-muted-foreground p-0">
                           <Popover open={contractFilterOpen} onOpenChange={setContractFilterOpen}>
                             <PopoverTrigger asChild>
                               <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
@@ -677,7 +677,7 @@ export function AllTaskPage() {
                             </PopoverContent>
                           </Popover>
                         </th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                        <th className="text-left text-sm font-medium text-muted-foreground p-0">
                           <Popover open={riskColumnFilterOpen} onOpenChange={setRiskColumnFilterOpen}>
                             <PopoverTrigger asChild>
                               <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
@@ -718,7 +718,7 @@ export function AllTaskPage() {
                             </PopoverContent>
                           </Popover>
                         </th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                        <th className="text-left text-sm font-medium text-muted-foreground p-0">
                           <Popover open={dueDateFilterOpen} onOpenChange={setDueDateFilterOpen}>
                             <PopoverTrigger asChild>
                               <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
@@ -822,7 +822,7 @@ export function AllTaskPage() {
                         </PopoverContent>
                       </Popover>
                     </th> */}
-                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                        <th className="text-left text-sm font-medium text-muted-foreground p-0">
                           <Popover open={assignedToFilterOpen} onOpenChange={setAssignedToFilterOpen}>
                             <PopoverTrigger asChild>
                               <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">
@@ -871,7 +871,7 @@ export function AllTaskPage() {
                             </PopoverContent>
                           </Popover>
                         </th>
-                        <th className="text-left text-xs font-medium text-muted-foreground p-0">
+                        <th className="text-left text-sm font-medium text-muted-foreground p-0">
                           <Popover open={escalatedToFilterOpen} onOpenChange={setEscalatedToFilterOpen}>
                             <PopoverTrigger asChild>
                               <button className="w-full flex items-center gap-1 p-3 text-left hover:bg-gray-100">

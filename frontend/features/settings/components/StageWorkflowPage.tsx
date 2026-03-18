@@ -28,6 +28,7 @@ import {
   Sparkles,
   CloudLightning,
   Zap,
+  Timer,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -268,7 +269,7 @@ export function StageWorkflowPage({ categoryName, stage, backHref, onBack }: Sta
                       <Users className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Set Timer">
-                      <Clock className="h-4 w-4" />
+                      <Timer className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-gray-600 hover:bg-gray-50" title="Step Conditions">
                       <Network className="h-4 w-4" />

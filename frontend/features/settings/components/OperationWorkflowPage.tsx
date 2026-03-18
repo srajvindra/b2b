@@ -102,7 +102,7 @@ export function OperationWorkflowPage() {
                         </div>
                     ) : activeTab === "overview" ? (
                         <div className="max-w-full mx-auto">
-                            <div className="w-full aspect-video bg-blue-100 border border-border rounded-lg mb-8" />
+                            <div className="w-full h-150 aspect-video bg-blue-100 border border-border rounded-lg mb-8" />
                             <div className="space-y-4 text-sm text-muted-foreground leading-relaxed">
                                 <p>
                                     Property Onboarding is the second major process in property management, where you will collect all

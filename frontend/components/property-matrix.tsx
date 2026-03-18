@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
 import {
   Wrench,
   Home,
@@ -8,8 +7,6 @@ import {
   DollarSign,
   CheckSquare,
   ListTodo,
-  ChevronDown,
-  X,
 } from "lucide-react"
 
 interface SubItem {
@@ -137,27 +134,12 @@ interface PropertyMetricsSummaryProps {
 }
 
 export function PropertyMetricsSummary({ activeFilter, onFilterChange }: PropertyMetricsSummaryProps) {
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null)
-      }
-    }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [])
-
   const handleItemClick = (key: string) => {
     if (activeFilter === key) {
       onFilterChange?.(null)
     } else {
       onFilterChange?.(key)
     }
-    setOpenDropdown(null)
   }
 
   const activeCategoryId = activeFilter
@@ -165,76 +147,55 @@ export function PropertyMetricsSummary({ activeFilter, onFilterChange }: Propert
     : null
 
   return (
-    <div className="bg-background px-6 py-3 border-b" ref={dropdownRef}>
+    <div className="bg-background px-6 py-3 border-b">
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5">
         {CATEGORIES.map((cat) => {
           const isActive = activeCategoryId === cat.id
-          const isOpen = openDropdown === cat.id
-          const activeItem = cat.items.find((i) => i.key === activeFilter)
 
           return (
-            <div key={cat.id} className="relative">
-              {/* Collapsed Tile */}
-              <button
-                type="button"
-                onClick={() => setOpenDropdown(isOpen ? null : cat.id)}
-                className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-all text-left ${
-                  isActive
-                    ? `${cat.activeBg} ${cat.activeBorder}`
-                    : `${cat.color} hover:shadow-sm`
-                }`}
-              >
+            <div
+              key={cat.id}
+              className={`flex flex-col rounded-lg border transition-colors overflow-hidden ${
+                isActive ? `${cat.activeBg} ${cat.activeBorder}` : `${cat.color} hover:shadow-sm`
+              }`}
+            >
+              {/* Header */}
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-slate-100">
                 <div className={`p-1 rounded-md ${cat.iconBg} shrink-0`}>
                   <span className={cat.iconColor}>{cat.icon}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[11px] text-slate-500 leading-tight truncate">{cat.title}</p>
-                  <div className="flex items-center gap-1">
-                    <span className="text-sm font-bold text-slate-900">
-                      {activeItem ? activeItem.value : cat.total}
-                    </span>
-                    {activeItem && (
-                      <span className="text-[9px] text-slate-500 truncate">({activeItem.label})</span>
-                    )}
-                  </div>
                 </div>
-                <ChevronDown className={`h-3 w-3 text-slate-400 shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-              </button>
+                <span className="text-sm font-bold text-slate-900 tabular-nums">{cat.total}</span>
+              </div>
 
-              {/* Dropdown */}
-              {isOpen && (
-                <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white rounded-lg border border-slate-200 shadow-lg py-1 min-w-[180px]">
+              {/* Sub-items (3 rows visible, rest via scroll) */}
+              <div className="px-2 py-2">
+                <div className="h-[96px] overflow-y-auto pr-1 flex flex-col gap-0.5">
                   {cat.items.map((item) => (
                     <button
                       key={item.key}
                       type="button"
                       onClick={() => handleItemClick(item.key)}
-                      className={`w-full flex items-center justify-between px-3 py-2 text-left transition-colors ${
+                      className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors text-left ${
                         activeFilter === item.key
                           ? `${cat.activeBg} font-medium`
-                          : "hover:bg-slate-50"
+                          : "hover:bg-slate-50 text-slate-600"
                       }`}
                     >
-                      <span className="text-xs text-slate-700">{item.label}</span>
-                      <span className={`text-xs font-bold tabular-nums ${item.highlight ? "text-red-600" : "text-slate-800"}`}>
+                      <span className="truncate">{item.label}</span>
+                      <span
+                        className={`text-xs font-bold tabular-nums shrink-0 ml-2 ${
+                          item.highlight ? "text-red-600" : "text-slate-800"
+                        }`}
+                      >
                         {item.value}
                       </span>
                     </button>
                   ))}
-                  {isActive && (
-                    <div className="border-t border-slate-100 mt-1 pt-1 px-3 pb-1">
-                      <button
-                        type="button"
-                        onClick={() => { onFilterChange?.(null); setOpenDropdown(null) }}
-                        className="flex items-center gap-1 text-[11px] text-slate-400 hover:text-slate-600"
-                      >
-                        <X className="h-3 w-3" />
-                        Clear filter
-                      </button>
-                    </div>
-                  )}
                 </div>
-              )}
+              </div>
             </div>
           )
         })}

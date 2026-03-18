@@ -199,10 +199,9 @@ export function PropertyMetricsSummary({ activeFilters = [], onFilterChange }: P
                 <span className="text-lg font-bold ml-auto tabular-nums text-foreground">{cat.total}</span>
               </div>
               {/* Body: sub-metrics */}
-              <div
-                className={`flex-1 flex flex-col gap-0.5 px-2 py-2 ${cat.scrollable ? "h-[108px] overflow-y-auto pr-1" : ""}`}
-              >
-                {cat.items.map((item) => (
+              <div className="flex-1 px-2 py-2">
+                <div className="h-[96px] overflow-y-auto pr-1 flex flex-col gap-0.5">
+                  {cat.items.map((item) => (
                   <button
                     key={item.key}
                     type="button"
@@ -222,7 +221,8 @@ export function PropertyMetricsSummary({ activeFilters = [], onFilterChange }: P
                       {item.value}
                     </span>
                   </button>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )

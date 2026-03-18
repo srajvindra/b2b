@@ -270,7 +270,7 @@ export default function StageWorkflow({ currentProcessName }: StageWorkflowProps
             <Button
               size="sm"
               variant="outline"
-              className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
+              className="text-xs bg-blue-600 hover:bg-blue-600 hover:text-white text-white"
               onClick={() => { setAddingStage(true); setEditingStageId(null) }}
             >
               <Plus className="h-3 w-3 mr-1" />
