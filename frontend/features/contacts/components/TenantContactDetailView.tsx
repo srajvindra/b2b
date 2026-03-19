@@ -114,7 +114,7 @@ import {
   TENANT_MISSING_DOCUMENTS,
   TENANT_AUDIT_LOGS,
 } from "@/features/contacts/tenant/data"
-import { teamMembers, initialAssignedTeam, allStaffMembers } from "@/features/contacts/data/ownerDetailData"
+import { teamMembers, initialAssignedTeam, allStaffMembers, taskStaffMembers } from "@/features/contacts/data/ownerDetailData"
 import { tenantMissingFields } from "@/features/contacts/data/contactDetailMock"
 import {
   TenantInformationTab,
@@ -174,22 +174,30 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
     "Prospect Owner": "prospectOwner",
   }
 
-  const dashboardTasks = useMemo<Task[]>(() => tasks.map((t, idx) => ({
-    id: typeof t.id === "string" ? idx + 1 : Number(t.id),
-    title: t.title,
-    dueDate: t.dueDate,
-    priority: t.priority.toLowerCase(),
-    entity: t.relatedEntityName ? `${t.relatedEntityName} (${t.relatedEntityType})` : t.assignee,
-    entityType: entityTypeMap[t.relatedEntityType || "Tenant"] || "tenant",
-    risk: "Operational",
-    overdue: t.isOverdue || false,
-    assignedTo: t.assignee,
-    escalatedTo: t.escalatedTo || "",
-    status: t.status,
-    processName: t.processName || undefined,
-    processEntityType: t.processName ? (entityTypeMap[t.relatedEntityType || "Tenant"] || "tenant") : undefined,
-    autoCreated: t.autoCreated,
-  })), [tasks])
+  const dashboardTasks = useMemo<Task[]>(() => tasks.map((t, idx) => {
+    const escalatedTo = t.escalatedTo || ""
+    const escalatedToRole = escalatedTo.includes(" (") ? (escalatedTo.match(/\(([^)]+)\)/)?.[1] ?? "") : ""
+    const entityTitle = t.relatedEntityName || contact.name
+    const entity = t.relatedEntityName ? `${t.relatedEntityName} (${t.relatedEntityType})` : contact.name
+    return {
+      id: typeof t.id === "string" ? idx + 1 : Number(t.id),
+      type: "task" as const,
+      title: t.title,
+      dueDate: t.dueDate,
+      priority: t.priority.toLowerCase(),
+      entity,
+      entityTitle,
+      entityType: entityTypeMap[t.relatedEntityType || "Tenant"] || "tenant",
+      risk: t.risk || "Operational",
+      overdue: t.isOverdue || false,
+      assignedTo: t.assignee,
+      escalatedTo,
+      escalatedToRole,
+      status: t.status,
+      processName: t.processName || undefined,
+      autoCreated: t.autoCreated,
+    }
+  }), [tasks, contact.name])
 
   const tasksCardState = useTasksCardState({ tasks: dashboardTasks })
 
@@ -1411,6 +1419,10 @@ export default function ContactTenantDetailPage({ contact, onBack, onNavigateToU
             onProcessClick={onNavigateToProcess ?? ((process, contactName) => nav.go("contactProcessDetail", { process, contactName }))}
             onEditProcess={() => { }}
             onRemoveNewProcess={(processId) => setNewlyStartedProcesses((prev) => prev.filter((p) => p.id !== processId))}
+            onEscalateProcess={(id, staffName) => {
+              setNewlyStartedProcesses(prev => prev.map(p => p.id === id ? { ...p, status: "Escalated", escalatedTo: staffName } : p))
+            }}
+            escalatedToStaffMembers={taskStaffMembers}
             expandedProcesses={expandedProcesses}
             onToggleProcessExpanded={toggleProcessExpanded}
             contactName={contact.name}

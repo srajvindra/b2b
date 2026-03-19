@@ -92,10 +92,12 @@ import {
   Share2,
   Copy,
   QrCode,
+  TriangleAlert,
 } from "lucide-react"
 import { SMSPopupModal } from "@/components/sms-popup-modal"
 import { EmailPopupModal } from "@/components/email-popup-modal"
 import { CommentsDialog, useComments, TENANT_INITIAL_COMMENTS } from "@/components/shared/comments-dialog"
+import { EscalateDialog } from "@/components/shared/EscalateDialog"
 import { useNav } from "@/app/dashboard/page"
 import { useQuickActions } from "@/context/QuickActionsContext"
 import { getLeadProspectQuickActions, getOwnerProspectQuickActions } from "@/lib/quickActions"
@@ -738,8 +740,34 @@ export function TenantApplicationDetailView({
     leaseProspectStage: string
     startedOn: string
     status: string
+    escalatedTo?: string
     tasks: Array<{ id: string; name: string; startDate: string | null; completedDate: string | null; staffName: string; staffEmail: string }>
   }>>([])
+  const [escalateDialogOpen, setEscalateDialogOpen] = useState(false)
+  const [processToEscalate, setProcessToEscalate] = useState<{
+    id: string
+    name: string
+  } | null>(null)
+
+  const escalatedToStaffMembers = useMemo(
+    () => prospectTaskStaffMembersMock.map((s, i) => ({ id: i + 1, name: s.name, role: s.role })),
+    [],
+  )
+
+  const handleEscalateClick = (process: { id: string; name: string }) => {
+    setProcessToEscalate(process)
+    setEscalateDialogOpen(true)
+  }
+
+  const handleEscalateConfirm = (staffName: string) => {
+    if (processToEscalate) {
+      setNewlyStartedProcesses((prev) =>
+        prev.map((p) => (p.id === processToEscalate.id ? { ...p, status: "Escalated", escalatedTo: staffName } : p)),
+      )
+      setProcessToEscalate(null)
+      setEscalateDialogOpen(false)
+    }
+  }
 
   const toggleProcessExpanded = (processId: string) => {
     setExpandedProcesses((prev) =>
@@ -827,11 +855,13 @@ export function TenantApplicationDetailView({
     dueDate: t.dueDate,
     priority: t.priority.toLowerCase(),
     entity: `${t.relatedEntityName} (${t.relatedEntityType})`,
+    entityTitle: t.relatedEntityName || "",
     entityType: "leaseProspect" as const,
     risk: "Operational",
     overdue: t.isOverdue,
     assignedTo: t.assignee,
     escalatedTo: (t as { escalatedTo?: string }).escalatedTo || "",
+    escalatedToRole: (t as { escalatedToRole?: string }).escalatedToRole || "",
     status: t.status,
     processName: t.processName || undefined,
     // processEntityType: t.processName ? ("leaseProspect" as const) : undefined,
@@ -2462,6 +2492,13 @@ export function TenantApplicationDetailView({
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete Process
                                 </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}>
+                                  <TriangleAlert className="h-4 w-4 mr-2" />
+                                  Escalate
+                                </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
@@ -2507,6 +2544,13 @@ export function TenantApplicationDetailView({
                                 <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete Process
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}>
+                                  <TriangleAlert className="h-4 w-4 mr-2" />
+                                  Escalate
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -2562,6 +2606,13 @@ export function TenantApplicationDetailView({
                                 <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete Process
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}>
+                                  <TriangleAlert className="h-4 w-4 mr-2" />
+                                  Escalate
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -2620,6 +2671,13 @@ export function TenantApplicationDetailView({
                                 <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete Process
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}>
+                                  <TriangleAlert className="h-4 w-4 mr-2" />
+                                  Escalate
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -4531,6 +4589,20 @@ export function TenantApplicationDetailView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EscalateDialog
+        open={escalateDialogOpen}
+        onOpenChange={(open) => {
+          setEscalateDialogOpen(open)
+          if (!open) setProcessToEscalate(null)
+        }}
+        title="Escalate Process"
+        subtitle={processToEscalate?.name}
+        staffMembers={escalatedToStaffMembers}
+        value={(processToEscalate && "escalatedTo" in processToEscalate && typeof processToEscalate.escalatedTo === "string" ? processToEscalate.escalatedTo : "") ?? ""}
+        onConfirm={handleEscalateConfirm}
+        confirmLabel="Escalate"
+      />
 
       <CommentsDialog
         open={showCommentDialog}

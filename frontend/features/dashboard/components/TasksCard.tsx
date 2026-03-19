@@ -64,6 +64,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { Communication, Task, TaskSummary } from "../types"
 import { AddTaskDialog } from "../../../components/shared/AddTaskDialog"
+import { EscalateDialog } from "../../../components/shared/EscalateDialog"
 import { CommunicationModal } from "./CommunicationModal"
 
 
@@ -160,8 +161,6 @@ export function TasksCard({
   const [noteText, setNoteText] = useState("")
   const [escalateModalOpen, setEscalateModalOpen] = useState(false)
   const [escalateTask, setEscalateTask] = useState<Task | null>(null)
-  const [escalateSelectedStaff, setEscalateSelectedStaff] = useState("")
-  const [escalateStaffPopoverOpen, setEscalateStaffPopoverOpen] = useState(false)
   const [addTaskOpen, setAddTaskOpen] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [selectedCommunication, setSelectedCommunication] = useState<Communication | null>(null)
@@ -265,6 +264,7 @@ export function TasksCard({
   const [escalatedToFilterOpen, setEscalatedToFilterOpen] = useState(false)
   const [selectedEscalatedToFilters, setSelectedEscalatedToFilters] = useState<string[]>([])
   const [escalatedToFilterSearch, setEscalatedToFilterSearch] = useState("")
+  const [taskTypeFilter, setTaskTypeFilter] = useState<"open" | "overdue">("open")
 
   const uniqueContracts = useMemo(() => {
     return Array.from(new Set(filteredTasks.map((t) => t.entity))).filter(Boolean).sort((a, b) => a.localeCompare(b))
@@ -309,7 +309,7 @@ export function TasksCard({
     setEscalatedToFilterSearch("")
   }
 
-  const visibleTasks = useMemo(() => {
+  const baseVisibleTasks = useMemo(() => {
     return filteredTasks.filter((t) => {
       if (selectedContracts.length > 0 && !selectedContracts.includes(t.entity)) return false
 
@@ -335,6 +335,32 @@ export function TasksCard({
     selectedRiskFilters,
   ])
 
+  const summary = useMemo(() => {
+    const open = baseVisibleTasks.filter((t) => t.status !== "Completed" && t.status !== "Skipped").length
+    const overdue = baseVisibleTasks.filter((t) => t.overdue).length
+    const dueToday = taskSummary.dueToday
+
+    return { open, overdue, dueToday }
+  }, [baseVisibleTasks, taskSummary.dueToday])
+
+  const visibleTasks = useMemo(() => {
+    return baseVisibleTasks.filter((t) => {
+      if (taskTypeFilter === "open") return t.status !== "Completed" && t.status !== "Skipped"
+      if (taskTypeFilter === "overdue") return t.overdue
+      return t.status !== "Completed" && t.status !== "Skipped"
+    })
+  }, [baseVisibleTasks, taskTypeFilter])
+
+  const isOpenSelected = taskTypeFilter === "open"
+  const isOverdueSelected = taskTypeFilter === "overdue"
+
+
+  function formatDateTime(value: Date) {
+    return new Intl.DateTimeFormat(undefined, {
+      day: "2-digit",
+      month: "short",
+    }).format(value)
+  }
   return (
     <>
       <Card className="border border-slate-200 bg-[rgba(248,245,245,1)]">
@@ -350,42 +376,56 @@ export function TasksCard({
                 </CardTitle>
               </div>
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200">
-                  <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-                    <CheckSquare className="h-4.5 w-4.5 text-slate-600" />
+                <button
+                  type="button"
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${isOpenSelected
+                    ? "bg-teal-600 border-teal-600"
+                    : "bg-white border-slate-200 hover:border-slate-300"
+                    }`}
+                  onClick={() => setTaskTypeFilter("open")}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isOpenSelected ? "bg-teal-500" : "bg-slate-100"}`}>
+                    <CheckSquare className={`h-4.5 w-4.5 ${isOpenSelected ? "text-white" : "text-slate-600"}`} />
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-lg font-bold text-slate-900 leading-none">
-                      {taskSummary.total}
+                    <span className={`text-lg font-bold leading-none ${isOpenSelected ? "text-white" : "text-slate-900"}`}>
+                      {summary.open}
                     </span>
-                    <span className="text-[11px] text-slate-500 uppercase tracking-wide font-medium">
+                    <span className={`text-[11px] uppercase tracking-wide font-medium ${isOpenSelected ? "text-teal-100" : "text-slate-500"}`}>
                       Open
                     </span>
                   </div>
-                </div>
-                {taskSummary.overdue > 0 && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200">
-                    <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <AlertCircle className="h-4.5 w-4.5 text-slate-600" />
+                </button>
+                {summary.overdue > 0 && (
+                  <button
+                    type="button"
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border cursor-pointer transition-all ${isOverdueSelected
+                      ? "bg-teal-600 border-teal-600"
+                      : "bg-white border-slate-200 hover:border-slate-300"
+                      }`}
+                    onClick={() => setTaskTypeFilter("overdue")}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isOverdueSelected ? "bg-teal-500" : "bg-slate-100"}`}>
+                      <AlertCircle className={`h-4.5 w-4.5 ${isOverdueSelected ? "text-white" : "text-slate-600"}`} />
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-lg font-bold text-slate-900 leading-none">
-                        {taskSummary.overdue}
+                      <span className={`text-lg font-bold leading-none ${isOverdueSelected ? "text-white" : "text-slate-900"}`}>
+                        {summary.overdue}
                       </span>
-                      <span className="text-[11px] text-slate-500 uppercase tracking-wide font-medium">
+                      <span className={`text-[11px] uppercase tracking-wide font-medium ${isOverdueSelected ? "text-teal-100" : "text-slate-500"}`}>
                         Overdue
                       </span>
                     </div>
-                  </div>
+                  </button>
                 )}
-                {taskSummary.dueToday > 0 && (
+                {summary.dueToday > 0 && (
                   <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200">
                     <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center">
                       <Clock className="h-4.5 w-4.5 text-slate-600" />
                     </div>
                     <div className="flex flex-col">
                       <span className="text-lg font-bold text-slate-900 leading-none">
-                        {taskSummary.dueToday}
+                        {summary.dueToday}
                       </span>
                       <span className="text-[11px] text-slate-500 uppercase tracking-wide font-medium">
                         Today
@@ -408,7 +448,7 @@ export function TasksCard({
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
               placeholder="Search by task..."
-              className="h-7 w-150 border-slate-200 bg-white pl-8"
+              className="h-9 w-full border-slate-200 bg-white pl-8"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -418,13 +458,10 @@ export function TasksCard({
           <div className="border border-slate-200 rounded-lg bg-white overflow-hidden">
             <div className="w-full overflow-x-auto">
               {/* Single horizontal scroll container; vertical scroll lives here (header is sticky) */}
-              <div className="min-w-max overflow-y-auto" style={{ maxHeight }}>
-                <table className="min-w-max w-max caption-bottom text-sm">
+              <div className="min-w-full overflow-y-auto" style={{ maxHeight }}>
+                <table className="min-w-full w-full caption-bottom text-sm">
                   <TableHeader className="sticky top-0 z-10 bg-slate-50">
                     <TableRow className="border-b bg-slate-50">
-                      <TableHead className="h-10 px-2 text-left align-middle font-medium text-slate-700 whitespace-nowrap">
-                        Task
-                      </TableHead>
                       <TableHead className="h-10 p-0 text-left align-middle font-medium text-slate-700 whitespace-nowrap">
                         <Popover open={contractFilterOpen} onOpenChange={setContractFilterOpen}>
                           <PopoverTrigger asChild>
@@ -432,7 +469,7 @@ export function TasksCard({
                               type="button"
                               className="w-full flex items-center gap-1 px-3 py-2 text-left hover:bg-slate-100"
                             >
-                              <span>Contract</span>
+                              <span>Contact</span>
                               <Filter
                                 className={`h-3 w-3 ${selectedContracts.length > 0 ? "text-teal-600" : "text-slate-400"}`}
                               />
@@ -490,7 +527,77 @@ export function TasksCard({
                           </PopoverContent>
                         </Popover>
                       </TableHead>
+                      <TableHead className="h-10 px-2 text-left align-middle font-medium text-slate-700 whitespace-nowrap">
+                        Task
+                      </TableHead>
 
+
+
+                      <TableHead className="h-10 p-0 text-left align-middle font-medium text-slate-700 whitespace-nowrap">
+                        <Popover open={assignedToFilterOpen} onOpenChange={setAssignedToFilterOpen}>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="w-full flex items-center gap-1 px-3 py-2 text-left hover:bg-slate-100"
+                            >
+                              <span>Assigned To</span>
+                              <Filter
+                                className={`h-3 w-3 ${selectedAssignedToFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`}
+                              />
+                              {selectedAssignedToFilters.length > 0 && (
+                                <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
+                                  {selectedAssignedToFilters.length}
+                                </span>
+                              )}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-56 p-2" align="start">
+                            <div className="mb-2">
+                              <Input
+                                placeholder="Search staff..."
+                                value={assignedToFilterSearch}
+                                onChange={(e) => setAssignedToFilterSearch(e.target.value)}
+                                className="h-8 text-xs"
+                              />
+                            </div>
+                            <div className="space-y-1 max-h-40 overflow-y-auto">
+                              {uniqueAssignedTo
+                                .filter((n) => n.toLowerCase().includes(assignedToFilterSearch.toLowerCase()))
+                                .map((name) => (
+                                  <label
+                                    key={name}
+                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
+                                  >
+                                    <Checkbox
+                                      checked={selectedAssignedToFilters.includes(name)}
+                                      onCheckedChange={() => toggleAssignedToFilter(name)}
+                                    />
+                                    <span className="truncate">{name}</span>
+                                  </label>
+                                ))}
+                            </div>
+                            <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 text-xs px-2"
+                                onClick={clearAssignedToFilter}
+                                disabled={selectedAssignedToFilters.length === 0}
+                              >
+                                Clear
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs px-2"
+                                onClick={() => setAssignedToFilterOpen(false)}
+                              >
+                                Close
+                              </Button>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </TableHead>
                       <TableHead className="h-10 p-0 text-left align-middle font-medium text-slate-700 whitespace-nowrap">
                         <Popover open={riskColumnFilterOpen} onOpenChange={setRiskColumnFilterOpen}>
                           <PopoverTrigger asChild>
@@ -610,72 +717,6 @@ export function TasksCard({
                       </TableHead>
 
                       <TableHead className="h-10 p-0 text-left align-middle font-medium text-slate-700 whitespace-nowrap">
-                        <Popover open={assignedToFilterOpen} onOpenChange={setAssignedToFilterOpen}>
-                          <PopoverTrigger asChild>
-                            <button
-                              type="button"
-                              className="w-full flex items-center gap-1 px-3 py-2 text-left hover:bg-slate-100"
-                            >
-                              <span>Assigned To</span>
-                              <Filter
-                                className={`h-3 w-3 ${selectedAssignedToFilters.length > 0 ? "text-teal-600" : "text-slate-400"}`}
-                              />
-                              {selectedAssignedToFilters.length > 0 && (
-                                <span className="ml-1 text-[10px] rounded-full bg-teal-50 text-teal-700 px-1.5 py-0.5 border border-teal-200">
-                                  {selectedAssignedToFilters.length}
-                                </span>
-                              )}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-56 p-2" align="start">
-                            <div className="mb-2">
-                              <Input
-                                placeholder="Search staff..."
-                                value={assignedToFilterSearch}
-                                onChange={(e) => setAssignedToFilterSearch(e.target.value)}
-                                className="h-8 text-xs"
-                              />
-                            </div>
-                            <div className="space-y-1 max-h-40 overflow-y-auto">
-                              {uniqueAssignedTo
-                                .filter((n) => n.toLowerCase().includes(assignedToFilterSearch.toLowerCase()))
-                                .map((name) => (
-                                  <label
-                                    key={name}
-                                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted/50 cursor-pointer text-xs"
-                                  >
-                                    <Checkbox
-                                      checked={selectedAssignedToFilters.includes(name)}
-                                      onCheckedChange={() => toggleAssignedToFilter(name)}
-                                    />
-                                    <span className="truncate">{name}</span>
-                                  </label>
-                                ))}
-                            </div>
-                            <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-xs px-2"
-                                onClick={clearAssignedToFilter}
-                                disabled={selectedAssignedToFilters.length === 0}
-                              >
-                                Clear
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-7 text-xs px-2"
-                                onClick={() => setAssignedToFilterOpen(false)}
-                              >
-                                Close
-                              </Button>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </TableHead>
-
-                      <TableHead className="h-10 p-0 text-left align-middle font-medium text-slate-700 whitespace-nowrap">
                         <Popover open={escalatedToFilterOpen} onOpenChange={setEscalatedToFilterOpen}>
                           <PopoverTrigger asChild>
                             <button
@@ -748,133 +789,227 @@ export function TasksCard({
 
                   <TableBody>
                     {visibleTasks.length > 0 ? (
-                      visibleTasks.map((task) => (
-                        <TableRow key={task.id} className="hover:bg-slate-50">
-                          <TableCell className="py-3 overflow-hidden">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div
-                                className="p-2 rounded-full relative shrink-0"
-                                style={{
-                                  backgroundColor: task.type === "email" ? "#c8e6cc" : task.type === "call" ? "#b3e8e5" : "#BBDEFB",
-                                }}
-                              >
-                                {task.type === "email" ? (
-                                  <Mail className="h-4 w-4 text-green-800" />
-                                ) : task.type === "call" ? (
-                                  <Phone className="h-4 w-4 text-teal-800" />
-                                ) : task.type === "sms" ? (
-                                  <MessageSquare className="h-4 w-4 text-blue-800" />
-                                ) : (
-                                  <CheckSquare className="h-4 w-4 text-blue-800" />
-                                )}
+                      visibleTasks.map((task) => {
+                        const taskEscalatedToNameFromValue = task.escalatedTo?.includes(" (")
+                          ? task.escalatedTo.split(" (")[0]
+                          : (task.escalatedTo ?? "")
+                        const taskEscalatedStaff =
+                          escalatedToStaffMembers.find((staff) => staff.name === taskEscalatedToNameFromValue) ??
+                          escalatedToStaffMembers.find(
+                            (staff) => `${staff.name} (${staff.role})` === (task.escalatedTo ?? ""),
+                          )
+                        const taskEscalatedToName = taskEscalatedStaff?.name ?? taskEscalatedToNameFromValue
+                        const taskEscalatedToRole =
+                          taskEscalatedStaff?.role ??
+                          (task.escalatedTo?.match(/\(([^)]+)\)/)?.[1] ?? task.escalatedToRole ?? "")
+                        return (
+                          <TableRow key={task.id} className="hover:bg-slate-50">
+                            <TableCell className="py-3 overflow-hidden">
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="p-2 rounded-full relative shrink-0"
+                                  style={{
+                                    backgroundColor: task.type === "email" ? "#c8e6cc" : task.type === "call" ? "#b3e8e5" : "#BBDEFB",
+                                  }}
+                                >
+                                  {task.type === "email" ? (
+                                    <Mail className="h-4 w-4 text-green-800" />
+                                  ) : task.type === "call" ? (
+                                    <Phone className="h-4 w-4 text-teal-800" />
+                                  ) : task.type === "sms" ? (
+                                    <MessageSquare className="h-4 w-4 text-blue-800" />
+                                  ) : (
+                                    <CheckSquare className="h-4 w-4 text-blue-800" />
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-0.5 min-w-0">
+                                  <span className="text-sm font-medium truncate text-slate-800">{task.entityTitle}</span>
+                                  <span className="text-sm text-slate-500">({task.entity})</span>
+                                </div>
                               </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 overflow-hidden">
                               <div
                                 className="flex flex-col gap-0.5 min-w-0 cursor-pointer"
                                 onClick={() => {
                                   if (task.autoCreated) openAutoCreatedCommunication(task)
                                 }}
                               >
-                                <span className="text-sm font-medium text-slate-800">
+                                <span
+                                  className="block max-w-[260px] text-sm font-medium truncate text-slate-800"
+                                  title={task.title}
+                                >
                                   {task.title}
                                 </span>
-                                {task.processName && (
+                                <div className="flex items-center gap-1">
+                                  {task.processName && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        handleProcessClick(task)
+                                      }}
+                                      className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 hover:underline w-fit"
+                                    >
+                                      <Workflow className="h-3 w-3" />
+                                      {task.processName}
+                                    </button>
+                                  )}
+                                  {task.autoCreated && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded w-fit">
+                                      Auto-created
+                                    </span>
+                                  )}
+                                  <span className="inline-flex items-center gap-1 text-[12px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded w-fit">{formatDateTime(new Date(task.dueDate))}</span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600 overflow-hidden">
+                              <Popover
+                                open={assignPopoverOpen === task.id}
+                                onOpenChange={(open) =>
+                                  setAssignPopoverOpen(open ? task.id : null)
+                                }
+                              >
+                                <PopoverTrigger asChild>
                                   <button
                                     type="button"
-                                    onClick={(e) => {
-                                      handleProcessClick(task)
-                                    }}
-                                    className="flex items-center gap-1 text-xs text-teal-600 hover:text-teal-700 hover:underline w-fit"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
                                   >
-                                    <Workflow className="h-3 w-3" />
-                                    {task.processName}
+                                    <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                      {(() => {
+                                        const [firstName, lastName] = task.assignedTo.split(" ");
+                                        return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                      })()}
+                                    </div>
+                                    <span className="whitespace-nowrap overflow-hidden">{task.assignedTo}</span>
+                                    <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
                                   </button>
-                                )}
-                                {task.autoCreated && (
-                                  <span className="inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded w-fit">
-                                    Auto-created
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-[220px] p-0"
+                                  align="start"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Command>
+                                    <CommandInput placeholder="Search staff..." />
+                                    <CommandList>
+                                      <CommandEmpty>No staff found.</CommandEmpty>
+                                      <CommandGroup>
+                                        {staffMembers.map((staff) => (
+                                          <CommandItem
+                                            key={staff.id}
+                                            value={staff.name}
+                                            onSelect={() => {
+                                              onAssignTask(task.id, staff.name)
+                                              setAssignPopoverOpen(null)
+                                            }}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                              {(() => {
+                                                const [firstName, lastName] = staff.name.split(" ");
+                                                return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                              })()}
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="text-sm text-slate-900">
+                                                {staff.name}
+                                              </span>
+                                              <span className="text-[11px] text-slate-500">
+                                                {staff.role}
+                                              </span>
+                                            </div>
+                                            {task.assignedTo === staff.name && (
+                                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                            )}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </TableCell>
+                            <TableCell className="text-sm text-slate-600">
+                              <Popover
+                                open={riskPopoverOpen === task.id}
+                                onOpenChange={(open) =>
+                                  setRiskPopoverOpen(open ? task.id : null)
+                                }
+                              >
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-left"
+                                  >
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-xs font-medium capitalize ${getRiskStyles(task.risk)}`}
+                                    >
+                                      {task.risk}
+                                      <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
+                                    </Badge>
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-[180px] p-0"
+                                  align="start"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Command>
+                                    <CommandInput placeholder="Search risk..." />
+                                    <CommandList>
+                                      <CommandEmpty>No risk found.</CommandEmpty>
+                                      <CommandGroup>
+                                        {RISK_OPTIONS.map((option) => (
+                                          <CommandItem
+                                            key={option.value}
+                                            value={option.value}
+                                            onSelect={() => {
+                                              onUpdateRisk(task.id, option.value)
+                                              setRiskPopoverOpen(null)
+                                            }}
+                                            className="flex items-center gap-2"
+                                          >
+                                            <Badge
+                                              variant="outline"
+                                              className={`text-xs font-medium ${getRiskStyles(option.value)}`}
+                                            >
+                                              {option.label}
+                                            </Badge>
+                                            {task.risk === option.value && (
+                                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                            )}
+                                          </CommandItem>
+                                        ))}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={`text-sm ${task.overdue
+                                  ? "text-red-600 font-medium"
+                                  : "text-slate-600"
+                                  }`}
+                              >
+                                {task.dueDate && new Intl.DateTimeFormat('en-US', {
+                                  year: "numeric",
+                                  month: "2-digit",
+                                  day: "2-digit",
+                                }).format(new Date(task.dueDate))}
+                                {task.overdue && (
+                                  <span className="ml-1.5 text-xs text-red-500">
+                                    (Overdue)
                                   </span>
                                 )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600 overflow-hidden">
-                            <div className="">{task.entity}</div>
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600">
-                            <Popover
-                              open={riskPopoverOpen === task.id}
-                              onOpenChange={(open) =>
-                                setRiskPopoverOpen(open ? task.id : null)
-                              }
-                            >
-                              <PopoverTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-1.5 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-left"
-                                >
-                                  <Badge
-                                    variant="outline"
-                                    className={`text-xs font-medium capitalize ${getRiskStyles(task.risk)}`}
-                                  >
-                                    {task.risk}
-                                    <ChevronsUpDown className="h-3 w-3 ml-1 opacity-50" />
-                                  </Badge>
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-[180px] p-0"
-                                align="start"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Command>
-                                  <CommandInput placeholder="Search risk..." />
-                                  <CommandList>
-                                    <CommandEmpty>No risk found.</CommandEmpty>
-                                    <CommandGroup>
-                                      {RISK_OPTIONS.map((option) => (
-                                        <CommandItem
-                                          key={option.value}
-                                          value={option.value}
-                                          onSelect={() => {
-                                            onUpdateRisk(task.id, option.value)
-                                            setRiskPopoverOpen(null)
-                                          }}
-                                          className="flex items-center gap-2"
-                                        >
-                                          <Badge
-                                            variant="outline"
-                                            className={`text-xs font-medium ${getRiskStyles(option.value)}`}
-                                          >
-                                            {option.label}
-                                          </Badge>
-                                          {task.risk === option.value && (
-                                            <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                                          )}
-                                        </CommandItem>
-                                      ))}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={`text-sm ${task.overdue
-                                ? "text-red-600 font-medium"
-                                : "text-slate-600"
-                                }`}
-                            >
-                              {task.dueDate}
-                              {task.overdue && (
-                                <span className="ml-1.5 text-xs text-red-500">
-                                  (Overdue)
-                                </span>
-                              )}
-                            </span>
-                          </TableCell>
-                          {/* <TableCell>
+                              </span>
+                            </TableCell>
+                            {/* <TableCell>
                           <Badge
                             variant="outline"
                             className={`text-xs font-medium capitalize ${getPriorityStyles(task.priority)}`}
@@ -882,7 +1017,7 @@ export function TasksCard({
                             {task.priority}
                           </Badge>
                         </TableCell> */}
-                          {/* <TableCell>
+                            {/* <TableCell>
                           {task.status === "Skipped" ? (
                             <button
                               type="button"
@@ -905,217 +1040,156 @@ export function TasksCard({
                             </Badge>
                           )}
                         </TableCell> */}
-                          <TableCell className="text-sm text-slate-600 overflow-hidden">
-                            <Popover
-                              open={assignPopoverOpen === task.id}
-                              onOpenChange={(open) =>
-                                setAssignPopoverOpen(open ? task.id : null)
-                              }
-                            >
-                              <PopoverTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
-                                >
-                                  <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                    {(() => {
-                                      const [firstName, lastName] = task.assignedTo.split(" ");
-                                      return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
-                                    })()}
-                                  </div>
-                                  <span className="whitespace-nowrap overflow-hidden">{task.assignedTo}</span>
-                                  <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-[220px] p-0"
-                                align="start"
-                                onClick={(e) => e.stopPropagation()}
+                            <TableCell className="text-sm text-slate-600 overflow-hidden">
+                              <Popover
+                                open={escalatedToPopoverOpen === task.id}
+                                onOpenChange={(open) =>
+                                  setEscalatedToPopoverOpen(open ? task.id : null)
+                                }
                               >
-                                <Command>
-                                  <CommandInput placeholder="Search staff..." />
-                                  <CommandList>
-                                    <CommandEmpty>No staff found.</CommandEmpty>
-                                    <CommandGroup>
-                                      {staffMembers.map((staff) => (
-                                        <CommandItem
-                                          key={staff.id}
-                                          value={staff.name}
-                                          onSelect={() => {
-                                            onAssignTask(task.id, staff.name)
-                                            setAssignPopoverOpen(null)
-                                          }}
-                                          className="flex items-center gap-2"
-                                        >
-                                          <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                            {(() => {
-                                              const [firstName, lastName] = staff.name.split(" ");
-                                              return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
-                                            })()}
-                                          </div>
-                                          <div className="flex flex-col">
-                                            <span className="text-sm text-slate-900">
-                                              {staff.name}
-                                            </span>
-                                            <span className="text-[11px] text-slate-500">
-                                              {staff.role}
-                                            </span>
-                                          </div>
-                                          {task.assignedTo === staff.name && (
-                                            <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                                          )}
-                                        </CommandItem>
-                                      ))}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                          </TableCell>
-                          <TableCell className="text-sm text-slate-600 overflow-hidden">
-                            <Popover
-                              open={escalatedToPopoverOpen === task.id}
-                              onOpenChange={(open) =>
-                                setEscalatedToPopoverOpen(open ? task.id : null)
-                              }
-                            >
-                              <PopoverTrigger asChild>
-                                <button
-                                  type="button"
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
-                                >
-                                  {task.escalatedTo ? (
-                                    <>
-                                      {/* <TriangleAlert className="h-4 w-4 text-amber-500 shrink-0" /> */}
-                                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                        {(() => {
-                                          const [firstName, lastName] = task.escalatedTo.split(" ");
-                                          return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
-                                        })()}
-                                      </div>
-                                      <span className="whitespace-nowrap overflow-hidden text-ellipsis">{task.escalatedTo}</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <TriangleAlert className="h-4 w-4 text-slate-300 shrink-0" />
-                                      <span className="text-slate-400">None</span>
-                                    </>
-                                  )}
-                                  <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-[220px] p-0"
-                                align="start"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <Command>
-                                  <CommandInput placeholder="Search staff..." />
-                                  <CommandList>
-                                    <CommandEmpty>No staff found.</CommandEmpty>
-                                    <CommandGroup>
-                                      {escalatedToStaffMembers.map((staff) => {
-                                        const displayValue = `${staff.name} (${staff.role})`
-                                        const isSelected = task.escalatedTo === displayValue || task.escalatedTo === staff.name
-                                        return (
-                                          <CommandItem
-                                            key={staff.id}
-                                            value={staff.name}
-                                            onSelect={() => {
-                                              onEscalateTask(task.id, displayValue)
-                                              setEscalatedToPopoverOpen(null)
-                                            }}
-                                            className="flex items-center gap-2"
-                                          >
-                                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                                              {(() => {
-                                                const [firstName, lastName] = staff.name.split(" ");
-                                                return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
-                                              })()}
-                                            </div>
-                                            <div className="flex flex-col">
-                                              <span className="text-sm text-slate-900">
-                                                {staff.name}
-                                              </span>
-                                              <span className="text-[11px] text-slate-500">
-                                                {staff.role}
-                                              </span>
-                                            </div>
-                                            {isSelected && (
-                                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                                            )}
-                                          </CommandItem>
-                                        )
-                                      })}
-                                    </CommandGroup>
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <MoreVertical className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    handleTaskClick(task)
-                                  }}
-                                  className="gap-2 cursor-pointer"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                  View
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setNoteTask(task)
-                                    setNoteText(task.notes || "")
-                                    setNoteModalOpen(true)
-                                  }}
-                                  className="gap-2 cursor-pointer"
-                                >
-                                  <StickyNote className={`h-4 w-4 ${task.notes ? "text-teal-600" : ""}`} />
-                                  {task.notes ? "Edit Note" : "Add Note"}
-                                </DropdownMenuItem>
-                                {task.status !== "Completed" && (
-                                  <DropdownMenuItem
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
                                     onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 px-2 py-1 rounded-md border border-transparent hover:border-slate-200 hover:bg-slate-50 transition-colors text-sm text-slate-700 w-full text-left"
+                                  >
+                                    {task.escalatedTo ? (
+                                      <>
+                                        {/* <TriangleAlert className="h-4 w-4 text-amber-500 shrink-0" /> */}
+                                        <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                          {(() => {
+                                            const [firstName, lastName] = taskEscalatedToName.split(" ");
+                                            return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                          })()}
+                                        </div>
+                                        <div className="flex flex-col">
+                                          <span className="whitespace-nowrap overflow-hidden text-ellipsis text-slate-900">{taskEscalatedToName}</span>
+                                          {task.escalatedToRole && (
+                                            <span className="text-[11px] text-slate-500 truncate">
+                                              ({taskEscalatedToRole})
+                                            </span>
+                                          )}
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <TriangleAlert className="h-4 w-4 text-slate-300 shrink-0" />
+                                        <span className="text-slate-400">None</span>
+                                      </>
+                                    )}
+                                    <ChevronsUpDown className="h-3 w-3 text-slate-400 shrink-0 ml-auto" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent
+                                  className="w-[220px] p-0"
+                                  align="start"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Command>
+                                    <CommandInput placeholder="Search staff..." />
+                                    <CommandList>
+                                      <CommandEmpty>No staff found.</CommandEmpty>
+                                      <CommandGroup>
+                                        {escalatedToStaffMembers.map((staff) => {
+                                          const displayValue = `${staff.name} (${staff.role})`
+                                          const isSelected = task.escalatedTo === displayValue || task.escalatedTo === staff.name
+                                          return (
+                                            <CommandItem
+                                              key={staff.id}
+                                              value={staff.name}
+                                              onSelect={() => {
+                                                onEscalateTask(task.id, displayValue)
+                                                setEscalatedToPopoverOpen(null)
+                                              }}
+                                              className="flex items-center gap-2"
+                                            >
+                                              <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
+                                                {(() => {
+                                                  const [firstName, lastName] = staff.name.split(" ");
+                                                  return (firstName?.[0] ?? "") + (lastName?.[0] ?? "");
+                                                })()}
+                                              </div>
+                                              <div className="flex flex-col">
+                                                <span className="text-sm text-slate-900">
+                                                  {staff.name}
+                                                </span>
+                                                <span className="text-[11px] text-slate-500">
+                                                  {staff.role}
+                                                </span>
+                                              </div>
+                                              {isSelected && (
+                                                <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
+                                              )}
+                                            </CommandItem>
+                                          )
+                                        })}
+                                      </CommandGroup>
+                                    </CommandList>
+                                  </Command>
+                                </PopoverContent>
+                              </Popover>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreVertical className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-40">
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleTaskClick(task)
+                                    }}
                                     className="gap-2 cursor-pointer"
                                   >
-                                    <Check className="h-4 w-4" />
-                                    Complete
+                                    <Eye className="h-4 w-4" />
+                                    View
                                   </DropdownMenuItem>
-                                )}
-                                <DropdownMenuItem
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    setEscalateTask(task)
-                                    setEscalateSelectedStaff(task.escalatedTo || "")
-                                    setEscalateModalOpen(true)
-                                  }}
-                                  className="gap-2 cursor-pointer"
-                                >
-                                  <TriangleAlert className={`h-4 w-4 ${task.escalatedTo ? "text-amber-500" : ""}`} />
-                                  Escalate
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setNoteTask(task)
+                                      setNoteText(task.notes || "")
+                                      setNoteModalOpen(true)
+                                    }}
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    <StickyNote className={`h-4 w-4 ${task.notes ? "text-teal-600" : ""}`} />
+                                    {task.notes ? "Edit Note" : "Add Note"}
+                                  </DropdownMenuItem>
+                                  {task.status !== "Completed" && (
+                                    <DropdownMenuItem
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="gap-2 cursor-pointer"
+                                    >
+                                      <Check className="h-4 w-4" />
+                                      Complete
+                                    </DropdownMenuItem>
+                                  )}
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setEscalateTask(task)
+                                      setEscalateModalOpen(true)
+                                    }}
+                                    className="gap-2 cursor-pointer"
+                                  >
+                                    <TriangleAlert className={`h-4 w-4 ${task.escalatedTo ? "text-amber-500" : ""}`} />
+                                    Escalate
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        )
+                      })
                     ) : (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-slate-500">
@@ -1140,7 +1214,8 @@ export function TasksCard({
           defaultAssignee={selectedStaff}
           onAddTask={onAddTask}
         />
-      )}
+      )
+      }
 
       <Dialog open={showSkippedModal} onOpenChange={setShowSkippedModal}>
         <DialogContent>
@@ -1190,109 +1265,21 @@ export function TasksCard({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={escalateModalOpen} onOpenChange={setEscalateModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <TriangleAlert className="h-5 w-5 text-amber-500" />
-              Escalate Task
-            </DialogTitle>
-            {escalateTask && (
-              <p className="text-sm text-slate-500 mt-1">{escalateTask.title}</p>
-            )}
-          </DialogHeader>
-          <div className="space-y-3">
-            <p className="text-sm text-slate-600">
-              Select a staff member to escalate this task to:
-            </p>
-            <Popover open={escalateStaffPopoverOpen} onOpenChange={setEscalateStaffPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between text-left font-normal"
-                >
-                  {escalateSelectedStaff ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                        {escalateSelectedStaff
-                          .replace(/\s*\(.*?\)\s*/g, " ")
-                          .trim()
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
-                      </div>
-                      <span>{escalateSelectedStaff}</span>
-                    </div>
-                  ) : (
-                    <span className="text-slate-400">Select staff member...</span>
-                  )}
-                  <ChevronsUpDown className="h-4 w-4 text-slate-400 shrink-0" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search staff..." />
-                  <CommandList>
-                    <CommandEmpty>No staff found.</CommandEmpty>
-                    <CommandGroup>
-                      {escalatedToStaffMembers.map((staff) => {
-                        const displayValue = `${staff.name} (${staff.role})`
-                        const isSelected = escalateSelectedStaff === displayValue || escalateSelectedStaff === staff.name
-                        return (
-                          <CommandItem
-                            key={staff.id}
-                            value={staff.name}
-                            onSelect={() => {
-                              setEscalateSelectedStaff(displayValue)
-                              setEscalateStaffPopoverOpen(false)
-                            }}
-                            className="flex items-center gap-2"
-                          >
-                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-medium text-slate-600 shrink-0">
-                              {staff.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm text-slate-900">
-                                {staff.name}
-                              </span>
-                              <span className="text-[11px] text-slate-500">
-                                {staff.role}
-                              </span>
-                            </div>
-                            {isSelected && (
-                              <Check className="h-3.5 w-3.5 text-teal-600 ml-auto" />
-                            )}
-                          </CommandItem>
-                        )
-                      })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setEscalateModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              className="bg-amber-500 hover:bg-amber-600 text-white"
-              disabled={!escalateSelectedStaff}
-              onClick={() => {
-                if (escalateTask && escalateSelectedStaff) {
-                  onEscalateTask(escalateTask.id, escalateSelectedStaff)
-                }
-                setEscalateModalOpen(false)
-              }}
-            >
-              Confirm Escalation
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EscalateDialog
+        open={escalateModalOpen}
+        onOpenChange={(open) => {
+          setEscalateModalOpen(open)
+          if (!open) setEscalateTask(null)
+        }}
+        title="Escalate Task"
+        subtitle={escalateTask?.title}
+        staffMembers={escalatedToStaffMembers}
+        value={escalateTask ? (escalatedTo[escalateTask.id] || escalateTask.escalatedTo || "") : ""}
+        onConfirm={(staffName) => {
+          if (escalateTask) onEscalateTask(escalateTask.id, staffName)
+          setEscalateModalOpen(false)
+        }}
+      />
       <CommunicationModal
         communication={selectedCommunication}
         open={showModal}

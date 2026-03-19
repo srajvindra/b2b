@@ -186,9 +186,8 @@ export function PropertyMetricsSummary({ activeFilters = [], onFilterChange }: P
           return (
             <div
               key={cat.id}
-              className={`flex flex-col border rounded-lg shadow-sm bg-card overflow-hidden transition-colors ${
-                isCategoryActive ? "ring-2 ring-primary bg-primary/5" : ""
-              }`}
+              className={`flex flex-col border rounded-lg shadow-sm bg-card overflow-hidden transition-colors ${isCategoryActive ? "ring-2 ring-primary bg-primary/5" : ""
+                }`}
             >
               {/* Header */}
               <div className={`flex items-center gap-2 px-3 py-2 border-b ${cat.headerBg}`}>
@@ -202,25 +201,23 @@ export function PropertyMetricsSummary({ activeFilters = [], onFilterChange }: P
               <div className="flex-1 px-2 py-2">
                 <div className="h-[96px] overflow-y-auto pr-1 flex flex-col gap-0.5">
                   {cat.items.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    onClick={() => handleItemClick(item.key)}
-                    className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors text-left ${
-                      activeFilters.includes(item.key)
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "hover:bg-muted/80 text-muted-foreground"
-                    }`}
-                  >
-                    <span className="truncate">{item.label}</span>
-                    <span
-                      className={`font-semibold tabular-nums shrink-0 ml-2 ${
-                        item.highlight ? "text-red-600" : "text-foreground"
-                      }`}
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => handleItemClick(item.key)}
+                      className={`w-full flex items-center justify-between px-2 py-1.5 text-xs rounded-md transition-colors text-left ${activeFilters.includes(item.key)
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-muted/80 text-muted-foreground"
+                        }`}
                     >
-                      {item.value}
-                    </span>
-                  </button>
+                      <span className="truncate">{item.label}</span>
+                      <span
+                        className={`font-semibold tabular-nums shrink-0 ml-2 ${item.highlight ? "text-red-600" : "text-foreground"
+                          }`}
+                      >
+                        {item.value}
+                      </span>
+                    </button>
                   ))}
                 </div>
               </div>

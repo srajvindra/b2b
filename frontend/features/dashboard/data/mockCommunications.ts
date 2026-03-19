@@ -12,6 +12,8 @@ export const mockCommunications: Communication[] = [
     timestamp: "2025-12-21 09:15 AM",
     read: true,
     responded: true,
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     receivedAt: new Date("2025-12-21T09:15:00"),
     assignedTo: "Nina Patel",
     emailHistory: [
@@ -57,6 +59,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-21T14:30:00"),
     assignedTo: "Richard Surovi",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     isGroupSms: false,
     contactId: "sarah-johnson-1",
     communicationThread: [
@@ -138,6 +142,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-22T10:00:00"),
     assignedTo: "Nina Patel",
+    escalatedTo: "David Wilson",
+    escalatedToRole: "GM",
   },
   {
     id: 4,
@@ -152,6 +158,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-22T11:45:00"),
     assignedTo: "Mike Johnson",
+    escalatedTo: "Taylor Johnson",
+    escalatedToRole: "GM",
     emailHistory: [
       {
         id: 1,
@@ -177,6 +185,8 @@ export const mockCommunications: Communication[] = [
     responded: true,
     receivedAt: new Date("2025-12-22T15:20:00"),
     assignedTo: "Sarah Chen",
+    escalatedTo: "David Wilson",
+    escalatedToRole: "GM",
     conversationHistory: [
       {
         id: 1,
@@ -215,6 +225,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-23T08:00:00"),
     assignedTo: "Richard Surovi",
+    escalatedTo: "Kimberly Johnson",
+    escalatedToRole: "Executive/MD",
     emailHistory: [
       {
         id: 1,
@@ -255,6 +267,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-23T07:30:00"),
     assignedTo: "Mike Johnson",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     emailHistory: [
       {
         id: 1,
@@ -279,6 +293,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-22T16:45:00"),
     assignedTo: "Nina Patel",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     isGroupSms: false,
     contactId: "amanda-white-1",
     communicationThread: [
@@ -316,6 +332,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-22T14:15:00"),
     assignedTo: "Sarah Chen",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
   },
   {
     id: 10,
@@ -330,6 +348,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-22T09:00:00"),
     assignedTo: "Richard Surovi",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     emailHistory: [
       {
         id: 1,
@@ -355,6 +375,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-23T10:30:00"),
     assignedTo: "Sarah Chen",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     isGroupSms: false,
     contactId: "chris-lee-1",
     communicationThread: [
@@ -407,6 +429,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-23T11:00:00"),
     assignedTo: "Nina Patel",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
   },
   {
     id: 13,
@@ -421,6 +445,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-23T08:45:00"),
     assignedTo: "Sarah Chen",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     emailHistory: [
       {
         id: 1,
@@ -445,6 +471,8 @@ export const mockCommunications: Communication[] = [
     responded: true,
     receivedAt: new Date("2025-12-23T09:15:00"),
     assignedTo: "Mike Johnson",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     conversationHistory: [
       {
         id: 1,
@@ -477,6 +505,8 @@ export const mockCommunications: Communication[] = [
     responded: true,
     receivedAt: new Date("2025-12-21T15:30:00"),
     assignedTo: "Richard Surovi",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
   },
   {
     id: 16,
@@ -491,6 +521,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-23T08:00:00"),
     assignedTo: "Mike Johnson",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     isGroupSms: true,
     groupParticipants: [
       "John Smith",
@@ -548,6 +580,8 @@ export const mockCommunications: Communication[] = [
     responded: false,
     receivedAt: new Date("2025-12-22T16:00:00"),
     assignedTo: "Nina Patel",
+    escalatedTo: "Oliver Torres",
+    escalatedToRole: "VP",
     isGroupSms: true,
     groupParticipants: [
       "Amanda White",

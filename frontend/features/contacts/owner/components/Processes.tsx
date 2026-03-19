@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -15,6 +16,7 @@ import {
   Edit,
   Trash2,
   Check,
+  TriangleAlert,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -23,9 +25,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { EscalateDialog } from "@/components/shared/EscalateDialog"
 import type { OwnerProcessesData, OwnerProcessItem, OwnerProcessTaskItem } from "../types"
 
-export interface OwnerProcessesTabNewProcess extends OwnerProcessItem {}
+export interface OwnerProcessesTabNewProcess extends OwnerProcessItem { }
+
+export type EscalateStaffMember = { id: number | string; name: string; role: string }
 
 export interface OwnerProcessesTabProps {
   ownerProcesses: OwnerProcessesData
@@ -36,6 +41,8 @@ export interface OwnerProcessesTabProps {
   onProcessClick: (process: OwnerProcessItem, contactName: string) => void
   onEditProcess: (process: OwnerProcessItem) => void
   onRemoveNewProcess: (processId: string) => void
+  onEscalateProcess: (processId: string, staffName: string) => void
+  escalatedToStaffMembers: EscalateStaffMember[]
   expandedProcesses: string[]
   onToggleProcessExpanded: (id: string) => void
   contactName: string
@@ -50,10 +57,28 @@ export function OwnerProcessesTab({
   onProcessClick,
   onEditProcess,
   onRemoveNewProcess,
+  onEscalateProcess,
+  escalatedToStaffMembers,
   expandedProcesses,
   onToggleProcessExpanded,
   contactName,
 }: OwnerProcessesTabProps) {
+  const [escalateDialogOpen, setEscalateDialogOpen] = useState(false)
+  const [processToEscalate, setProcessToEscalate] = useState<OwnerProcessItem | null>(null)
+
+  const handleEscalateClick = (process: OwnerProcessItem) => {
+    setProcessToEscalate(process)
+    setEscalateDialogOpen(true)
+  }
+
+  const handleEscalateConfirm = (staffName: string) => {
+    if (processToEscalate) {
+      onEscalateProcess(processToEscalate.id, staffName)
+      setProcessToEscalate(null)
+      setEscalateDialogOpen(false)
+    }
+  }
+
   return (
     <div className="mt-4">
       <div className="space-y-6">
@@ -72,27 +97,24 @@ export function OwnerProcessesTab({
           <button
             type="button"
             onClick={() => onProcessStatusFilterChange("in-progress")}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              processStatusFilter === "in-progress" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "in-progress" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             In Progress ({ownerProcesses.inProgress.length + newlyStartedProcesses.length})
           </button>
           <button
             type="button"
             onClick={() => onProcessStatusFilterChange("completed")}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              processStatusFilter === "completed" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "completed" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Completed ({ownerProcesses.completed.length})
           </button>
           <button
             type="button"
             onClick={() => onProcessStatusFilterChange("upcoming")}
-            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-              processStatusFilter === "upcoming" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            }`}
+            className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${processStatusFilter === "upcoming" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
           >
             Upcoming ({ownerProcesses.upcoming.length})
           </button>
@@ -199,6 +221,16 @@ export function OwnerProcessesTab({
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Remove Process
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}
+                              >
+                                <TriangleAlert className="h-4 w-4 mr-2" />
+                                Escalate
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -288,6 +320,17 @@ export function OwnerProcessesTab({
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete Process
+                              </DropdownMenuItem>
+
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}
+                              >
+                                <TriangleAlert className="h-4 w-4 mr-2" />
+                                Escalate
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -385,6 +428,16 @@ export function OwnerProcessesTab({
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete Process
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}
+                              >
+                                <TriangleAlert className="h-4 w-4 mr-2" />
+                                Escalate
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -490,6 +543,16 @@ export function OwnerProcessesTab({
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete Process
                               </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEscalateClick(process)
+                                }}
+                              >
+                                <TriangleAlert className="h-4 w-4 mr-2" />
+                                Escalate
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -505,6 +568,20 @@ export function OwnerProcessesTab({
           )}
         </div>
       </div>
+
+      <EscalateDialog
+        open={escalateDialogOpen}
+        onOpenChange={(open) => {
+          setEscalateDialogOpen(open)
+          if (!open) setProcessToEscalate(null)
+        }}
+        title="Escalate Process"
+        subtitle={processToEscalate?.name}
+        staffMembers={escalatedToStaffMembers}
+        value={processToEscalate && "escalatedTo" in processToEscalate && processToEscalate.escalatedTo ? String(processToEscalate.escalatedTo) : ""}
+        onConfirm={handleEscalateConfirm}
+        confirmLabel="Escalate"
+      />
     </div>
   )
 }
@@ -534,9 +611,8 @@ function OwnerProcessTasksTable({ tasks }: OwnerProcessTasksTableProps) {
                 {task.startDate || "\u2014"}
               </TableCell>
               <TableCell
-                className={`text-sm ${
-                  task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"
-                }`}
+                className={`text-sm ${task.completedDate ? "text-teal-600 font-medium" : "text-muted-foreground"
+                  }`}
               >
                 {task.completedDate || "\u2014"}
               </TableCell>

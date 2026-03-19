@@ -223,7 +223,7 @@ const handleViewTemplate = (template: Template) => {
   
         {/* Search and Filters */}
         <div className="flex flex-wrap items-center gap-4 mb-6">
-          <div className="relative flex-1 min-w-[250px] max-w-md">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by template name or creator..."
@@ -278,27 +278,27 @@ const handleViewTemplate = (template: Template) => {
           <table className="w-full">
             <thead className="bg-muted border-b border-border">
               <tr>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">
                   Template Name
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">
                   Created By
                 </th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">
                   Created On
                 </th>
                 {activeTab === "email" && (
                   <>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Files</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sends</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Opened</th>
-                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Clicked</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">Files</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">Sends</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">Opened</th>
+                    <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">Clicked</th>
                   </>
                 )}
                 {activeTab === "sms" && (
-                  <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Sends</th>
+                  <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">Sends</th>
                 )}
-                <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -322,11 +322,11 @@ const handleViewTemplate = (template: Template) => {
                   </td>
                   <td className="px-4 py-4">
                     <div>
-                      <span className="text-foreground">{template.createdBy.name}</span>
-                      <span className="text-muted-foreground"> - {template.createdBy.role}</span>
+                      <span className="text-sm font-medium text-foreground">{template.createdBy.name}</span>
+                      <span className="text-sm text-muted-foreground"> - {template.createdBy.role}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-muted-foreground">
+                  <td className="px-4 py-4 text-sm text-muted-foreground">
                     {formatDate(template.createdOn)}
                   </td>
                   {activeTab === "email" && template.type === "email" && (

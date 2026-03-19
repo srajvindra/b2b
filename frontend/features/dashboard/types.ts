@@ -17,11 +17,13 @@ export interface Task {
   dueDate: string
   priority: string
   entity: string
+  entityTitle: string
   entityType: TaskEntityType
   risk: string
   overdue: boolean
   assignedTo: string
   escalatedTo: string
+  escalatedToRole: string
   status: TaskStatus
   processName?: string
   processEntityType?: TaskEntityType
@@ -76,6 +78,8 @@ export interface Communication {
   responded?: boolean
   receivedAt: Date
   assignedTo: string
+  escalatedTo?: string
+  escalatedToRole?: string
   isGroupSms?: boolean
   groupParticipants?: string[]
   contactId?: string

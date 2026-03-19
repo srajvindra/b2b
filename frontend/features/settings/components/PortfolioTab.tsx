@@ -90,19 +90,17 @@ export function PortfolioTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="border border-border">
-        <CardContent className="p-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search CSR portfolios..."
-              className="pl-10"
-              value={portfolioSearchQuery}
-              onChange={(e) => setPortfolioSearchQuery(e.target.value)}
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search CSR portfolios..."
+            className="pl-10"
+            value={portfolioSearchQuery}
+            onChange={(e) => setPortfolioSearchQuery(e.target.value)}
+          />
+        </div>
+      </div>
       <Card className="border border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">

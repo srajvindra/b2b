@@ -64,24 +64,17 @@ export default function PropertyDirectoryPage() {
       </div>
 
       {/* Search and Filters */}
-      <Card className="mb-6">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search properties by name, address, owner, or type..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Badge variant="secondary" className="text-sm">
-              {filteredProperties.length} Properties
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search properties by name, address, owner, or type..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
 
       {/* Properties Table */}
       <Card>

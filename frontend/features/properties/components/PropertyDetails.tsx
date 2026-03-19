@@ -63,6 +63,7 @@ import {
   Copy,
   Minus,
   Maximize2,
+  TriangleAlert,
 } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar" // Import Avatar components
 
@@ -100,6 +101,7 @@ import {
 import { PROPERTY_MISSING_FIELDS, PROPERTY_MISSING_DOCUMENTS } from "@/features/properties/data/propertyDetail"
 import type { ProcessTask, PropertyProcess } from "@/features/properties/types"
 import { useRouter } from "next/navigation"
+import { EscalateDialog } from "@/components/shared/EscalateDialog"
 import { TasksCard } from "@/features/dashboard/components/TasksCard"
 import { useTasksCardState } from "@/features/dashboard/hooks/useTasksCardState"
 import type { Task } from "@/features/dashboard/types"
@@ -236,7 +238,9 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
 
   const dashboardTasks = useMemo<Task[]>(() => tasks.map((t) => ({
     id: t.id,
+    type: "task" as const,
     title: t.title,
+    entityTitle: t.relatedEntity || "",
     dueDate: t.dueDate,
     priority: t.priority.toLowerCase(),
     entity: t.relatedEntity,
@@ -247,7 +251,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
     escalatedTo: (t as { escalatedTo?: string }).escalatedTo || "",
     status: t.status as Task["status"],
     processName: t.processLink || undefined,
-    processEntityType: t.processLink ? ("property" as const) : undefined,
+    // processEntityType: t.processLink ? ("property" as const) : undefined,
+    escalatedToRole: (t as { escalatedToRole?: string }).escalatedToRole || "",
   })), [tasks])
 
   const tasksCardState = useTasksCardState({ tasks: dashboardTasks })
@@ -277,6 +282,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
   const [showCreateProcessModal, setShowCreateProcessModal] = useState(false)
   const [showEditProcessModal, setShowEditProcessModal] = useState(false)
   const [showDeleteProcessModal, setShowDeleteProcessModal] = useState(false)
+  const [escalateDialogOpen, setEscalateDialogOpen] = useState(false)
+  const [processToEscalate, setProcessToEscalate] = useState<PropertyProcess | null>(null)
   const [selectedProcess, setSelectedProcess] = useState<PropertyProcess | null>(null)
   const [processForm, setProcessForm] = useState({
     processName: "",
@@ -388,6 +395,31 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
     setShowDeleteProcessModal(true)
   }
 
+  const handleEscalateClick = (process: PropertyProcess) => {
+    setProcessToEscalate(process)
+    setEscalateDialogOpen(true)
+  }
+
+  const handleEscalateConfirm = (staffName: string) => {
+    if (!processToEscalate) return
+    setPropertyProcesses((prev) =>
+      prev.map((p) =>
+        p.id === processToEscalate.id
+          ? { ...p, escalatedTo: staffName }
+          : p
+      )
+    )
+    setEscalateDialogOpen(false)
+    setProcessToEscalate(null)
+  }
+
+  const handleEscalateDelete = () => {
+    if (!processToEscalate) return
+    setPropertyProcesses((prev) => prev.filter((p) => p.id !== processToEscalate.id))
+    setEscalateDialogOpen(false)
+    setProcessToEscalate(null)
+  }
+
   // Document upload state
   const [documents, setDocuments] = useState(SAMPLE_DOCUMENTS)
   const [showUploadForm, setShowUploadForm] = useState(false)
@@ -418,11 +450,11 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
   return (
     <div className="flex-1 flex flex-col h-full">
       {/* Main Content */}
-      <div className="flex-1 px-6 pb-6 pt-2 overflow-auto">
+      <div className="flex-1 px-6 pb-6 pt-2 overflow-y-auto overflow-x-hidden">
         {/* Main Layout with Quick Actions Sidebar */}
         <div className="flex gap-6">
           {/* Left side - Main Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Back Button */}
             <button onClick={onBack} className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-2">
               <ArrowLeft className="h-4 w-4" />
@@ -583,8 +615,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as typeof activeTab)}
                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-colors ${activeTab === tab.id
-                        ? "border-2 border-teal-600 text-slate-800 -mb-px"
-                        : "text-muted-foreground hover:text-foreground"
+                      ? "border-2 border-teal-600 text-slate-800 -mb-px"
+                      : "text-muted-foreground hover:text-foreground"
                       }`}
                   >
                     <tab.icon className="h-4 w-4" />
@@ -595,9 +627,9 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
             </div>
 
             {/* Content Area */}
-            <div>
+            <div className="w-full min-w-0 overflow-x-hidden">
               {activeTab === "overview" && (
-                <div className="space-y-4">
+                <div className="space-y-4 w-full">
                   {/* Tasks Section */}
                   <div id="property-tasks-section">
                     <TasksCard
@@ -1192,8 +1224,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                               key={tab.id}
                               onClick={() => setProcessSubTab(tab.id)}
                               className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${processSubTab === tab.id
-                                  ? "border-teal-600 text-teal-600"
-                                  : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
+                                ? "border-teal-600 text-teal-600"
+                                : "border-transparent text-muted-foreground hover:text-foreground hover:border-gray-300"
                                 }`}
                             >
                               {tab.label} ({tab.count})
@@ -1273,12 +1305,12 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                                       </div>
                                       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                                         <Badge variant="outline" className={`text-xs ${process.status === "In Progress" ? "bg-teal-50 text-teal-700 border-teal-200"
-                                            : process.status === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                              : "bg-slate-50 text-slate-600 border-slate-200"
+                                          : process.status === "Completed" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                            : "bg-slate-50 text-slate-600 border-slate-200"
                                           }`}>
                                           <span className={`inline-block h-1.5 w-1.5 rounded-full mr-1.5 ${process.status === "In Progress" ? "bg-teal-500"
-                                              : process.status === "Completed" ? "bg-emerald-500"
-                                                : "bg-slate-400"
+                                            : process.status === "Completed" ? "bg-emerald-500"
+                                              : "bg-slate-400"
                                             }`} />
                                           {process.status}
                                         </Badge>
@@ -1299,6 +1331,10 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                                             >
                                               <Trash2 className="h-4 w-4 mr-2" />
                                               Delete
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-destructive" onClick={() => handleEscalateClick(process)}>
+                                              <TriangleAlert className="h-4 w-4 mr-2" />
+                                              Escalate
                                             </DropdownMenuItem>
                                           </DropdownMenuContent>
                                         </DropdownMenu>
@@ -1523,6 +1559,24 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                         </DialogContent>
                       </Dialog>
 
+                      <EscalateDialog
+                        open={escalateDialogOpen}
+                        onOpenChange={(open) => {
+                          setEscalateDialogOpen(open)
+                          if (!open) setProcessToEscalate(null)
+                        }}
+                        title="Escalate Process"
+                        subtitle={processToEscalate?.processName}
+                        staffMembers={STAFF_MEMBERS}
+                        value={(processToEscalate && "escalatedTo" in processToEscalate && typeof (processToEscalate as { escalatedTo?: string }).escalatedTo === "string"
+                          ? (processToEscalate as { escalatedTo?: string }).escalatedTo
+                          : "") ?? ""}
+                        onConfirm={handleEscalateConfirm}
+                        confirmLabel="Escalate"
+                      // onDelete={handleEscalateDelete}
+                      // deleteLabel="Delete Process"
+                      />
+
                       {/* Delete Confirmation Modal */}
                       <Dialog open={showDeleteProcessModal} onOpenChange={setShowDeleteProcessModal}>
                         <DialogContent className="sm:max-w-[400px]">
@@ -1553,238 +1607,238 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
               )}
 
 
-                        {/* Marketing Tab */}
-          {activeTab === "marketing" && (
-            <div className="space-y-6">
-              {/* Marketing Information Card */}
-              <div className="bg-white border border-gray-200 rounded-lg">
-                <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900">Marketing Information</h3>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1">
-                    <Edit className="h-4 w-4" />
-                    Edit
-                  </Button>
-                </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-2 gap-x-12 gap-y-4">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Posted to your Website</span>
-                      <span className="text-sm font-medium text-gray-900">No</span>
+              {/* Marketing Tab */}
+              {activeTab === "marketing" && (
+                <div className="space-y-6">
+                  {/* Marketing Information Card */}
+                  <div className="bg-white border border-gray-200 rounded-lg">
+                    <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100">
+                      <h3 className="text-lg font-semibold text-gray-900">Marketing Information</h3>
+                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1">
+                        <Edit className="h-4 w-4" />
+                        Edit
+                      </Button>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Posted to the Internet</span>
-                      <span className="text-sm font-medium text-gray-900">No</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 flex items-center gap-1">
-                        Premium Listing
-                        <Info className="h-3.5 w-3.5 text-gray-400" />
-                      </span>
-                      <span className="text-sm font-medium text-gray-900">Off</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Removed from Vacancies List</span>
-                      <Checkbox id="removed-vacancies" disabled />
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Available On</span>
-                      <span className="text-sm text-gray-400">—</span>
-                    </div>
-                    <div></div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Marketing Title</span>
-                      <span className="text-sm text-gray-400">—</span>
-                    </div>
-                    <div></div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Marketing Description</span>
-                      <span className="text-sm text-gray-400">—</span>
-                    </div>
-                    <div></div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600 flex items-center gap-1">
-                        YouTube Video URL
-                        <Info className="h-3.5 w-3.5 text-gray-400" />
-                      </span>
-                      <span className="text-sm text-gray-400">—</span>
+                    <div className="p-6">
+                      <div className="grid grid-cols-2 gap-x-12 gap-y-4">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Posted to your Website</span>
+                          <span className="text-sm font-medium text-gray-900">No</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Posted to the Internet</span>
+                          <span className="text-sm font-medium text-gray-900">No</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600 flex items-center gap-1">
+                            Premium Listing
+                            <Info className="h-3.5 w-3.5 text-gray-400" />
+                          </span>
+                          <span className="text-sm font-medium text-gray-900">Off</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Removed from Vacancies List</span>
+                          <Checkbox id="removed-vacancies" disabled />
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Available On</span>
+                          <span className="text-sm text-gray-400">—</span>
+                        </div>
+                        <div></div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Marketing Title</span>
+                          <span className="text-sm text-gray-400">—</span>
+                        </div>
+                        <div></div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-600">Marketing Description</span>
+                          <span className="text-sm text-gray-400">—</span>
+                        </div>
+                        <div></div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600 flex items-center gap-1">
+                            YouTube Video URL
+                            <Info className="h-3.5 w-3.5 text-gray-400" />
+                          </span>
+                          <span className="text-sm text-gray-400">—</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Unit Images Card */}
-              <div className="bg-gray-50 border border-gray-200 rounded-lg">
-                <div className="px-6 py-4 flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Unit Images</h3>
-                  <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1">
-                    <Upload className="h-4 w-4" />
-                    Upload
-                  </Button>
-                </div>
-                <div className="px-6 pb-6">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 bg-white text-center">
-                    <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-sm">
-                      <span className="text-blue-600 hover:underline cursor-pointer">Drag images here</span>
-                      <span className="text-gray-600"> or </span>
-                      <span className="text-blue-600 hover:underline cursor-pointer">Choose files to upload</span>
-                    </p>
-                    <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG, WebP up to 10MB each</p>
+                  {/* Unit Images Card */}
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="px-6 py-4 flex items-center justify-between">
+                      <h3 className="text-lg font-semibold text-gray-900">Unit Images</h3>
+                      <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 gap-1">
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </Button>
+                    </div>
+                    <div className="px-6 pb-6">
+                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 bg-white text-center">
+                        <ImageIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <p className="text-sm">
+                          <span className="text-blue-600 hover:underline cursor-pointer">Drag images here</span>
+                          <span className="text-gray-600"> or </span>
+                          <span className="text-blue-600 hover:underline cursor-pointer">Choose files to upload</span>
+                        </p>
+                        <p className="text-xs text-gray-400 mt-2">Supports JPG, PNG, WebP up to 10MB each</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Link Rows */}
-              <div className="space-y-3">
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ExternalLink className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Application Link</span>
+                  {/* Link Rows */}
+                  <div className="space-y-3">
+                    <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <ExternalLink className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Application Link</span>
+                      </div>
+                      <button type="button" onClick={() => handleShareLinkClick("Application Link")}>
+                        <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
+                      </button>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <ExternalLink className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Showing Link</span>
+                      </div>
+                      <button type="button" onClick={() => handleShareLinkClick("Showing Link")}>
+                        <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
+                      </button>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <ExternalLink className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Matterport Scan</span>
+                      </div>
+                      <button type="button" onClick={() => handleShareLinkClick("Matterport Scan")}>
+                        <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
+                      </button>
+                    </div>
+                    <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <ExternalLink className="h-4 w-4 text-green-500" />
+                        <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Rental Comps</span>
+                      </div>
+                      <button type="button" onClick={() => handleShareLinkClick("Rental Comps")}>
+                        <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
+                      </button>
+                    </div>
                   </div>
-                  <button type="button" onClick={() => handleShareLinkClick("Application Link")}>
-                    <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
-                  </button>
                 </div>
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ExternalLink className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Showing Link</span>
-                  </div>
-                  <button type="button" onClick={() => handleShareLinkClick("Showing Link")}>
-                    <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
-                  </button>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ExternalLink className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Matterport Scan</span>
-                  </div>
-                  <button type="button" onClick={() => handleShareLinkClick("Matterport Scan")}>
-                    <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
-                  </button>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-lg px-4 py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <ExternalLink className="h-4 w-4 text-green-500" />
-                    <span className="text-sm font-medium text-blue-600 underline cursor-pointer hover:text-blue-700">Rental Comps</span>
-                  </div>
-                  <button type="button" onClick={() => handleShareLinkClick("Rental Comps")}>
-                    <Share2 className="h-5 w-5 text-green-500 cursor-pointer hover:text-green-600" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* Maintenance Tab */}
-          {activeTab === "maintenance" && (
-            <div className="space-y-4">
-              <div className="bg-card border border-border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Wrench className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold">Work Orders</h3>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Select defaultValue="all">
-                      <SelectTrigger className="w-[140px] h-9">
-                        <SelectValue placeholder="Filter Status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        <SelectItem value="pending">Pending</SelectItem>
-                        <SelectItem value="in-progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
+              {/* Maintenance Tab */}
+              {activeTab === "maintenance" && (
+                <div className="space-y-4">
+                  <div className="bg-card border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Wrench className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="text-lg font-semibold">Work Orders</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select defaultValue="all">
+                          <SelectTrigger className="w-[140px] h-9">
+                            <SelectValue placeholder="Filter Status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Status</SelectItem>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="in-progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
 
+                      </div>
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[100px]">Work Order</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>Unit</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Assigned To</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Priority</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Closed</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {[
+                          { id: "WO-001", title: "HVAC System Repair", description: "Air conditioning unit not cooling properly", status: "In Progress", priority: "High", assignedTo: "John Martinez", unit: "Unit 101", category: "HVAC", createdDate: "2024-01-15", closedDate: null },
+                          { id: "WO-002", title: "Plumbing Leak Fix", description: "Kitchen sink leak reported by tenant", status: "Completed", priority: "Medium", assignedTo: "Sarah Johnson", unit: "Unit 205", category: "Plumbing", createdDate: "2024-01-10", closedDate: "2024-01-12" },
+                          { id: "WO-003", title: "Electrical Outlet Replacement", description: "Faulty outlet in living room", status: "Pending", priority: "Low", assignedTo: "Mike Chen", unit: "Unit 312", category: "Electrical", createdDate: "2024-01-18", closedDate: null },
+                          { id: "WO-004", title: "Window Seal Repair", description: "Draft coming through bedroom window", status: "Completed", priority: "Medium", assignedTo: "John Martinez", unit: "Unit 408", category: "General", createdDate: "2024-01-05", closedDate: "2024-01-08" },
+                          { id: "WO-005", title: "Appliance Replacement", description: "Dishwasher not draining, needs replacement", status: "In Progress", priority: "High", assignedTo: "Sarah Johnson", unit: "Unit 102", category: "Appliances", createdDate: "2024-01-20", closedDate: null },
+                        ].map((order) => (
+                          <TableRow key={order.id} className="hover:bg-muted/50">
+                            <TableCell className="font-medium text-blue-600">{order.id}</TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium text-sm">{order.title}</p>
+                                <p className="text-xs text-muted-foreground truncate max-w-[200px]">{order.description}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-sm">{order.unit}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="text-xs">
+                                {order.category}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback className="text-xs bg-teal-100 text-teal-700">
+                                    {order.assignedTo.split(" ").map(n => n[0]).join("")}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm">{order.assignedTo}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${order.status === "Completed"
+                                  ? "border-green-300 bg-green-50 text-green-700"
+                                  : order.status === "In Progress"
+                                    ? "border-blue-300 bg-blue-50 text-blue-700"
+                                    : "border-amber-300 bg-amber-50 text-amber-700"
+                                  }`}
+                              >
+                                {order.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${order.priority === "High"
+                                  ? "border-red-300 bg-red-50 text-red-700"
+                                  : order.priority === "Medium"
+                                    ? "border-amber-300 bg-amber-50 text-amber-700"
+                                    : "border-gray-300 bg-gray-50 text-gray-700"
+                                  }`}
+                              >
+                                {order.priority}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {new Date(order.createdDate).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {order.closedDate ? new Date(order.closedDate).toLocaleDateString() : "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">Work Order</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>Unit</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Assigned To</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Priority</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Closed</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[
-                      { id: "WO-001", title: "HVAC System Repair", description: "Air conditioning unit not cooling properly", status: "In Progress", priority: "High", assignedTo: "John Martinez", unit: "Unit 101", category: "HVAC", createdDate: "2024-01-15", closedDate: null },
-                      { id: "WO-002", title: "Plumbing Leak Fix", description: "Kitchen sink leak reported by tenant", status: "Completed", priority: "Medium", assignedTo: "Sarah Johnson", unit: "Unit 205", category: "Plumbing", createdDate: "2024-01-10", closedDate: "2024-01-12" },
-                      { id: "WO-003", title: "Electrical Outlet Replacement", description: "Faulty outlet in living room", status: "Pending", priority: "Low", assignedTo: "Mike Chen", unit: "Unit 312", category: "Electrical", createdDate: "2024-01-18", closedDate: null },
-                      { id: "WO-004", title: "Window Seal Repair", description: "Draft coming through bedroom window", status: "Completed", priority: "Medium", assignedTo: "John Martinez", unit: "Unit 408", category: "General", createdDate: "2024-01-05", closedDate: "2024-01-08" },
-                      { id: "WO-005", title: "Appliance Replacement", description: "Dishwasher not draining, needs replacement", status: "In Progress", priority: "High", assignedTo: "Sarah Johnson", unit: "Unit 102", category: "Appliances", createdDate: "2024-01-20", closedDate: null },
-                    ].map((order) => (
-                      <TableRow key={order.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium text-blue-600">{order.id}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium text-sm">{order.title}</p>
-                            <p className="text-xs text-muted-foreground truncate max-w-[200px]">{order.description}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-sm">{order.unit}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {order.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarFallback className="text-xs bg-teal-100 text-teal-700">
-                                {order.assignedTo.split(" ").map(n => n[0]).join("")}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">{order.assignedTo}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${order.status === "Completed"
-                                ? "border-green-300 bg-green-50 text-green-700"
-                                : order.status === "In Progress"
-                                  ? "border-blue-300 bg-blue-50 text-blue-700"
-                                  : "border-amber-300 bg-amber-50 text-amber-700"
-                              }`}
-                          >
-                            {order.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={`text-xs ${order.priority === "High"
-                                ? "border-red-300 bg-red-50 text-red-700"
-                                : order.priority === "Medium"
-                                  ? "border-amber-300 bg-amber-50 text-amber-700"
-                                  : "border-gray-300 bg-gray-50 text-gray-700"
-                              }`}
-                          >
-                            {order.priority}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(order.createdDate).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {order.closedDate ? new Date(order.closedDate).toLocaleDateString() : "—"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
+              )}
               {/* Upload Document Dialog */}
               <Dialog open={showUploadForm} onOpenChange={(open) => {
                 setShowUploadForm(open)
@@ -2189,14 +2243,14 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                           <div className="flex items-center gap-2">
                             <span
                               className={`w-2 h-2 rounded-full ${label.color === "blue"
-                                  ? "bg-primary"
-                                  : label.color === "red"
-                                    ? "bg-destructive"
-                                    : label.color === "amber"
-                                      ? "bg-warning"
-                                      : label.color === "emerald"
-                                        ? "bg-success"
-                                        : "bg-info"
+                                ? "bg-primary"
+                                : label.color === "red"
+                                  ? "bg-destructive"
+                                  : label.color === "amber"
+                                    ? "bg-warning"
+                                    : label.color === "emerald"
+                                      ? "bg-success"
+                                      : "bg-info"
                                 }`}
                             />
                             {label.name}
@@ -2592,8 +2646,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                 <button
                   onClick={() => setMissingInfoTab("fields")}
                   className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${missingInfoTab === "fields"
-                      ? "border-amber-500 text-amber-600"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "border-amber-500 text-amber-600"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                     }`}
                 >
                   Missing Fields ({PROPERTY_MISSING_FIELDS.length})
@@ -2601,8 +2655,8 @@ export function PropertyDetailPage({ propertyId, onBack, onUnitClick }: Property
                 <button
                   onClick={() => setMissingInfoTab("documents")}
                   className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${missingInfoTab === "documents"
-                      ? "border-amber-500 text-amber-600"
-                      : "border-transparent text-muted-foreground hover:text-foreground"
+                    ? "border-amber-500 text-amber-600"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
                     }`}
                 >
                   Missing Documents ({PROPERTY_MISSING_DOCUMENTS.length})

@@ -67,7 +67,7 @@ export default function PropertyGroupsPage() {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null)
   const [staffSearchQuery, setStaffSearchQuery] = useState("")
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null)
-  
+
   // Create new group state
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [newGroupName, setNewGroupName] = useState("")
@@ -78,7 +78,7 @@ export default function PropertyGroupsPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null)
   const [showPropertyDropdown, setShowPropertyDropdown] = useState(false)
   const [showTeamDropdown, setShowTeamDropdown] = useState(false)
-  
+
   // Get unique areas from properties
   const getUniqueAreas = () => {
     const areas = new Set<string>()
@@ -87,21 +87,21 @@ export default function PropertyGroupsPage() {
     })
     return Array.from(areas).sort()
   }
-  
+
   // Get properties by area
   const getPropertiesByArea = (area: string) => {
     return MOCK_PROPERTIES.filter(p => getAreaFromAddress(p.address) === area)
   }
-  
+
   // Expanded areas state
   const [expandedAreas, setExpandedAreas] = useState<string[]>(getUniqueAreas())
-  
+
   const toggleAreaExpanded = (area: string) => {
-    setExpandedAreas((prev) => 
+    setExpandedAreas((prev) =>
       prev.includes(area) ? prev.filter((a) => a !== area) : [...prev, area]
     )
   }
-  
+
   const openTeamModal = (propertyId: string, e: React.MouseEvent) => {
     e.stopPropagation()
     setSelectedPropertyId(propertyId)
@@ -235,7 +235,7 @@ export default function PropertyGroupsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Properties</label>
               <p className="text-sm text-muted-foreground">Search and select properties to add to this group</p>
-              
+
               {/* Selected Properties Tags */}
               {selectedProperties.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
@@ -275,16 +275,14 @@ export default function PropertyGroupsPage() {
                       filteredPropertiesForSelection.map((property) => (
                         <div
                           key={property.id}
-                          className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent ${
-                            selectedProperties.includes(property.id) ? "bg-accent/50" : ""
-                          }`}
+                          className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent ${selectedProperties.includes(property.id) ? "bg-accent/50" : ""
+                            }`}
                           onClick={() => togglePropertySelection(property.id)}
                         >
-                          <div className={`w-5 h-5 border rounded flex items-center justify-center ${
-                            selectedProperties.includes(property.id) 
-                              ? "bg-primary border-primary text-primary-foreground" 
-                              : "border-input"
-                          }`}>
+                          <div className={`w-5 h-5 border rounded flex items-center justify-center ${selectedProperties.includes(property.id)
+                            ? "bg-primary border-primary text-primary-foreground"
+                            : "border-input"
+                            }`}>
                             {selectedProperties.includes(property.id) && <Check className="h-3 w-3" />}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -317,7 +315,7 @@ export default function PropertyGroupsPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium">Assign Team Members</label>
               <p className="text-sm text-muted-foreground">Select department and staff members to assign to this group</p>
-              
+
               {/* Selected Team Members */}
               {selectedTeamMembers.length > 0 && (
                 <div className="space-y-2 mb-3">
@@ -380,9 +378,8 @@ export default function PropertyGroupsPage() {
                             return (
                               <div
                                 key={staff.id}
-                                className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent ${
-                                  isSelected ? "opacity-50" : ""
-                                }`}
+                                className={`flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-accent ${isSelected ? "opacity-50" : ""
+                                  }`}
                                 onClick={() => {
                                   if (!isSelected) {
                                     addTeamMember(staff, departments.find((d) => d.id === selectedDepartment)?.name || "")
@@ -467,7 +464,7 @@ export default function PropertyGroupsPage() {
             <p className="text-sm text-muted-foreground">Properties organized by area/location</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button 
+            <Button
               onClick={() => setShowCreateGroup(true)}
               className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white"
             >
@@ -484,23 +481,23 @@ export default function PropertyGroupsPage() {
         </div>
       </div>
 
-      <div className="border-b bg-card p-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-xl">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search staff members or properties..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* <div className="border-b bg-card p-6">
+        <div className="flex flex-col gap-4"> */}
+      {/* </div>
+      </div> */}
 
       <div className="flex-1 overflow-auto p-6 bg-muted/20">
+        <div className="flex items-center justify-between mb-6">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search staff members or properties..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
         <div className="space-y-4">
           {getUniqueAreas().filter(area => {
             if (!searchQuery) return true
@@ -631,14 +628,14 @@ export default function PropertyGroupsPage() {
               )
             )
           }).length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <MapPin className="h-16 w-16 text-muted-foreground/40 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No areas found</h3>
-              <p className="text-sm text-muted-foreground max-w-sm">
-                Try adjusting your search to find what you're looking for.
-              </p>
-            </div>
-          )}
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <MapPin className="h-16 w-16 text-muted-foreground/40 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No areas found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  Try adjusting your search to find what you're looking for.
+                </p>
+              </div>
+            )}
         </div>
       </div>
 
@@ -712,8 +709,8 @@ export default function PropertyGroupsPage() {
                             </PopoverTrigger>
                             <PopoverContent className="w-[260px] p-0" align="end">
                               <Command>
-                                <CommandInput 
-                                  placeholder="Search by name or email..." 
+                                <CommandInput
+                                  placeholder="Search by name or email..."
                                   value={staffSearchQuery}
                                   onValueChange={setStaffSearchQuery}
                                 />
@@ -721,7 +718,7 @@ export default function PropertyGroupsPage() {
                                   <CommandEmpty>No staff found.</CommandEmpty>
                                   <CommandGroup>
                                     {allStaffMembers
-                                      .filter(staff => 
+                                      .filter(staff =>
                                         staff.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
                                         staff.email.toLowerCase().includes(staffSearchQuery.toLowerCase())
                                       )
@@ -730,8 +727,8 @@ export default function PropertyGroupsPage() {
                                           key={staff.id}
                                           value={`${staff.name} ${staff.email}`}
                                           onSelect={() => {
-                                            setAssignedTeam(assignedTeam.map(m => 
-                                              m.id === member.id 
+                                            setAssignedTeam(assignedTeam.map(m =>
+                                              m.id === member.id
                                                 ? { ...m, name: staff.name, email: staff.email }
                                                 : m
                                             ))
@@ -778,7 +775,7 @@ export default function PropertyGroupsPage() {
             }} className="bg-transparent">
               Cancel
             </Button>
-            <Button 
+            <Button
               className="bg-teal-600 hover:bg-teal-700"
               onClick={() => {
                 setShowTeamModal(false)

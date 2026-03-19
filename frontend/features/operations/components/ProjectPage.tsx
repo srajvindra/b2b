@@ -114,15 +114,15 @@ export default function ProjectsPage() {
       tasks.map((task) =>
         task.id === selectedTask.id
           ? {
-              ...task,
-              name: newTask.name,
-              description: newTask.description,
-              property: properties.find((p) => p.id === newTask.property)?.name || task.property,
-              assignedTo: staffMember?.name || task.assignedTo,
-              assignedToRole: staffMember?.role || task.assignedToRole,
-              dueDate: newTask.dueDate,
-              notes: newTask.notes,
-            }
+            ...task,
+            name: newTask.name,
+            description: newTask.description,
+            property: properties.find((p) => p.id === newTask.property)?.name || task.property,
+            assignedTo: staffMember?.name || task.assignedTo,
+            assignedToRole: staffMember?.role || task.assignedToRole,
+            dueDate: newTask.dueDate,
+            notes: newTask.notes,
+          }
           : task,
       ),
     )
@@ -173,7 +173,7 @@ export default function ProjectsPage() {
 
       {/* Filters and Search */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="relative flex-1 max-w-md">
+        <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           <Input
             placeholder="Search by employee name or task..."
@@ -213,10 +213,6 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      {/* Task Count */}
-      <p className="text-sm text-gray-500 mb-4">
-        Showing {filteredTasks.length} of {tasks.length} tasks
-      </p>
 
       {/* Table View */}
       {viewMode === "table" && (
@@ -359,6 +355,11 @@ export default function ProjectsPage() {
           )}
         </div>
       )}
+
+      {/* Task Count */}
+      <p className="text-sm text-gray-500 mb-4">
+        Showing {filteredTasks.length} of {tasks.length} tasks
+      </p>
 
       {/* Create Task Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

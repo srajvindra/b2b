@@ -36,6 +36,7 @@ import {
   Trash2,
   ExternalLink,
   Users,
+  TriangleAlert,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -55,6 +56,7 @@ import {
   getPrivateMessagesForContact,
   getGroupMessagesForContact,
 } from "@/features/messages/data/messagesPage"
+import { EscalateDialog } from "@/components/shared/EscalateDialog"
 
 
 export default function MessagesPage() {
@@ -76,6 +78,7 @@ export default function MessagesPage() {
   const [msgDateRange, setMsgDateRange] = useState<DateRange | undefined>(undefined)
   const [msgDatePopoverOpen, setMsgDatePopoverOpen] = useState(false)
   const [msgSearchQuery, setMsgSearchQuery] = useState("")
+  const [messageEscalations, setMessageEscalations] = useState<Record<string, { escalatedTo: string; escalatedAt: string }>>({})
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   const filteredContacts = CONTACTS.filter((contact) => {
@@ -180,7 +183,7 @@ export default function MessagesPage() {
     if (type === "email") return `bg-[#E6F4EA] border border-[#c8e6cf] text-slate-900 ${rounding}`
     if (type === "sms") {
       // Outgoing SMS uses Sky Blue (#90CAF9), Incoming SMS uses lighter blue
-      return isOutgoing 
+      return isOutgoing
         ? `bg-[#90CAF9] border border-[#64B5F6] text-slate-900 ${rounding}`
         : `bg-[#E3F2FD] border border-[#bbdefb] text-slate-900 ${rounding}`
     }
@@ -320,10 +323,10 @@ export default function MessagesPage() {
                 </p>
               )}
             </div>
-) : (
-          <p className="text-base whitespace-pre-line text-slate-700 leading-relaxed">
-            {highlightText(msg.content)}
-          </p>
+          ) : (
+            <p className="text-base whitespace-pre-line text-slate-700 leading-relaxed">
+              {highlightText(msg.content)}
+            </p>
           )}
 
           {/* Timestamp */}
@@ -487,11 +490,10 @@ export default function MessagesPage() {
               <div className="h-4 w-px bg-slate-200" />
               <button
                 onClick={() => { setCommSubTab("private"); setSelectedGroupId(null) }}
-                className={`relative h-7 px-2.5 rounded-md text-xs font-medium transition-colors ${
-                  commSubTab === "private"
+                className={`relative h-7 px-2.5 rounded-md text-xs font-medium transition-colors ${commSubTab === "private"
                     ? "bg-teal-600 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
+                  }`}
               >
                 Private
                 {privateUnreadCount > 0 && (
@@ -500,11 +502,10 @@ export default function MessagesPage() {
               </button>
               <button
                 onClick={() => { setCommSubTab("group"); setSelectedGroupId(null) }}
-                className={`relative h-7 px-2.5 rounded-md text-xs font-medium transition-colors ${
-                  commSubTab === "group"
+                className={`relative h-7 px-2.5 rounded-md text-xs font-medium transition-colors ${commSubTab === "group"
                     ? "bg-teal-600 text-white"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                }`}
+                  }`}
               >
                 Group
                 {groupUnreadCount > 0 && (
@@ -528,9 +529,8 @@ export default function MessagesPage() {
                       <div
                         key={`${contact.id}-${group.name}`}
                         onClick={() => { setSelectedContact(contact); setSelectedGroupId(group.name) }}
-                        className={`p-3 border-b cursor-pointer transition-colors ${
-                          isSelected ? "bg-white border-l-2 border-l-teal-600" : "hover:bg-white"
-                        }`}
+                        className={`p-3 border-b cursor-pointer transition-colors ${isSelected ? "bg-white border-l-2 border-l-teal-600" : "hover:bg-white"
+                          }`}
                       >
                         <div className="flex items-start gap-3">
                           <div className="h-10 w-10 rounded-full bg-teal-100 flex items-center justify-center shrink-0">
@@ -563,51 +563,49 @@ export default function MessagesPage() {
                 })}
               </>
             ) : (
-            filteredContacts.map((contact) => (
-              <div
-                key={contact.id}
-                onClick={() => { setSelectedContact(contact); setSelectedGroupId(null) }}
-                className={`p-4 border-b cursor-pointer transition-colors ${
-                  selectedContact?.id === contact.id && !selectedGroupId ? "bg-white border-l-2 border-l-teal-600" : "hover:bg-white"
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback className="bg-slate-200 text-slate-700 text-sm">
-                      {contact.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm text-slate-900 truncate">{contact.name}</span>
-                      <span className="text-xs text-slate-500">{contact.lastMessageTime}</span>
+              filteredContacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  onClick={() => { setSelectedContact(contact); setSelectedGroupId(null) }}
+                  className={`p-4 border-b cursor-pointer transition-colors ${selectedContact?.id === contact.id && !selectedGroupId ? "bg-white border-l-2 border-l-teal-600" : "hover:bg-white"
+                    }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-slate-200 text-slate-700 text-sm">
+                        {contact.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <span className="font-medium text-sm text-slate-900 truncate">{contact.name}</span>
+                        <span className="text-xs text-slate-500">{contact.lastMessageTime}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <Badge
+                          variant="outline"
+                          className={`text-xs px-1.5 py-0 ${contact.type === "owner"
+                              ? "border-blue-200 text-blue-700 bg-blue-50"
+                              : "border-green-200 text-green-700 bg-green-50"
+                            }`}
+                        >
+                          {contact.type === "owner" ? "Owner" : "Tenant"}
+                        </Badge>
+                        {contact.property && <span className="text-xs text-slate-500 truncate">{contact.property}</span>}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1 line-clamp-1">{contact.lastMessage}</p>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <Badge
-                        variant="outline"
-                        className={`text-xs px-1.5 py-0 ${
-                          contact.type === "owner"
-                            ? "border-blue-200 text-blue-700 bg-blue-50"
-                            : "border-green-200 text-green-700 bg-green-50"
-                        }`}
-                      >
-                        {contact.type === "owner" ? "Owner" : "Tenant"}
+                    {((contact.unreadCount ?? 0) > 0 || (contact.groupUnreadCount ?? 0) > 0) && (
+                      <Badge className="bg-green-500 text-white h-5 min-w-5 flex items-center justify-center text-xs">
+                        {(contact.unreadCount ?? 0) + (contact.groupUnreadCount ?? 0)}
                       </Badge>
-                      {contact.property && <span className="text-xs text-slate-500 truncate">{contact.property}</span>}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-1">{contact.lastMessage}</p>
+                    )}
                   </div>
-                  {((contact.unreadCount ?? 0) > 0 || (contact.groupUnreadCount ?? 0) > 0) && (
-                    <Badge className="bg-green-500 text-white h-5 min-w-5 flex items-center justify-center text-xs">
-                      {(contact.unreadCount ?? 0) + (contact.groupUnreadCount ?? 0)}
-                    </Badge>
-                  )}
                 </div>
-              </div>
-            ))
+              ))
             )}
           </div>
         </div>
@@ -631,11 +629,10 @@ export default function MessagesPage() {
                     <h2 className="font-semibold text-slate-900">{selectedContact.name}</h2>
                     <Badge
                       variant="outline"
-                      className={`text-xs ${
-                        selectedContact.type === "owner"
+                      className={`text-xs ${selectedContact.type === "owner"
                           ? "border-blue-200 text-blue-700 bg-blue-50"
                           : "border-green-200 text-green-700 bg-green-50"
-                      }`}
+                        }`}
                     >
                       {selectedContact.type === "owner" ? "Owner" : "Tenant"}
                     </Badge>
@@ -689,8 +686,7 @@ export default function MessagesPage() {
                           key={t}
                           type="button"
                           onClick={() => setMsgTypeFilter(t)}
-                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                            msgTypeFilter === t
+                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${msgTypeFilter === t
                               ? t === "email"
                                 ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
                                 : t === "sms"
@@ -699,7 +695,7 @@ export default function MessagesPage() {
                                     ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]"
                                     : "bg-teal-50 text-teal-700 border border-teal-200"
                               : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                          }`}
+                            }`}
                         >
                           {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Call"}
                         </button>
@@ -713,11 +709,10 @@ export default function MessagesPage() {
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                            msgDateRange?.from
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${msgDateRange?.from
                               ? "bg-teal-50 text-teal-700 border-teal-200"
                               : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
-                          }`}
+                            }`}
                         >
                           <CalendarDays className="h-3 w-3" />
                           {msgDateRange?.from ? (
@@ -794,6 +789,8 @@ export default function MessagesPage() {
                         <>
                           {filteredPrivateMsgs.map((msg, index) => {
                             const showDateHeader = index === 0 || filteredPrivateMsgs[index - 1].date !== msg.date
+                            const escalatedTo = messageEscalations[msg.id]?.escalatedTo ?? msg.escalatedTo
+                            const escalatedAt = messageEscalations[msg.id]?.escalatedAt ?? msg.escalatedAt
                             return (
                               <div key={msg.id}>
                                 {showDateHeader && (
@@ -802,6 +799,15 @@ export default function MessagesPage() {
                                   </div>
                                 )}
                                 {renderMessageBubble(msg, selectedContact.name)}
+                                {escalatedTo && escalatedAt && (
+                                  <div className="flex items-center justify-center gap-3 my-3">
+                                    <div className="flex-1 h-px bg-slate-200" />
+                                    <span className="text-[10px] text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                                      Escalated to <span className="font-medium">{escalatedTo}</span> at <span className="font-medium">{escalatedAt}</span>
+                                    </span>
+                                    <div className="flex-1 h-px bg-slate-200" />
+                                  </div>
+                                )}
                               </div>
                             )
                           })}
@@ -824,147 +830,158 @@ export default function MessagesPage() {
 
               {/* ======= GROUP SUB-TAB ======= */}
               {commSubTab === "group" && !msgSelectedGroup && (
-                  <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
-                    Select a group from the list to view conversation.
-                  </div>
+                <div className="flex-1 flex items-center justify-center text-sm text-slate-500">
+                  Select a group from the list to view conversation.
+                </div>
               )}
               {commSubTab === "group" && msgSelectedGroup && (
-                  <>
-                    {/* Group conversation header */}
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-slate-800">{msgSelectedGroup.name}</h3>
-                        <p className="text-xs text-slate-500">{msgSelectedGroup.participants.join(", ")}</p>
-                      </div>
-                      <span className="text-xs text-slate-500">{filteredGroupMsgs.length} messages</span>
+                <>
+                  {/* Group conversation header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-slate-800">{msgSelectedGroup.name}</h3>
+                      <p className="text-xs text-slate-500">{msgSelectedGroup.participants.join(", ")}</p>
                     </div>
+                    <span className="text-xs text-slate-500">{filteredGroupMsgs.length} messages</span>
+                  </div>
 
-                    {/* Type / Date / Search Filters */}
-                    <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-lg border border-slate-200 bg-white">
-                      <div className="flex items-center gap-1">
-                        {(["all", "email", "sms", "call"] as const).map((t) => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setMsgTypeFilter(t)}
-                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                              msgTypeFilter === t
-                                ? t === "email"
-                                  ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
-                                  : t === "sms"
-                                    ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
-                                    : t === "call"
-                                      ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]"
-                                      : "bg-teal-50 text-teal-700 border border-teal-200"
-                                : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
+                  {/* Type / Date / Search Filters */}
+                  <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-lg border border-slate-200 bg-white">
+                    <div className="flex items-center gap-1">
+                      {(["all", "email", "sms", "call"] as const).map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setMsgTypeFilter(t)}
+                          className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${msgTypeFilter === t
+                              ? t === "email"
+                                ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
+                                : t === "sms"
+                                  ? "bg-[#E3F2FD] text-blue-800 border border-[#bbdefb]"
+                                  : t === "call"
+                                    ? "bg-[#E0F7F6] text-teal-800 border border-[#b8e8e6]"
+                                    : "bg-teal-50 text-teal-700 border border-teal-200"
+                              : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
                             }`}
-                          >
-                            {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Call"}
-                          </button>
-                        ))}
-                      </div>
-                      <div className="h-5 w-px bg-slate-200" />
-                      <Popover open={msgDatePopoverOpen} onOpenChange={setMsgDatePopoverOpen}>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                              msgDateRange?.from
-                                ? "bg-teal-50 text-teal-700 border-teal-200"
-                                : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
-                            }`}
-                          >
-                            <CalendarDays className="h-3 w-3" />
-                            {msgDateRange?.from ? (
-                              msgDateRange.to
-                                ? `${format(msgDateRange.from, "MMM d")} - ${format(msgDateRange.to, "MMM d, yyyy")}`
-                                : format(msgDateRange.from, "MMM d, yyyy")
-                            ) : (
-                              "Date"
-                            )}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarWidget
-                            mode="range"
-                            selected={msgDateRange}
-                            onSelect={(range) => {
-                              setMsgDateRange(range)
-                              if (range?.to) setMsgDatePopoverOpen(false)
-                            }}
-                            numberOfMonths={1}
-                          />
-                          {msgDateRange?.from && (
-                            <div className="border-t p-2 flex justify-end">
-                              <button
-                                type="button"
-                                onClick={() => { setMsgDateRange(undefined); setMsgDatePopoverOpen(false) }}
-                                className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          )}
-                        </PopoverContent>
-                      </Popover>
-                      <div className="h-5 w-px bg-slate-200" />
-                      <div className="relative flex-1 min-w-[140px]">
-                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
-                        <input
-                          type="text"
-                          value={msgSearchQuery}
-                          onChange={(e) => setMsgSearchQuery(e.target.value)}
-                          placeholder="Search conversations..."
-                          className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
-                        />
-                        {msgSearchQuery && (
-                          <button
-                            type="button"
-                            onClick={() => setMsgSearchQuery("")}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                      {(msgTypeFilter !== "all" || msgDateRange?.from || msgSearchQuery) && (
+                        >
+                          {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Call"}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="h-5 w-px bg-slate-200" />
+                    <Popover open={msgDatePopoverOpen} onOpenChange={setMsgDatePopoverOpen}>
+                      <PopoverTrigger asChild>
                         <button
                           type="button"
-                          onClick={() => { setMsgTypeFilter("all"); setMsgDateRange(undefined); setMsgSearchQuery("") }}
-                          className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${msgDateRange?.from
+                              ? "bg-teal-50 text-teal-700 border-teal-200"
+                              : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
+                            }`}
                         >
-                          Clear all
+                          <CalendarDays className="h-3 w-3" />
+                          {msgDateRange?.from ? (
+                            msgDateRange.to
+                              ? `${format(msgDateRange.from, "MMM d")} - ${format(msgDateRange.to, "MMM d, yyyy")}`
+                              : format(msgDateRange.from, "MMM d, yyyy")
+                          ) : (
+                            "Date"
+                          )}
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarWidget
+                          mode="range"
+                          selected={msgDateRange}
+                          onSelect={(range) => {
+                            setMsgDateRange(range)
+                            if (range?.to) setMsgDatePopoverOpen(false)
+                          }}
+                          numberOfMonths={1}
+                        />
+                        {msgDateRange?.from && (
+                          <div className="border-t p-2 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => { setMsgDateRange(undefined); setMsgDatePopoverOpen(false) }}
+                              className="text-xs text-slate-500 hover:text-slate-700 px-2 py-1"
+                            >
+                              Clear
+                            </button>
+                          </div>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                    <div className="h-5 w-px bg-slate-200" />
+                    <div className="relative flex-1 min-w-[140px]">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400" />
+                      <input
+                        type="text"
+                        value={msgSearchQuery}
+                        onChange={(e) => setMsgSearchQuery(e.target.value)}
+                        placeholder="Search conversations..."
+                        className="w-full pl-7 pr-7 py-1 rounded-md text-xs border border-slate-200 bg-slate-50 text-slate-700 placeholder:text-slate-400 outline-none focus:border-teal-300 focus:ring-1 focus:ring-teal-200 transition-colors"
+                      />
+                      {msgSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setMsgSearchQuery("")}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-3 w-3" />
                         </button>
                       )}
                     </div>
+                    {(msgTypeFilter !== "all" || msgDateRange?.from || msgSearchQuery) && (
+                      <button
+                        type="button"
+                        onClick={() => { setMsgTypeFilter("all"); setMsgDateRange(undefined); setMsgSearchQuery("") }}
+                        className="text-xs text-slate-400 hover:text-slate-600 shrink-0"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
 
-                    {/* Group Chat Messages */}
-                    <div className="flex-1 overflow-y-auto border rounded-lg p-4 bg-slate-50">
-                      <div className="flex flex-col gap-3">
-                        {filteredGroupMsgs.length > 0 ? filteredGroupMsgs.map((msg, index) => {
-                          const showDateHeader = index === 0 || filteredGroupMsgs[index - 1].date !== msg.date
-                          return (
-                            <div key={msg.id}>
-                              {showDateHeader && (
-                                <div className="flex items-center justify-center my-3">
-                                  <span className="text-[10px] text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">{msg.date}</span>
-                                </div>
-                              )}
-                              {renderMessageBubble(msg, selectedContact.name)}
-                            </div>
-                          )
-                        }) : (
-                          <div className="flex items-center justify-center h-32 text-sm text-slate-500">
-                            No messages match the selected filters.
+                  {/* Group Chat Messages */}
+                  <div className="flex-1 overflow-y-auto border rounded-lg p-4 bg-slate-50">
+                    <div className="flex flex-col gap-3">
+                      {filteredGroupMsgs.length > 0 ? filteredGroupMsgs.map((msg, index) => {
+                        const showDateHeader = index === 0 || filteredGroupMsgs[index - 1].date !== msg.date
+                        const escalatedTo = messageEscalations[msg.id]?.escalatedTo ?? msg.escalatedTo
+                        const escalatedAt = messageEscalations[msg.id]?.escalatedAt ?? msg.escalatedAt
+                        return (
+                          <div key={msg.id}>
+                            {showDateHeader && (
+                              <div className="flex items-center justify-center my-3">
+                                <span className="text-[10px] text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">{msg.date}</span>
+                              </div>
+                            )}
+                            {renderMessageBubble(msg, selectedContact.name)}
+
+                            {escalatedTo && escalatedAt && (
+                              <div className="flex items-center justify-center gap-3 my-3">
+                                <div className="flex-1 h-px bg-slate-200" />
+                                
+                                <span className="text-[10px] text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                                  Escalated to <span className="font-medium">{escalatedTo}</span> at <span className="font-medium">{escalatedAt}</span>
+                                </span>
+                                <div className="flex-1 h-px bg-slate-200" />
+                              </div>
+                            )}
                           </div>
-                        )}
-                        <div ref={chatEndRef} />
-                      </div>
+                        )
+                      }) : (
+                        <div className="flex items-center justify-center h-32 text-sm text-slate-500">
+                          No messages match the selected filters.
+                        </div>
+                      )}
+                      <div ref={chatEndRef} />
                     </div>
+                  </div>
 
-                    {/* Reply Composer */}
-                    {renderReplyComposer()}
-                  </>
+                  {/* Reply Composer */}
+                  {renderReplyComposer()}
+                </>
               )}
             </div>
           </div>

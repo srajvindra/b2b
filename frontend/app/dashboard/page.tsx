@@ -15,7 +15,7 @@ import { Combined } from "@/features/dashboard/components/Combined"
 import type { CombinedItem } from "@/features/dashboard/components/Combined"
 import { CommunicationModal } from "@/features/dashboard/components/CommunicationModal"
 import type { Communication } from "@/features/dashboard/types"
-import { Wrench, FileText, LogOut, DollarSign, ShieldAlert, OctagonAlert, CircleAlert, Landmark, Clock } from "lucide-react"
+import { Wrench, FileText, LogOut, DollarSign, ShieldAlert, OctagonAlert, CircleAlert, Landmark, Clock, ShieldAlertIcon } from "lucide-react"
 import { Filter } from "lucide-react"
 import { mockTasks as initialMockTasks } from "@/features/dashboard/data/mockTasks"
 import { mockCommunications } from "@/features/dashboard/data/mockCommunications"
@@ -59,20 +59,29 @@ export default function Page() {
 
   const escalatedToStaffMembers = useMemo(
     () => [
-      { id: 1, name: "David Wilson", role: "CSM" },
+      { id: 1, name: "David Wilson", role: "GM" },
       { id: 2, name: "Oliver Torres", role: "VP" },
       { id: 3, name: "Taylor Johnson", role: "GM" },
       { id: 4, name: "Kimberly Johnson", role: "Executive/MD" },
-      { id: 5, name: "David Kim", role: "CSM" },],
+      { id: 5, name: "David Kim", role: "VP" },],
     []
   )
   const [selectedStaff, setSelectedStaff] = useState<string | null>(null)
   const [tasksSearchQuery, setTasksSearchQuery] = useState("")
   const [showDashFilters, setShowDashFilters] = useState(false)
-  const [dashFilter, setDashFilter] = useState<"myTasks" | "overdue" | "revenueRisk" | "slaRisk" | "legalRisk" | "orgTasks">("myTasks")
+  const [dashFilter, setDashFilter] = useState<"myTasks" | "overdue" | "escalated" | "revenueRisk" | "slaRisk" | "legalRisk" | "orgTasks">("myTasks")
   const [assignmentOverrides, setAssignmentOverrides] = useState<Record<number, string>>({})
   const [riskOverrides, setRiskOverrides] = useState<Record<number, string>>({})
   const [escalatedTo, setEscalatedTo] = useState<Record<number, string>>({})
+  const [commEscalatedTo, setCommEscalatedTo] = useState<Record<number, string>>(() => {
+    const initial: Record<number, string> = {}
+    mockCommunications.forEach((c) => {
+      if (c.escalatedTo) {
+        initial[c.id] = c.escalatedToRole ? `${c.escalatedTo} (${c.escalatedToRole})` : c.escalatedTo
+      }
+    })
+    return initial
+  })
   const [noteOverrides, setNoteOverrides] = useState<Record<number, string>>({})
   const [tasks, setTasks] = useState<Task[]>(initialMockTasks)
 
@@ -86,6 +95,10 @@ export default function Page() {
 
   const handleEscalateTask = (taskId: number, staffName: string) => {
     setEscalatedTo((prev) => ({ ...prev, [taskId]: staffName }))
+  }
+
+  const handleEscalateCommunication = (commId: number, staffName: string) => {
+    setCommEscalatedTo((prev) => ({ ...prev, [commId]: staffName }))
   }
 
   const handleUpdateNote = (taskId: number, note: string) => {
@@ -112,6 +125,8 @@ export default function Page() {
             return t.assignedTo === CURRENT_USER
           case "overdue":
             return t.overdue
+          case "escalated":
+            return t.escalatedTo !== ""
           case "revenueRisk":
             return t.tags?.includes("revenueRisk")
           case "slaRisk":
@@ -190,6 +205,10 @@ export default function Page() {
 
   const filteredCommunications = useMemo(() => {
     return baseFilteredCommunications.filter((c) => {
+      if (dashFilter === "escalated") {
+        const hasEscalation = commEscalatedTo[c.id] || c.escalatedTo
+        if (!hasEscalation) return false
+      }
       if (selectedTile === "emails" && c.type !== "email") return false
       if (selectedTile === "sms" && c.type !== "text") return false
       if (selectedTile === "calls" && c.type !== "call") return false
@@ -202,7 +221,7 @@ export default function Page() {
       if (selectedTile === "calls") return isUnresponded(c) || !c.read
       return (c)
     })
-  }, [baseFilteredCommunications, selectedTile, subFilter])
+  }, [baseFilteredCommunications, selectedTile, subFilter, dashFilter, commEscalatedTo])
 
   // ----- KPIs (inlined from features/dashboard/hooks/useKPIs.ts) -----
   const [userRole] = useState<"associate" | "manager" | "leader">("manager")
@@ -245,7 +264,7 @@ export default function Page() {
     return [...commItems, ...taskItems].sort((a, b) => b.sortDate.getTime() - a.sortDate.getTime())
   }, [filteredCommunications, filteredTasks])
 
-  const [dashFilterType, setDashFilterType] = useState<"myTasks" | "overdue" | "revenueRisk" | "slaRisk" | "legalRisk" | "orgTasks">("myTasks")
+  const [dashFilterType, setDashFilterType] = useState<"myTasks" | "overdue" | "escalated" | "revenueRisk" | "slaRisk" | "legalRisk" | "orgTasks">("myTasks")
   const [dashFilterValue, setDashFilterValue] = useState<string>("")
   const [dashFilterDate, setDashFilterDate] = useState<string>("")
   const [dashFilterStatus, setDashFilterStatus] = useState<"all" | "open" | "closed">("all")
@@ -326,53 +345,51 @@ export default function Page() {
 
       {/* Summary Tiles */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-red-50/50">
-            <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-              <CircleAlert className="h-4.5 w-4.5 text-red-600" />
+        <div className="rounded-xl border border-slate-300 bg-red-50/50 p-5 min-h-[116px]">
+          <div className="flex items-center gap-3 h-full">
+            <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+              <ShieldAlertIcon className="h-6 w-6 text-red-600" />
             </div>
-            <p className="text-sm font-medium text-slate-900">Critical Items</p>
-          </div>
-          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
-            <p className="text-2xl font-bold text-slate-900">6</p>
+            <div className="min-w-0">
+              <p className="min-h-[20px] text-base font-semibold text-slate-900">6 Critical Items</p>
+              <p className="min-h-[18px] text-sm text-red-600">5 Critical</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-green-50/50">
-            <div className="w-9 h-9 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-              <DollarSign className="h-4.5 w-4.5 text-green-600" />
+        <div className="rounded-xl border border-slate-300 bg-green-50/50 p-5 min-h-[116px]">
+          <div className="flex items-center gap-3 h-full">
+            <div className="h-12 w-12 rounded-xl bg-green-100 flex items-center justify-center shrink-0">
+              <DollarSign className="h-6 w-6 text-green-600" />
             </div>
-            <p className="text-sm font-medium text-slate-900">Revenue at Risk</p>
-          </div>
-          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
-            <p className="text-xl font-bold text-slate-900">$27,600</p>
-            <p className="text-[11px] text-slate-500 text-center">Recent Escalations</p>
+            <div className="min-w-0">
+              <p className="min-h-[20px] text-base font-semibold text-slate-900">$27,600 Revenue at Risk</p>
+              <p className="min-h-[18px] text-sm text-slate-500">Recent Escalations</p>
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-amber-50/50">
-            <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-              <Landmark className="h-4.5 w-4.5 text-red-700" />
+        <div className="rounded-xl border border-slate-300 bg-amber-50/50 p-5 min-h-[116px]">
+          <div className="flex items-center gap-3 h-full">
+            <div className="h-12 w-12 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
+              <Landmark className="h-6 w-6 text-red-700" />
             </div>
-            <p className="text-sm font-medium text-slate-900">Legal Exposure</p>
-          </div>
-          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
-            <p className="text-2xl font-bold text-slate-900">4</p>
-            <p className="text-[11px] text-slate-500 text-center">Pending Violations</p>
+            <div className="min-w-0">
+              <p className="min-h-[20px] text-base font-semibold text-slate-900">4 Legal Exposure</p>
+              <p className="min-h-[18px] text-sm text-slate-500">Pending Violations</p>
+            </div>
           </div>
         </div>
-        <div className="flex flex-col rounded-xl border border-slate-300  overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-300 bg-sky-50/50">
-            <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
-              <Clock className="h-4.5 w-4.5 text-slate-600" />
+
+        <div className="rounded-xl border border-slate-300 bg-sky-50/50 p-5 min-h-[116px]">
+          <div className="flex items-center gap-3 h-full">
+            <div className="h-12 w-12 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0">
+              <Clock className="h-6 w-6 text-yellow-600" />
             </div>
-            <p className="text-sm font-medium text-slate-900">SLA Breaches</p>
-          </div>
-          <div className="px-4 py-5 flex flex-col items-center gap-1 bg-white">
-            <p className="text-2xl font-bold text-slate-900">5</p>
-            <p className="text-[11px] text-slate-500 text-center">Longest Aging 3h 48m <span className="text-[10px] text-slate-400">15 sec</span></p>
+            <div className="min-w-0">
+              <p className="min-h-[20px] text-base font-semibold text-slate-900">5 SLA Breaches</p>
+              <p className="min-h-[18px] text-sm text-slate-500">Longest Aging 3h 48m <span className="text-xs text-slate-500">15 sec</span></p>
+            </div>
           </div>
         </div>
       </div>
@@ -431,6 +448,7 @@ export default function Page() {
         {([
           { key: "myTasks" as const, label: "My Tasks" },
           { key: "overdue" as const, label: "Overdue" },
+          { key: "escalated" as const, label: "Escalated" },
           { key: "revenueRisk" as const, label: "Revenue at Risk" },
           { key: "slaRisk" as const, label: "SLA Risk" },
           { key: "legalRisk" as const, label: "Legal Risk" },
@@ -491,6 +509,9 @@ export default function Page() {
             isPending={isPending}
             selectedStaff={selectedStaff}
             staffMembers={STAFF_MEMBERS}
+            escalatedToStaffMembers={escalatedToStaffMembers}
+            commEscalatedOverrides={commEscalatedTo}
+            onEscalateCommunication={handleEscalateCommunication}
             onAddTask={handleAddTask}
             maxHeight="350px"
           />
@@ -531,6 +552,8 @@ export default function Page() {
             }}
             staffMembers={STAFF_MEMBERS}
             escalatedToStaffMembers={escalatedToStaffMembers}
+            commEscalatedOverrides={commEscalatedTo}
+            onEscalateCommunication={handleEscalateCommunication}
             onAssignTask={handleAssignTask}
             onUpdateRisk={handleUpdateRisk}
             onEscalateTask={handleEscalateTask}

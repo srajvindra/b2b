@@ -220,19 +220,21 @@ export function StagesCategoriesPage({
         </Card>
       )}
 
-      <Card className="mb-4">
-        <CardContent className="">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search categories..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      {/* <Card className="mb-4">
+        <CardContent className=""> */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search categories..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+      </div>
+      {/* </CardContent>
+      </Card> */}
 
       <Card>
         <CardContent className="p-0">
@@ -358,9 +360,8 @@ export function StagesCategoriesPage({
                         {category.statuses.map((status, index) => (
                           <tr
                             key={status.id}
-                            className={`border-b transition-all duration-150 ${
-                              editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
-                            }`}
+                            className={`border-b transition-all duration-150 ${editingStatusId === status.id ? "bg-muted" : "bg-card hover:bg-muted/50"
+                              }`}
                           >
                             <td colSpan={4} className="p-0">
                               <div className="p-4 pl-16 flex items-center gap-4">

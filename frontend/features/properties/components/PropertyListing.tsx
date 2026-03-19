@@ -748,9 +748,9 @@ export default function AllPropertiesPage() {
                             {visiblePropertyColumns.includes("propertyStatus") && (
                               <TableCell>
                                 <Badge className={`text-xs whitespace-nowrap ${property.propertyStatus === "Active" ? "bg-green-100 text-green-700" :
-                                    property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
-                                      property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
-                                        "bg-amber-100 text-amber-700"
+                                  property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
+                                    property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
+                                      "bg-amber-100 text-amber-700"
                                   }`}>{property.propertyStatus}</Badge>
                               </TableCell>
                             )}
@@ -761,7 +761,7 @@ export default function AllPropertiesPage() {
                               <TableCell>
                                 <button
                                   type="button"
-                                  onClick={(e) => {router.push(`/properties/${property.id}/unit/${100 + (Number(property.id) % Math.max(property.units, 1))}`) }}
+                                  onClick={(e) => { router.push(`/properties/${property.id}/unit/${100 + (Number(property.id) % Math.max(property.units, 1))}`) }}
                                   className="flex items-center gap-1.5 text-[rgba(1,96,209,1)] hover:underline cursor-pointer"
                                 >
                                   <MapPin className="h-3.5 w-3.5 shrink-0" />
@@ -828,9 +828,9 @@ export default function AllPropertiesPage() {
                             {visibleUnitColumns.includes("propertyStatus") && (
                               <TableCell>
                                 <Badge className={`text-xs whitespace-nowrap ${property.propertyStatus === "Active" ? "bg-green-100 text-green-700" :
-                                    property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
-                                      property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
-                                        "bg-amber-100 text-amber-700"
+                                  property.propertyStatus === "Under Termination" ? "bg-red-100 text-red-700" :
+                                    property.propertyStatus === "Hidden" ? "bg-slate-200 text-slate-600" :
+                                      "bg-amber-100 text-amber-700"
                                   }`}>{property.propertyStatus}</Badge>
                               </TableCell>
                             )}

@@ -117,6 +117,7 @@ import {
   getOwnerProperties,
   initialAssignedTeam,
   allStaffMembers,
+  taskStaffMembers,
   INITIAL_CUSTOM_FIELDS,
   AVAILABLE_SECTIONS,
   contactAuditLogs,
@@ -1524,6 +1525,10 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
                 onProcessClick={onNavigateToProcess ?? ((process, contactName) => nav.go("contactProcessDetail", { process, contactName }))}
                 onEditProcess={handleEditProcess}
                 onRemoveNewProcess={(id) => setNewlyStartedProcesses(prev => prev.filter(p => p.id !== id))}
+                onEscalateProcess={(id, staffName) => {
+                  setNewlyStartedProcesses(prev => prev.map(p => p.id === id ? { ...p, status: "Escalated", escalatedTo: staffName } : p))
+                }}
+                escalatedToStaffMembers={taskStaffMembers}
                 expandedProcesses={expandedProcesses}
                 onToggleProcessExpanded={toggleProcessExpanded}
                 contactName={contact.name}
@@ -1536,10 +1541,10 @@ export default function ContactOwnerDetailPage({ contact, onBack, onNavigateToPr
               <OwnerAuditLogTab
                 logs={contactAuditLogs}
                 onDeletedNoteClick={(entry) => {
-                setSelectedDeletedNote(entry)
-                                    setShowDeletedNoteModal(true)
-              }}
-            />
+                  setSelectedDeletedNote(entry)
+                  setShowDeletedNoteModal(true)
+                }}
+              />
             </TabsContent>
           </Tabs>
         </div>

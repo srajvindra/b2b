@@ -105,6 +105,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarWidget } from "@/components/ui/calendar"
 import { format, isWithinInterval, startOfDay, endOfDay } from "date-fns"
 import type { DateRange } from "react-day-picker"
+import { TriangleAlert } from "lucide-react"
+import { EscalateDialog } from "@/components/shared/EscalateDialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { useNav } from "@/app/dashboard/page"
@@ -137,18 +139,21 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
 
     const dashboardTasks = useMemo<Task[]>(() => ownerTasks.map((t, idx) => ({
         id: idx + 1,
+        type: "task" as const,
         title: t.title,
         dueDate: t.dueDate,
         priority: t.priority.toLowerCase(),
         entity: `${t.relatedEntityName} (${t.relatedEntityType})`,
+        entityTitle: t.relatedEntityName || "",
         entityType: "prospectOwner" as const,
         risk: "Operational",
         overdue: t.isOverdue,
         assignedTo: t.assignee,
         escalatedTo: (t as { escalatedTo?: string }).escalatedTo || "",
+        escalatedToRole: (t as { escalatedToRole?: string }).escalatedToRole || "",
         status: t.status as Task["status"],
         processName: t.processName || undefined,
-        processEntityType: t.processName ? ("prospectOwner" as const) : undefined,
+        // processEntityType: t.processName ? ("prospectOwner" as const) : undefined,
         autoCreated: t.source === "communication",
     })), [])
 
@@ -295,6 +300,26 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
         status: string
         tasks: Array<{ id: string; name: string; startDate: string | null; completedDate: string | null; staffName: string; staffEmail: string }>
     }>>([])
+
+    const [escalateDialogOpen, setEscalateDialogOpen] = useState(false)
+    const [processToEscalate, setProcessToEscalate] = useState<{ id: string; name: string } | null>(null)
+    const escalatedToStaffMembers = useMemo(
+        () => taskStaffMembers.map((s, i) => ({ id: s.id, name: s.name, role: s.role })),
+        [],
+    )
+    const handleEscalateClick = (process: { id: string; name: string }) => {
+        setProcessToEscalate(process)
+        setEscalateDialogOpen(true)
+    }
+    const handleEscalateConfirm = (staffName: string) => {
+        if (processToEscalate) {
+            setNewlyStartedProcesses((prev) =>
+                prev.map((p) => (p.id === processToEscalate.id ? { ...p, status: "Escalated", escalatedTo: staffName } : p)),
+            )
+            setProcessToEscalate(null)
+            setEscalateDialogOpen(false)
+        }
+    }
 
     // State for Create/Edit Process panel
     const [showProcessPanel, setShowProcessPanel] = useState(false)
@@ -1225,7 +1250,7 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                             <TasksCard
                                 selectedStaff={null}
                                 {...tasksCardState}
-                                processRoute={{ 
+                                processRoute={{
                                     basePath: "leads/owner-prospects",
                                     categoryId: categoryId as string,
                                     leadId: leadId as string,
@@ -2667,6 +2692,13 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Remove Process
                                                                     </DropdownMenuItem>
+                                                                    <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        handleEscalateClick(process)
+                                                                    }}>
+                                                                        <TriangleAlert className="h-4 w-4 mr-2" />
+                                                                        Escalate
+                                                                    </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
                                                         </div>
@@ -2787,6 +2819,13 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                     <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Delete Process
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        handleEscalateClick(process)
+                                                                    }}>
+                                                                        <TriangleAlert className="h-4 w-4 mr-2" />
+                                                                        Escalate
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -2917,6 +2956,13 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                     <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Delete Process
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        handleEscalateClick(process)
+                                                                    }}>
+                                                                        <TriangleAlert className="h-4 w-4 mr-2" />
+                                                                        Escalate
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -3050,6 +3096,13 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                                                                     <DropdownMenuItem className="text-destructive" onClick={(e) => e.stopPropagation()}>
                                                                         <Trash2 className="h-4 w-4 mr-2" />
                                                                         Delete Process
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem className="text-destructive" onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        handleEscalateClick(process)
+                                                                    }}>
+                                                                        <TriangleAlert className="h-4 w-4 mr-2" />
+                                                                        Escalate
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -5155,6 +5208,20 @@ export function OwnerDetailView({ lead, onBack, onNavigateToProperty }: OwnerDet
                 comments={comments}
                 onAddComment={handleAddComment}
                 description="Internal comments for this owner prospect."
+            />
+
+            <EscalateDialog
+                open={escalateDialogOpen}
+                onOpenChange={(open) => {
+                    setEscalateDialogOpen(open)
+                    if (!open) setProcessToEscalate(null)
+                }}
+                title="Escalate Process"
+                subtitle={processToEscalate?.name}
+                staffMembers={escalatedToStaffMembers}
+                value={(processToEscalate && "escalatedTo" in processToEscalate && typeof processToEscalate.escalatedTo === "string" ? processToEscalate.escalatedTo : "") ?? ""}
+                onConfirm={handleEscalateConfirm}
+                confirmLabel="Escalate"
             />
         </div>
     )

@@ -563,170 +563,170 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
     // List view
     return (
       // <Card className="flex-1 overflow-hidden bg-muted/30 border-border">
-        <div className="rounded-md border border-border h-full overflow-auto bg-background/60">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted border-b-2 border-border">
-                {(activeTab === "owners" || activeTab === "tenants") && (
-                  <TableHead className="w-10">
-                    <Checkbox
-                      checked={
-                        visibleContacts.length > 0 &&
-                        visibleContacts.every((c) => selectedContactIds.includes(c.id))
+      <div className="rounded-md border border-border h-full overflow-auto bg-background/60">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted border-b-2 border-border">
+              {(activeTab === "owners" || activeTab === "tenants") && (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={
+                      visibleContacts.length > 0 &&
+                      visibleContacts.every((c) => selectedContactIds.includes(c.id))
+                    }
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedContactIds((prev) => [
+                          ...new Set([...prev, ...visibleContacts.map((c) => c.id)]),
+                        ])
+                      } else {
+                        const visibleIds = new Set(visibleContacts.map((c) => c.id))
+                        setSelectedContactIds((prev) => prev.filter((id) => !visibleIds.has(id)))
                       }
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedContactIds((prev) => [
-                            ...new Set([...prev, ...visibleContacts.map((c) => c.id)]),
-                          ])
-                        } else {
-                          const visibleIds = new Set(visibleContacts.map((c) => c.id))
-                          setSelectedContactIds((prev) => prev.filter((id) => !visibleIds.has(id)))
-                        }
-                      }}
-                    />
-                  </TableHead>
-                )}
-                <TableHead className="font-semibold text-foreground">Name</TableHead>
-                <TableHead className="font-semibold text-foreground">Properties / Company</TableHead>
-                <TableHead className="font-semibold text-foreground">Contact Info</TableHead>
-                <TableHead className="font-semibold text-foreground">Units</TableHead>
-                <TableHead className="font-semibold text-foreground">
-                  {activeTab === "owners" ? "CSR / CSM" : "Assignee"}
+                    }}
+                  />
                 </TableHead>
-                <TableHead className="font-semibold text-foreground">Status</TableHead>
-                <TableHead className="font-semibold text-foreground">Last Active</TableHead>
-                <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
+              )}
+              <TableHead className="font-semibold text-foreground">Name</TableHead>
+              <TableHead className="font-semibold text-foreground">Properties / Company</TableHead>
+              <TableHead className="font-semibold text-foreground">Contact Info</TableHead>
+              <TableHead className="font-semibold text-foreground">Units</TableHead>
+              <TableHead className="font-semibold text-foreground">
+                {activeTab === "owners" ? "CSR / CSM" : "Assignee"}
+              </TableHead>
+              <TableHead className="font-semibold text-foreground">Status</TableHead>
+              <TableHead className="font-semibold text-foreground">Last Active</TableHead>
+              <TableHead className="text-right font-semibold text-foreground">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {visibleContacts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={12} className="h-24 text-center text-muted-foreground">
+                  No {getPageTitle().toLowerCase()} found.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {visibleContacts.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={12} className="h-24 text-center text-muted-foreground">
-                    No {getPageTitle().toLowerCase()} found.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                visibleContacts.map((contact) => (
-                  <TableRow
-                    key={contact.id}
-                    className={`cursor-pointer hover:bg-secondary/80 transition-colors ${selectedContactIds.includes(contact.id) ? "bg-primary/5" : ""
-                      }`}
-                    onClick={() => handleRowClick(contact)}
-                  >
-                    {(activeTab === "owners" || activeTab === "tenants") && (
-                      <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedContactIds.includes(contact.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedContactIds((prev) => [...prev, contact.id])
-                            } else {
-                              setSelectedContactIds((prev) => prev.filter((id) => id !== contact.id))
-                            }
-                          }}
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-9 w-9 border border-border">
-                          <AvatarImage src={contact.avatar || "/placeholder.svg"} />
-                          <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                            {getInitials(contact.name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-[rgba(1,96,209,1)]">{contact.name}</div>
-                          <div className="text-xs text-muted-foreground">{contact.location}</div>
-                        </div>
-                      </div>
+            ) : (
+              visibleContacts.map((contact) => (
+                <TableRow
+                  key={contact.id}
+                  className={`cursor-pointer hover:bg-secondary/80 transition-colors ${selectedContactIds.includes(contact.id) ? "bg-primary/5" : ""
+                    }`}
+                  onClick={() => handleRowClick(contact)}
+                >
+                  {(activeTab === "owners" || activeTab === "tenants") && (
+                    <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedContactIds.includes(contact.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedContactIds((prev) => [...prev, contact.id])
+                          } else {
+                            setSelectedContactIds((prev) => prev.filter((id) => id !== contact.id))
+                          }
+                        }}
+                      />
                     </TableCell>
-                    <TableCell>
-                      {activeTab === "owners" ? (
-                        <span className="text-sm text-muted-foreground">{contact.companyLlc || "-"}</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1 max-w-[200px]">
-                          {contact.properties.slice(0, 2).map((prop, idx) => {
-                            const mapping = PROPERTY_UNIT_MAP[prop]
-                            const isTenant = contact.type === "Tenant"
-                            if (isTenant && mapping) {
-                              return (
-                                <Badge
-                                  key={idx}
-                                  variant="outline"
-                                  className="text-xs bg-primary/5 border-primary/30 text-primary"
-                                >
-                                  {prop}
-                                </Badge>
-                              )
-                            }
+                  )}
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-9 w-9 border border-border">
+                        <AvatarImage src={contact.avatar || "/placeholder.svg"} />
+                        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                          {getInitials(contact.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium text-[rgba(1,96,209,1)]">{contact.name}</div>
+                        <div className="text-xs text-muted-foreground">{contact.location}</div>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {activeTab === "owners" ? (
+                      <span className="text-sm text-muted-foreground">{contact.companyLlc || "-"}</span>
+                    ) : (
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {contact.properties.slice(0, 2).map((prop, idx) => {
+                          const mapping = PROPERTY_UNIT_MAP[prop]
+                          const isTenant = contact.type === "Tenant"
+                          if (isTenant && mapping) {
                             return (
                               <Badge
                                 key={idx}
                                 variant="outline"
-                                className="text-xs bg-secondary border-border text-muted-foreground"
+                                className="text-xs bg-primary/5 border-primary/30 text-primary"
                               >
                                 {prop}
                               </Badge>
                             )
-                          })}
-                          {contact.properties.length > 2 && (
+                          }
+                          return (
                             <Badge
+                              key={idx}
                               variant="outline"
                               className="text-xs bg-secondary border-border text-muted-foreground"
                             >
-                              +{contact.properties.length - 2}
+                              {prop}
                             </Badge>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <div className="flex items-center gap-1 text-sm">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground truncate max-w-[150px]">
-                            {contact.email}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">{contact.phone}</span>
-                        </div>
+                          )
+                        })}
+                        {contact.properties.length > 2 && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-secondary border-border text-muted-foreground"
+                          >
+                            +{contact.properties.length - 2}
+                          </Badge>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="tabular-nums text-center">
-                      <span className="text-sm text-muted-foreground">{contact.units ?? "-"}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">{contact.assignedStaff}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          contact.status === "Active"
-                            ? "bg-success/10 text-success hover:bg-success/10"
-                            : contact.status === "Pending"
-                              ? "bg-warning/10 text-warning hover:bg-warning/15"
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                        }
-                      >
-                        {contact.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{contact.lastActive}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1 text-sm">
+                        <Mail className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground truncate max-w-[150px]">
+                          {contact.email}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-muted-foreground">{contact.phone}</span>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="tabular-nums text-center">
+                    <span className="text-sm text-muted-foreground">{contact.units ?? "-"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm text-muted-foreground">{contact.assignedStaff}</span>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        contact.status === "Active"
+                          ? "bg-success/10 text-success hover:bg-success/10"
+                          : contact.status === "Pending"
+                            ? "bg-warning/10 text-warning hover:bg-warning/15"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }
+                    >
+                      {contact.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">{contact.lastActive}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={(e) => e.stopPropagation()}>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
       // </Card>
     )
   }
@@ -741,8 +741,8 @@ export default function OwnersTenantsPage({ type }: OwnersTenantsPageProps) {
         </div>
         <Button variant="outline" >
           <Download className="h-4 w-4" />
-            Export
-          </Button>
+          Export
+        </Button>
       </div>
 
       {activeTab === "owners" ? (

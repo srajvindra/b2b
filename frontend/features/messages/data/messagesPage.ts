@@ -151,6 +151,8 @@ export function getPrivateMessagesForContact(contact: Contact): CommMessage[] {
       isRead: true,
       callDuration: "5 min 23 sec",
       callNotes: `Called ${contact.name} to discuss:\n- Upcoming maintenance work\n- Property inspection scheduled for next month\n- Lease renewal options`,
+      escalatedTo: "David Wilson (GM)",
+      escalatedAt: "Yesterday",
     },
     {
       id: "m5",
@@ -197,6 +199,8 @@ export function getPrivateMessagesForContact(contact: Contact): CommMessage[] {
       timestamp: "4:30 PM",
       date: "Yesterday",
       isRead: false,
+      escalatedTo: "Jennifer Adams (Executive/MD)",
+      escalatedAt: "Yesterday",
     },
     {
       id: "m8",
@@ -257,6 +261,8 @@ export function getGroupMessagesForContact(
           timestamp: "8:30 AM",
           date: "Today",
           isRead: true,
+          escalatedTo: "Sarah (VP)",
+          escalatedAt: "Today",
         },
         {
           id: "g3",
@@ -297,6 +303,8 @@ export function getGroupMessagesForContact(
           date: "Yesterday",
           isRead: true,
           attachments: [{ name: "lease_draft_v2.pdf", size: "1.2 MB" }],
+          escalatedTo: "Jennifer Adams (Executive/MD)",
+          escalatedAt: "Yesterday",
         },
       ],
     },

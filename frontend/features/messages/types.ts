@@ -38,6 +38,10 @@ export interface CommMessage {
   attachments?: { name: string; size: string }[]
   callDuration?: string
   callNotes?: string
+  /** Staff member this message was escalated to (e.g. "David Wilson (GM)"). */
+  escalatedTo?: string
+  /** When the escalation occurred (e.g. "Nov 20, 2025" or "Yesterday"). */
+  escalatedAt?: string
   thread?: {
     id: string
     isIncoming: boolean

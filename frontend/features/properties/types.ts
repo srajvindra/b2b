@@ -97,6 +97,8 @@ export interface PropertyProcess {
   startedDate: string
   status: string
   tasks: ProcessTask[]
+  /** Staff member this process was escalated to (e.g. "David Wilson (GM)"). */
+  escalatedTo?: string
 }
 
 
