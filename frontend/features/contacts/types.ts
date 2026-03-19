@@ -125,6 +125,10 @@ export interface CommunicationItem {
   notes?: string
   fullContent?: string
   phone?: string
+  /** Staff member this communication was escalated to (e.g. "David Wilson (GM)"). */
+  escalatedTo?: string
+  /** When the escalation occurred (e.g. "Yesterday" or "12/4/2025"). */
+  escalatedAt?: string
 }
 
 // Owner contact detail types

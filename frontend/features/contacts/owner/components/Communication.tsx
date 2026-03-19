@@ -349,32 +349,29 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
     return (
       <div key={item.id} className={`flex ${isOutgoing ? "justify-end" : "justify-start"}`}>
         <div
-          className={`max-w-[75%] ${
-            isOutgoing
+          className={`max-w-[75%] ${isOutgoing
               ? "rounded-tl-xl rounded-tr-xl rounded-bl-xl"
               : "rounded-tl-xl rounded-tr-xl rounded-br-xl"
-          } ${
-            item.type === "email"
+            } ${item.type === "email"
               ? "bg-[#E6F4EA] border border-[#c8e6cf]"
               : item.type === "sms"
                 ? isOutgoing
-                  ? "bg-[#BBDEFB] border border-[#90CAF9]"
-                  : "bg-[#E3F2FD] border border-[#BBDEFB]"
+                  ? "bg-[#90CAF9] border border-[#64B5F6]"
+                  : "bg-[#E3F2FD] border border-[#bbdefb]"
                 : "bg-[#E0F7F6] border border-[#b8e8e6]"
-          } text-slate-900 p-3 shadow-sm`}
+            } text-slate-900 p-3 shadow-sm`}
         >
           <div className={`flex items-center gap-2 mb-1 ${isOutgoing ? "justify-end" : "justify-start"}`}>
             <span className="text-xs font-medium text-slate-500">{senderLabel}</span>
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                item.type === "email"
+              className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${item.type === "email"
                   ? "bg-[#c8e6cf] text-green-800"
                   : item.type === "sms"
                     ? isOutgoing
                       ? "bg-[#90CAF9] text-blue-900"
-                      : "bg-[#BBDEFB] text-blue-800"
+                      : "bg-[#E3F2FD] text-blue-800"
                     : "bg-[#b8e8e6] text-teal-800"
-              }`}
+                }`}
             >
               {item.type === "email" ? "Email" : item.type === "sms" ? "SMS" : "Call"}
             </span>
@@ -402,7 +399,7 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                         className={
                           idx > 0
                             ? "pt-2 border-t border-dashed border-opacity-30 " +
-                              (isOutgoing ? "border-teal-300" : "border-slate-300")
+                            (isOutgoing ? "border-teal-300" : "border-slate-300")
                             : ""
                         }
                       >
@@ -502,11 +499,10 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
           <div className="flex items-center gap-1 mb-4 border-b">
             <button
               onClick={() => handleSubTabChange("private")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                commSubTab === "private"
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${commSubTab === "private"
                   ? "border-teal-600 text-teal-700"
                   : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
+                }`}
             >
               Private
               {privateUnread > 0 && (
@@ -517,11 +513,10 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
             </button>
             <button
               onClick={() => handleSubTabChange("group")}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                commSubTab === "group"
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${commSubTab === "group"
                   ? "border-teal-600 text-teal-700"
                   : "border-transparent text-slate-500 hover:text-slate-700"
-              }`}
+                }`}
             >
               Group
               {groupUnread > 0 && (
@@ -549,8 +544,7 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                         key={t}
                         type="button"
                         onClick={() => setCommTabTypeFilter(t)}
-                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                          commTabTypeFilter === t
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${commTabTypeFilter === t
                             ? t === "email"
                               ? "bg-[#E6F4EA] text-green-800 border border-[#c8e6cf]"
                               : t === "sms"
@@ -559,7 +553,7 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                                   ? "bg-[#E8EAF6] text-indigo-800 border border-[#c5cae9]"
                                   : "bg-teal-50 text-teal-700 border border-teal-200"
                             : "bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200"
-                        }`}
+                          }`}
                       >
                         {t === "all" ? "All" : t === "email" ? "Emails" : t === "sms" ? "SMS" : "Calls"}
                       </button>
@@ -573,19 +567,18 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                        commTabDateRange?.from
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${commTabDateRange?.from
                           ? "bg-teal-50 text-teal-700 border-teal-200"
                           : "bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"
-                      }`}
+                        }`}
                     >
                       <Calendar className="h-3 w-3" />
                       {commTabDateRange?.from ? (
                         commTabDateRange.to
                           ? `${format(commTabDateRange.from, "MMM d")} - ${format(
-                              commTabDateRange.to,
-                              "MMM d, yyyy",
-                            )}`
+                            commTabDateRange.to,
+                            "MMM d, yyyy",
+                          )}`
                           : format(commTabDateRange.from, "MMM d, yyyy")
                       ) : (
                         "Date"
@@ -659,12 +652,23 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
               <div className="min-h-[250px] flex-1 overflow-y-auto space-y-3 mb-4 pr-2 border rounded-lg p-4 bg-slate-50 flex flex-col-reverse">
                 <div className="flex flex-col gap-3">
                   {filteredPrivateComms.length > 0 ? (
-                    filteredPrivateComms.map((item) =>
-                      renderMessageBubble(item, {
-                        isOutgoing: !item.isIncoming,
-                        senderLabel: item.isIncoming ? contactName : STAFF_NAME,
-                      })
-                    )
+                    filteredPrivateComms.map((item) => (
+                      <div key={item.id}>
+                        {renderMessageBubble(item, {
+                          isOutgoing: !item.isIncoming,
+                          senderLabel: item.isIncoming ? contactName : STAFF_NAME,
+                        })}
+                        {item.escalatedTo && item.timestamp && (
+                          <div className="flex  items-center justify-center gap-3 my-3">
+                            <div className="flex-1 h-px bg-slate-200" />
+                            <span className="text-[10px] text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                              Escalated to {item.escalatedTo} at {item.timestamp}
+                            </span>
+                            <div className="flex-1 h-px bg-slate-200" />
+                          </div>
+                        )}
+                      </div>
+                    ))
                   ) : (
                     <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
                       No private communications yet.
@@ -693,13 +697,24 @@ export function OwnerCommunicationTab({ communications, contact }: OwnerCommunic
                 </div>
                 <div className="min-h-[250px] flex-1 overflow-y-auto space-y-3 mb-4 pr-2 border rounded-lg p-4 bg-slate-50 flex flex-col-reverse">
                   <div className="flex flex-col gap-3">
-                    {filteredGroupMessages.map((item) =>
-                      renderMessageBubble(item, {
-                        isOutgoing: !item.isIncoming,
-                        senderLabel: item.from?.name || "Unknown",
-                        isGroup: true,
-                      })
-                    )}
+                    {filteredGroupMessages.map((item) => (
+                      <div key={item.id}>
+                        {renderMessageBubble(item, {
+                          isOutgoing: !item.isIncoming,
+                          senderLabel: item.from?.name || "Unknown",
+                          isGroup: true,
+                        })}
+                        {item.escalatedTo && item.timestamp && (
+                          <div className="flex rounded-lg items-center justify-center gap-3 my-3">
+                            <div className="flex-1 h-px bg-slate-200" />
+                            <span className="text-[10px] text-slate-500 bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">
+                              Escalated to {item.escalatedTo} at {item.timestamp}
+                            </span>
+                            <div className="flex-1 h-px bg-slate-200" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
                 {renderReplyComposer(contactEmail, "Type a message to the group...")}

@@ -47,6 +47,8 @@ export function getOwnerCommunications(
       date: new Date("2025-12-04T12:22:00"),
       isRead: false,
       isIncoming: true,
+      escalatedTo: "Jennifer Adams (Leasing)",
+      escalatedAt: "12/4/2025",
     },
     {
       id: "n1",
@@ -76,6 +78,8 @@ export function getOwnerCommunications(
       appfolioLink: "https://appfolio.com/calls/12345",
       notes:
         "Left voicemail about property management services. Mentioned our competitive rates and comprehensive services including tenant placement, maintenance coordination, and financial reporting.",
+      escalatedTo: "David Wilson (GM)",
+      escalatedAt: "12/4/2025",
     },
     {
       id: "s3",
